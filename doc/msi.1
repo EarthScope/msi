@@ -1,0 +1,146 @@
+.TH MSI 1 2005/07/22
+.SH NAME
+Mini-SEED Inspector
+
+.SH SYNOPSIS
+.nf
+msi [options] file1 [file2 file3 ...]
+
+.fi
+.SH DESCRIPTION
+\fBmsi\fP is a general purpose Mini-SEED parser.  In addition to
+parsing and displaying the contents of Mini-SEED records, \fBmsi\fP
+will derive continuous trace information for Mini-SEED data.
+
+By default, \fBmsi\fP will output a single line of information to
+summarize each record processed.  More verbose ordifferent output can
+be specified via the numerous options.
+
+If '-' is specified standard input will be read.  Multiple input files
+will be processed in the order specified.
+
+When a input file is full SEED including both SEED headers and data
+records all of the headers will be skipped and completely unprocessed.
+
+.SH OPTIONS
+
+.IP "-V         "
+Print program version and exit.
+
+.IP "-h         "
+Print program usage and exit.
+
+.IP "-v         "
+Be more verbose.  This flag can be used multiple times ("-v -v" or
+"-vv") for more verbosity.
+
+.IP "-p         "
+Print details of each record header.  This flag can be used multiple
+times ("-p -p" or "-pp") for more verbosity.  Specifying two flags
+will result in all header details being printed.
+
+.IP "-a         "
+Autodetect every input record length.  By default the program will
+autodetect the record length of the first record and assume all
+following records are the same length.  This option is needed when the
+input record lengths are different.
+
+.IP "-O         "
+Include the offset into the file in bytes when printing header
+details.
+
+.IP "-s         "
+Print a basic summary including the number of records and the number
+of samples they included after processing all input records.
+
+.IP "-t         "
+Print a sorted trace list after processing all input records.
+
+.IP "-T         "
+Print a sorted trace list after processing all input records and
+suppress record-by-record output, i.e. trace list only.
+
+.IP "-tg        "
+Include gap estimates when approriate in trace listings.
+
+.IP "-tt \fIsecs\fP"
+Specify a time tolerance for constructing continous trace
+segments. The tolerance is specified in seconds.  The default
+tolerance is 1/2 of the sample period.
+
+.IP "-rt \fIdiff\fP"
+Specify a sample rate tolerance for constructing continous trace
+segments. The tolerance is specified as the difference between two
+sampling rates.  The default tolerance is tested as: (abs(1-sr1/sr2) <
+0.0001).
+
+.IP "-g         "
+Print a sorted gap/overlap list after processing all input records.
+
+.IP "-G         "
+Print a sorted gap/overlap list after processing all input records and
+suppress record-by-record output, i.e. gap list only.
+
+.IP "-min \fIsec\fP"
+Only include gaps in the gap list larger or equal to \fIsec\fP number
+of seconds.
+
+.IP "-max \fIsec\fP"
+Only include gaps in the gap list smaller or equal to \fIsec\fP number
+of seconds.
+
+.IP "-H         "
+Heal trace segments when printing trace or gap/overlap lists.  When
+Mini-SEED records are read out of time order continuous trace segments
+might be split into multiple segments.  This option attempts to "heal"
+all such segments together.
+
+.IP "-tf \fIformat\fP"
+Specify the time stamp format for trace and gap/overlap lists.  The
+\fIformat\fP can be one of the following (default = 0):
+.nf
+  0 = SEED time, e.g. "2005,068,00:00:01.000000"
+  1 = ISO time, e.g. "2005-03-09T00:00:01.000000"
+  2 = Epoch seconds, e.g. "1110326401.000000"
+.fi
+
+.IP "-ts \fItime\fP"
+Limit processing to Mini-SEED records that start after \fItime\fP.
+The format of the \fItime\fP arguement
+is: 'YYYY[,DDD,HH,MM,SS,FFFFFF]' where valid delimiters are either
+commas (,), colons (:) or periods (.).
+
+.IP "-te \fItime\fP"
+Limit processing to Mini-SEED records that end before \fItime\fP.
+The format of the \fItime\fP arguement
+is: 'YYYY[,DDD,HH,MM,SS,FFFFFF]' where valid delimiters are either
+commas (,), colons (:) or periods (.).
+
+.IP "-n \fIcount\fP"
+Only process \fIcount\fP input records.
+
+.IP "-r \fIbytes\fP"
+Specify the intput record length in \fIbytes\fP.  By default the
+length of the first Mini-SEED record is automatically detected, this
+option forces the record length.  The option is required when the
+input records do not contain a 1000 Blockette.
+
+.IP "-e \fIencoding\fP"
+Specify the data encoding format.  These encoding values are the same
+as those specified in the SEED 1000 Blockette.
+
+.IP "-d          "
+Decompress/unpack data in input records and print the sample values.
+
+.IP "-b \fIbinfile\fP"
+Decompress/unpack data in input records and write the binary samples
+to \fIbinfile\fP.
+
+.IP "-o \fIoutfile\fP"
+Write all processed Mini-SEED records to \fIoutfile\fP.
+
+.SH AUTHOR
+.nf
+Chad Trabant
+IRIS Data Management Center
+.fi

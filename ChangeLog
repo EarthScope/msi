@@ -1,0 +1,11 @@
+2005.269: 1.2
+	- Update to libmseed 1.2.
+
+2005.203: 1.1
+	- Update to libmseed 1.1.
+	- Add '-tt' and '-rt' options to specify the time and sample
+	rate tolerances.
+
+2005.201: version 1.0
+	- The example msi program from libmseed.
+	- Add man page in the doc directory.
