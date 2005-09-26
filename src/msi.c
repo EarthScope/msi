@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2005.203
+ * modified 2005.269
  ***************************************************************************/
 
 #include <stdio.h>
@@ -28,7 +28,7 @@ static void addfile (char *filename);
 static void usage (void);
 static void term_handler (int sig);
 
-#define VERSION "1.1"
+#define VERSION "1.2"
 #define PACKAGE "msi"
 
 static flag    verbose      = 0;
