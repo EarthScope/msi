@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2005.269
+ * modified 2005.274
  ***************************************************************************/
 
 #include <stdio.h>
@@ -28,7 +28,7 @@ static void addfile (char *filename);
 static void usage (void);
 static void term_handler (int sig);
 
-#define VERSION "1.2"
+#define VERSION "1.3"
 #define PACKAGE "msi"
 
 static flag    verbose      = 0;
@@ -116,7 +116,7 @@ main (int argc, char **argv)
 	{
 	  bfp = stdout;
 	}
-      else if ( (bfp = fopen (binfile, "w")) == NULL )
+      else if ( (bfp = fopen (binfile, "wb")) == NULL )
 	{
 	  fprintf (stderr, "Cannot open binary data output file: %s (%s)\n",
 		   binfile, strerror(errno));
@@ -131,7 +131,7 @@ main (int argc, char **argv)
 	{
 	  ofp = stdout;
 	}
-      else if ( (ofp = fopen (outfile, "w")) == NULL )
+      else if ( (ofp = fopen (outfile, "wb")) == NULL )
 	{
 	  fprintf (stderr, "Cannot open output file: %s (%s)\n",
 		   outfile, strerror(errno));
