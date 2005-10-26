@@ -1,3 +1,6 @@
+2005.299: 1.4
+	- Update to libmseed 1.4.1.
+
 2005.274: 1.3
 	- Update to libmseed 1.3.
 	- Add Win32 Makefiles.
