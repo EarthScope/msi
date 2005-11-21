@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2005.299
+ * modified 2005.325
  ***************************************************************************/
 
 #include <stdio.h>
@@ -74,6 +74,7 @@ main (int argc, char **argv)
   int dataflag   = 0;
   int totalrecs  = 0;
   int totalsamps = 0;
+  int totalfiles = 0;
   off_t filepos  = 0;
 
   /* Process given parameters (command line and parameter file) */
@@ -237,6 +238,7 @@ main (int argc, char **argv)
       /* Make sure everything is cleaned up */
       ms_readmsr (NULL, 0, NULL, NULL, 0, 0, 0);
 
+      totalfiles++;
       flp = flp->next;
     } /* End of looping over file list */
 
@@ -247,7 +249,7 @@ main (int argc, char **argv)
     fclose (ofp);
   
   if ( basicsum )
-    printf ("Records: %d, Samples: %d\n", totalrecs, totalsamps);
+    printf ("Files: %d, Records: %d, Samples: %d\n", totalfiles, totalrecs, totalsamps);
     
   if ( tracegapsum || tracegaponly )
     {
