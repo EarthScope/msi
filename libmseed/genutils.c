@@ -7,7 +7,7 @@
  * ORFEUS/EC-Project MEREDIAN
  * IRIS Data Management Center
  *
- * modified: 2005.335
+ * modified: 2005.336
  ***************************************************************************/
 
 #include <stdio.h>
@@ -52,12 +52,12 @@ ms_find_reclen ( const char *msrecord, int maxheaderlen )
    * 2) 7th character is a valid data record indicator
    * 3) 8th character is an ASCII space or NULL [not valid SEED]
    */
-  if ( ! isdigit (*(msrecord)) ||
-       ! isdigit (*(msrecord+1)) ||
-       ! isdigit (*(msrecord+2)) ||
-       ! isdigit (*(msrecord+3)) ||
-       ! isdigit (*(msrecord+4)) ||
-       ! isdigit (*(msrecord+5)) ||
+  if ( ! isdigit ((unsigned char) *(msrecord)) ||
+       ! isdigit ((unsigned char) *(msrecord+1)) ||
+       ! isdigit ((unsigned char) *(msrecord+2)) ||
+       ! isdigit ((unsigned char) *(msrecord+3)) ||
+       ! isdigit ((unsigned char) *(msrecord+4)) ||
+       ! isdigit ((unsigned char) *(msrecord+5)) ||
        ! MS_ISDATAINDICATOR(*(msrecord+6)) ||
        ! (*(msrecord+7) == ' ' || *(msrecord+7) == '\0') )
     return -1;
