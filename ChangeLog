@@ -1,3 +1,6 @@
+2005.335: 1.6
+	- Update to libmseed 1.4.5.
+
 2005.325: 1.5
 	- Update to libmseed 1.4.4.
 	- Add total files count to basic summary.
