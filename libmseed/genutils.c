@@ -362,11 +362,6 @@ ms_btime2hptime (BTime *btime)
   hptime = (hptime_t ) (60 * (60 * (24 * days + btime->hour) + btime->min) + btime->sec) * HPTMODULUS
     + (btime->fract * (HPTMODULUS / 10000));
     
-  /*
-  printf ("DB: y: %d, d: %d, h: %d, m: %d, s:%d, f:%d\nhptime: %lld\n",
-	  btime->year, btime->day, btime->hour, btime->min, btime->sec, btime->fract, hptime);
-  */
-
   return hptime;
 }  /* End of ms_btime2hptime() */
 

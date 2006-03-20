@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2005.325
+ * modified 2006.058
  ***************************************************************************/
 
 #include <stdio.h>
@@ -26,7 +26,7 @@ static int lisnumber (char *number);
 static void addfile (char *filename);
 static void usage (void);
 
-#define VERSION "1.6"
+#define VERSION "1.7"
 #define PACKAGE "msi"
 
 static flag    verbose      = 0;
@@ -38,6 +38,7 @@ static flag    tracegapsum  = 0;    /* Controls printing of trace or gap list */
 static flag    tracegaponly = 0;    /* Controls printing of trace or gap list only */
 static flag    tracegaps    = 0;    /* Controls printing of gaps with a trace list */
 static flag    timeformat   = 0;    /* Time string format for trace or gap lists */
+static flag    dataquality  = 0;    /* Control matching of data qualities */
 static double  timetol      = -1.0; /* Time tolerance for continuous traces */
 static double  sampratetol  = -1.0; /* Sample rate tolerance for continuous traces */
 static double  mingap       = 0;    /* Minimum gap/overlap seconds when printing gap list */
@@ -65,8 +66,8 @@ int
 main (int argc, char **argv)
 {
   struct filelink *flp;
-  MSrecord *msr = 0;
-  TraceGroup *mstg = 0;
+  MSRecord *msr = 0;
+  MSTraceGroup *mstg = 0;
   FILE *bfp = 0;
   FILE *ofp = 0;
 
@@ -182,7 +183,7 @@ main (int argc, char **argv)
 	    }
 	  
 	  if ( tracegapsum || tracegaponly )
-	    mst_addmsrtogroup (mstg, msr, timetol, sampratetol);
+	    mst_addmsrtogroup (mstg, msr, dataquality, timetol, sampratetol);
 	  
 	  if ( dataflag )
 	    {
@@ -353,6 +354,10 @@ parameter_proc (int argcount, char **argvec)
 	{
 	  maxgap = strtod (getoptval(argcount, argvec, optind++), NULL);
 	  maxgapptr = &maxgap;
+	}
+      else if (strcmp (argvec[optind], "-Q") == 0)
+	{
+	  dataquality = 1;
 	}
       else if (strcmp (argvec[optind], "-H") == 0)
 	{
@@ -564,6 +569,7 @@ usage (void)
 	   " -G           Only print a sorted gap/overlap list\n"
 	   " -min secs    Only report gaps/overlaps larger or equal to specified seconds\n"
 	   " -max secs    Only report gaps/overlaps smaller or equal to specified seconds\n"
+	   " -Q           Additionally group traces by data quality\n"
 	   " -H           Heal trace segments, for out of time order data\n"
 	   " -tf format   Specify a time string format for trace and gap lists\n"
 	   "                format: 0 = SEED time, 1 = ISO time, 2 = epoch time\n"

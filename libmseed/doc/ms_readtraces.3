@@ -1,4 +1,4 @@
-.TH MS_READMSR 3 2004/12/17 "Libmseed API"
+.TH MS_READMSR 3 2006/03/20 "Libmseed API"
 .SH DESCRIPTION
 Read Mini-SEED data from files
 
@@ -6,14 +6,14 @@ Read Mini-SEED data from files
 .nf
 .B #include <libmseed.h>
 
-.BI "MSrecord   *\fBms_readmsr\fP ( char *" msfile ", int " reclen ", off_t *" fpos ",
+.BI "MSRecord   *\fBms_readmsr\fP ( char *" msfile ", int " reclen ", off_t *" fpos ",
 .BI "                         int *" last ", flag " skipnotdata ", flag " dataflag ",
 .BI "                         flag " verbose " );
 
-.BI "TraceGroup *\fBms_readtraces\fP ( char *" msfile ", int " reclen ", 
-.BI "                            double " timetol ", double " sampratetol ",
-.BI "                            flag " skipnotdata ", flag " dataflag ",
-.BI "                            flag " verbose " );"
+.BI "MSTraceGroup *\fBms_readtraces\fP ( char *" msfile ", int " reclen ", 
+.BI "                              double " timetol ", double " sampratetol ",
+.BI "                              flag " dataquality ", flag " skipnotdata ",
+.BI "                              flag " dataflag ", flag " verbose " );"
 .fi
 
 .SH DESCRIPTION
@@ -49,18 +49,25 @@ After reading all the input records the controlling program should
 call it one last time with \fImsfile\fP set to NULL.  This will close
 the file and cleanup allocated memory.
 
+If \fBms_readmsr\fP is called with a different file than the one it
+currently has open it will close the currently open file, open the new
+file and print an error message.  Properly coded applications should
+reset the function when the end of file has been reached as described
+above and not rely on this behavior.
+
 \fBms_readtraces\fP simply reads all Mini-SEED records from a file
-using \fBms_readmsr\fP and adds each one to a TraceGroup using
+using \fBms_readmsr\fP and adds each one to a MSTraceGroup using
 \fBmst_addmsrtogroup(3)\fP.  The \fImsfile\fP, \fIreclen\fP,
 \fIskipnotdata\fP and \fIdataflag\fP arguments are passed directly to
-\fBms_readmsr\fP.  The \fItimetol\fP and \fIsampratetol\fP arguments
-are passed directly to \fBmst_addmsrtogroup(3)\fP.
+\fBms_readmsr\fP.  The \fItimetol\fP, \fIsampratetol\fP and
+\fIdataquality\fP arguments are passed directly to
+\fBmst_addmsrtogroup(3)\fP.
 
 .SH RETURN VALUES
 \fBms_readmsr\fP returns the next read record or NULL on EOF, error or
 cleanup.
 
-\fBms_readtraces\fP returns a pointer to a TraceGroup on success or
+\fBms_readtraces\fP returns a pointer to a MSTraceGroup on success or
 NULL on error.
 
 .SH CAVEATS
@@ -73,7 +80,7 @@ Skeleton code for reading a file with \fBms_readmsr(3)\fP:
 
 .nf
 main() {
-  MSrecord *msr;
+  MSRecord *msr;
 
   while ( (msr = msr_readmsr(filename, 0, NULL, NULL, 1, 0, verbose)) )
     {
@@ -89,7 +96,7 @@ For reading a file with \fBms_readtraces(3)\fP:
 .nf
 
 main() {
-  MSrecord *mstg;
+  MSRecord *mstg;
 
   mstg = msr_readtraces (filename, 0, -1.0, -1.0, 1, 0, verbose);
 

@@ -7,7 +7,7 @@
  * Written by Chad Trabant,
  *   IRIS Data Management Center
  *
- * modified: 2005.203
+ * modified: 2006.058
  ***************************************************************************/
 
 #include <stdio.h>
@@ -19,9 +19,9 @@
 #include "packdata.h"
 
 /* Function(s) internal to this file */
-static int msr_pack_header_raw (MSrecord *msr, char *rawrec, int maxheaderlen,
+static int msr_pack_header_raw (MSRecord *msr, char *rawrec, int maxheaderlen,
 				flag swapflag, flag verbose);
-static int msr_update_header (MSrecord * msr, char *rawrec, flag swapflag,
+static int msr_update_header (MSRecord * msr, char *rawrec, flag swapflag,
 			      flag verbose);
 static int msr_pack_data (void *dest, void *src,
 			  int maxsamples, int maxdatabytes, int *packsamples,
@@ -38,13 +38,13 @@ static flag databyteorder = -2;
  * msr_pack:
  *
  * Pack data into SEED data records.  Using the record header values
- * in the MSrecord as a template the common header fields are packed
+ * in the MSRecord as a template the common header fields are packed
  * into the record header, blockettes in the blockettes chain are
  * packed and data samples are packed in the encoding format indicated
- * by the MSrecord->encoding field.  A Blockette 1000 will be added if
+ * by the MSRecord->encoding field.  A Blockette 1000 will be added if
  * one is not present.
  *
- * The MSrecord->datasamples array and MSrecord->numsamples value will
+ * The MSRecord->datasamples array and MSRecord->numsamples value will
  * not be changed by this routine.  It is the responsibility of the
  * calling routine to adjust the data buffer if desired.
  *
@@ -56,15 +56,15 @@ static flag databyteorder = -2;
  * If the flush flag != 0 all of the data will be packed into data
  * records even though the last one will probably not be filled.
  *
- * Default values are: data record indicator = 'D', record length =
- * 4096, encoding = 11 (Steim2) and byteorder = 1 (MSBF).  The
- * defaults are triggered when the the msr->drec_indicator is 0 or
+ * Default values are: data record & quality indicator = 'D', record
+ * length = 4096, encoding = 11 (Steim2) and byteorder = 1 (MSBF).
+ * The defaults are triggered when the the msr->dataquality is 0 or
  * msr->reclen, msr->encoding and msr->byteorder are -1 respectively.
  *
  * Returns the number of records created on success and -1 on error.
  ***************************************************************************/
 int
-msr_pack ( MSrecord * msr, void (*record_handler) (char *, int),
+msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
 	   int *packedsamples, flag flush, flag verbose )
 {
   uint16_t *HPnumsamples;
@@ -144,7 +144,7 @@ msr_pack ( MSrecord * msr, void (*record_handler) (char *, int),
     }
 
   /* Set default indicator, record length, byte order and encoding if needed */
-  if ( msr->drec_indicator == 0 ) msr->drec_indicator = 'D';
+  if ( msr->dataquality == 0 ) msr->dataquality = 'D';
   if ( msr->reclen == -1 ) msr->reclen = 4096;
   if ( msr->byteorder == -1 )  msr->byteorder = 1;
   if ( msr->encoding == -1 ) msr->encoding = STEIM2;
@@ -176,10 +176,10 @@ msr_pack ( MSrecord * msr, void (*record_handler) (char *, int),
     }
   
   /* Sanity check for msr/quality indicator */
-  if ( ! MS_ISDATAINDICATOR(msr->drec_indicator) )
+  if ( ! MS_ISDATAINDICATOR(msr->dataquality) )
     {
-      fprintf (stderr, "Record header indicator unrecognized: '%c'\n",
-	       msr->drec_indicator);
+      fprintf (stderr, "Record header & quality indicator unrecognized: '%c'\n",
+	       msr->dataquality);
       fprintf (stderr, "Packing failed.\n");
       return -1;
     }
@@ -342,7 +342,7 @@ msr_pack ( MSrecord * msr, void (*record_handler) (char *, int),
  * msr_pack_header:
  *
  * Pack data header/blockettes into the SEED record at
- * MSrecord->record.  Unlike msr_pack no default values are applied,
+ * MSRecord->record.  Unlike msr_pack no default values are applied,
  * the header structures are expected to be self describing and no
  * Blockette 1000 will be added.  This routine is only useful for
  * re-packing a record header.
@@ -350,7 +350,7 @@ msr_pack ( MSrecord * msr, void (*record_handler) (char *, int),
  * Returns the header length in bytes on success and -1 on error.
  ***************************************************************************/
 int
-msr_pack_header ( MSrecord *msr, flag verbose )
+msr_pack_header ( MSRecord *msr, flag verbose )
 {
   char *envvariable;
   flag headerswapflag = 0;
@@ -447,7 +447,7 @@ msr_pack_header ( MSrecord *msr, flag verbose )
  * Returns the header length in bytes on success or -1 on error.
  ***************************************************************************/
 static int
-msr_pack_header_raw ( MSrecord *msr, char *rawrec, int maxheaderlen,
+msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
 		      flag swapflag, flag verbose )
 {
   struct blkt_link_s *cur_blkt;
@@ -496,7 +496,7 @@ msr_pack_header_raw ( MSrecord *msr, char *rawrec, int maxheaderlen,
   /* Pack values into the fixed section of header */
   snprintf (seqnum, 7, "%06d", msr->sequence_number);
   memcpy (fsdh->sequence_number, seqnum, 6);
-  fsdh->drec_indicator = msr->drec_indicator;
+  fsdh->dataquality = msr->dataquality;
   fsdh->reserved = ' ';
   ms_strncpopen (fsdh->network, msr->network, 2);
   ms_strncpopen (fsdh->station, msr->station, 5);
@@ -802,7 +802,7 @@ msr_pack_header_raw ( MSrecord *msr, char *rawrec, int maxheaderlen,
  * Returns 0 on success or -1 on error.
  ***************************************************************************/
 static int
-msr_update_header ( MSrecord *msr, char *rawrec, flag swapflag,
+msr_update_header ( MSRecord *msr, char *rawrec, flag swapflag,
 		    flag verbose )
 {
   struct fsdh_s *fsdh;

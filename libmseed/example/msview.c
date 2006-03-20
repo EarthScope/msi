@@ -40,7 +40,7 @@ static void term_handler (int sig);
 int
 main (int argc, char **argv)
 {
-  MSrecord *msr = 0;
+  MSRecord *msr = 0;
 
   int dataflag   = 0;
   int totalrecs  = 0;

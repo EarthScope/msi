@@ -1,4 +1,4 @@
-.TH MSI 1 2005/07/22
+.TH MSI 1 2006/02/27
 .SH NAME
 Mini-SEED Inspector
 
@@ -88,6 +88,12 @@ of seconds.
 .IP "-max \fIsec\fP"
 Only include gaps in the gap list smaller or equal to \fIsec\fP number
 of seconds.
+
+.IP "-Q         "
+Additionally group input data based on SEED data qualitiy flags.  By
+default data are grouped by network, station, location, channel and
+adjacent time windows, this option adds data quality to the grouping
+parameters.
 
 .IP "-H         "
 Heal trace segments when printing trace or gap/overlap lists.  When

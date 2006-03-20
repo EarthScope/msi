@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2005.335
+ * modified: 2006.079
  ***************************************************************************/
 
 #include <stdio.h>
@@ -56,13 +56,14 @@ static int ateof (FILE *stream);
  *
  * Returns the next read record or NULL on EOF, error or cleanup.
  ***************************************************************************/
-MSrecord *
+MSRecord *
 ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
 	    flag skipnotdata, flag dataflag, flag verbose)
 {
-  static MSrecord *msr = NULL;
+  static MSRecord *msr = NULL;
   static FILE *fp = NULL;
   static char *rawrec = NULL;
+  static char filename[512];
   static int autodet = 1;
   static int readlen = MINRECLEN;
   int autodetexp = 8;
@@ -73,10 +74,10 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
   if ( msfile == NULL )
     {
       msr_free (&msr);
-
+      
       if ( fp != NULL )
 	fclose (fp);
-
+      
       if ( rawrec != NULL )
 	free (rawrec);
 
@@ -88,9 +89,25 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
       return NULL;
     }
   
+  /* Sanity check: track if we are reading the same file */
+  if ( fp && strcmp (msfile, filename) )
+    {
+      fprintf (stderr, "ms_readmsr() called with a different file name before being reset\n");
+      
+      /* Close previous file and reset needed variables */
+      fclose (fp);
+      
+      fp = NULL;
+      autodet = 1;
+      readlen = MINRECLEN;
+    }
+  
   /* Open the file if needed, redirect to stdin if file is "-" */
   if ( fp == NULL )
     {
+      strncpy (filename, msfile, sizeof(filename) - 1);
+      filename[sizeof(filename) - 1] = '\0';
+      
       if ( strcmp (msfile, "-") == 0 )
 	{
 	  fp = stdin;
@@ -141,7 +158,9 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
 	      if ( ! feof (fp) )
 		fprintf (stderr, "Short read at %d bytes during length detection\n", readlen);
 	      
-	      fclose (fp); fp = NULL; msr_free (&msr);
+	      if ( fp )
+		{ fclose (fp); fp = NULL; }
+	      msr_free (&msr);
 	      free (rawrec); rawrec = NULL;
 	      return NULL;
 	    }
@@ -178,7 +197,9 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
 	{
 	  fprintf (stderr, "Cannot detect record length: %s\n", msfile);
 	  
-	  fclose (fp); fp = NULL; msr_free (&msr);
+	  if ( fp )
+	    { fclose (fp); fp = NULL; }
+	  msr_free (&msr);
 	  free (rawrec); rawrec = NULL;
 	  return NULL;
 	}
@@ -192,11 +213,13 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
 	{
 	  fprintf (stderr, "Detected record length is out of range: %d\n", detsize);
 	  
-	  fclose (fp); fp = NULL; msr_free (&msr);
+	  if ( fp )
+	    { fclose (fp); fp = NULL; }
+	  msr_free (&msr);
 	  free (rawrec); rawrec = NULL;
 	  return NULL;
 	}
-            
+      
       rawrec = (char *) realloc (rawrec, detsize);
       
       /* Read the rest of the first record */
@@ -204,7 +227,9 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
 	{
 	  if ( (myfread (rawrec+readlen, 1, detsize-readlen, fp)) < (detsize-readlen) )
 	    {
-	      fclose (fp); fp = NULL; msr_free (&msr);
+	      if ( fp )
+		{ fclose (fp); fp = NULL; }
+	      msr_free (&msr);
 	      free (rawrec); rawrec = NULL;
 	      return NULL;
 	    }
@@ -219,7 +244,9 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
       
       if ( msr_unpack (rawrec, readlen, &msr, dataflag, verbose) == NULL )
 	{
-	  fclose (fp); fp = NULL; msr_free (&msr);
+	  if ( fp )
+	    { fclose (fp); fp = NULL; }
+	  msr_free (&msr);
 	  free (rawrec); rawrec = NULL;
 	  return NULL;
 	}
@@ -239,7 +266,9 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
       
       if ( (myfread (rawrec, 1, readlen, fp)) < readlen )
 	{
-	  fclose (fp); fp = NULL; msr_free (&msr);
+	  if ( fp )
+	    { fclose (fp); fp = NULL; }
+	  msr_free (&msr);
 	  free (rawrec); rawrec = NULL;
 	  return NULL;
 	}
@@ -268,7 +297,9 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
       
   if ( msr_unpack (rawrec, readlen, &msr, dataflag, verbose) == NULL )
     {
-      fclose (fp); fp = NULL; msr_free (&msr);
+      if ( fp )
+	{ fclose (fp); fp = NULL; }
+      msr_free (&msr);
       free (rawrec); rawrec = NULL;
       return NULL;
     }
@@ -303,14 +334,14 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
  * If reclen is negative the length of every record is automatically
  * detected.
  *
- * Returns the populated TraceGroup or NULL error.
+ * Returns the populated MSTraceGroup or NULL error.
  ***************************************************************************/
-TraceGroup *
+MSTraceGroup *
 ms_readtraces (char *msfile, int reclen, double timetol, double sampratetol,
-	       flag skipnotdata, flag dataflag, flag verbose)
+	       flag dataquality, flag skipnotdata, flag dataflag, flag verbose)
 {
-  MSrecord *msr;
-  TraceGroup *mstg;
+  MSRecord *msr;
+  MSTraceGroup *mstg;
   
   mstg = mst_initgroup (NULL);
   
@@ -320,7 +351,7 @@ ms_readtraces (char *msfile, int reclen, double timetol, double sampratetol,
   /* Loop over the input file */
   while ( (msr = ms_readmsr (msfile, reclen, NULL, NULL, skipnotdata, dataflag, verbose)))
     {
-      mst_addmsrtogroup (mstg, msr, timetol, sampratetol);
+      mst_addmsrtogroup (mstg, msr, dataquality, timetol, sampratetol);
     }
   
   ms_readmsr (NULL, 0, NULL, NULL, 0, 0, 0);
