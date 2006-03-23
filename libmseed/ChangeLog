@@ -1,3 +1,13 @@
+2006.082: version 1.5.2
+        - Make msr_pack() emit a warning with the function pointer to
+	the record_handler() is not set instead of bombing out.  The
+	packed record is not accessible any other way.
+	- Make the packedsamples argument to msr_pack() optional, the
+	pointer can be NULL if this information is not needed.
+	- Modify ms_readmsr() to be able to read packed files which are
+	indexed files used internally at the IRIS-DMC and probably no
+	where else.
+
 2006.079: version 1.5.1
 	- Add file name check in ms_readmsr() to make sure subsequent
 	reads are done on the same file.  If the function is called with a

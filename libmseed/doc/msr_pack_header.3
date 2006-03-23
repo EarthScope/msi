@@ -1,4 +1,4 @@
-.TH MSR_PACK 3 2006/02/27 "Libmseed API"
+.TH MSR_PACK 3 2006/03/23 "Libmseed API"
 .SH DESCRIPTION
 Packing of Mini-SEED records.
 
@@ -62,10 +62,11 @@ Each time a complete record is packed it will be passed to the
 \fIrecord_handler()\fP function along with it's length in bytes.  It
 is the responsibility of \fIrecord_handler()\fP to process the record,
 the memory will be re-used or freed when \fIrecord_handler()\fP
-returns.
+returns.  This function pointer is required, there is no other way to
+access the packed records.
 
 The integer pointed to by \fIpackedsamples\fP will be set to the total
-number of samples packed.
+number of samples packed if not NULL.
 
 If the \fIflush\fP flag is not zero all of the data will be packed
 into records, otherwise records will only be packed while there are

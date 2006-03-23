@@ -13,7 +13,7 @@
  *   ORFEUS/EC-Project MEREDIAN
  *   IRIS Data Management Center
  *
- * modified: 2006.058
+ * modified: 2006.080
  ***************************************************************************/
 
 #include <stdio.h>
@@ -92,7 +92,7 @@ msr_unpack ( char *record, int reclen, MSRecord **ppmsr,
   
   if ( reclen < MINRECLEN || reclen > MAXRECLEN )
     {
-      fprintf (stderr, "msr_pack(): record length is out of range: %d\n", reclen);
+      fprintf (stderr, "msr_unpack(): record length is out of range: %d\n", reclen);
       return NULL;
     }
   

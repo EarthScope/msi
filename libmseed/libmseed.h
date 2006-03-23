@@ -30,8 +30,8 @@ extern "C" {
 
 #include "lmplatform.h"
 
-#define LIBMSEED_VERSION "1.5.1"
-#define LIBMSEED_RELEASE "2006.079"
+#define LIBMSEED_VERSION "1.5.2"
+#define LIBMSEED_RELEASE "2006.082"
 
 #define MINRECLEN   256      /* Minimum Mini-SEED record length, 2^8 bytes */
 #define MAXRECLEN   1048576  /* Maximum Mini-SEED record length, 2^20 bytes */

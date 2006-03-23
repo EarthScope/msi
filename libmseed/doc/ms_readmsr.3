@@ -1,4 +1,4 @@
-.TH MS_READMSR 3 2006/03/20 "Libmseed API"
+.TH MS_READMSR 3 2006/03/23 "Libmseed API"
 .SH DESCRIPTION
 Read Mini-SEED data from files
 
@@ -69,6 +69,12 @@ cleanup.
 
 \fBms_readtraces\fP returns a pointer to a MSTraceGroup on success or
 NULL on error.
+
+.SH PACKED FILES
+\fBms_readtraces\fP will read packed Mini-SEED files, but only when
+the record length is being autodetected.  Packed Mini-SEED is the
+indexed archive format used internally at the IRIS Data Management
+Center and probably not used anywhere else.
 
 .SH CAVEATS
 Neither \fBms_readfile\fP or \fBms_readtraces\fP is thread safe nor

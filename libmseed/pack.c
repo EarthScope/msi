@@ -7,7 +7,7 @@
  * Written by Chad Trabant,
  *   IRIS Data Management Center
  *
- * modified: 2006.058
+ * modified: 2006.082
  ***************************************************************************/
 
 #include <stdio.h>
@@ -82,10 +82,17 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
   int maxdatabytes;
   int maxsamples;
   int recordcnt = 0;
+  int totalpackedsamples;
   int packsamples, packoffset;
   
-  if ( msr == NULL )
+  if ( ! msr )
     return -1;
+  
+  if ( ! record_handler )
+    {
+      fprintf (stderr, "msr_pack(): record_handler() function pointer not set!\n");
+      return -1;
+    }
   
   /* Read possible environmental variables that force byteorder */
   if ( headerbyteorder == -2 )
@@ -149,10 +156,10 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
   if ( msr->byteorder == -1 )  msr->byteorder = 1;
   if ( msr->encoding == -1 ) msr->encoding = STEIM2;
   
-  /* Cleanup sequence number */
+  /* Cleanup/reset sequence number */
   if ( msr->sequence_number <= 0 || msr->sequence_number > 999999)
     msr->sequence_number = 1;
-
+  
   if ( msr->reclen < MINRECLEN || msr->reclen > MAXRECLEN )
     {
       fprintf (stderr, "msr_pack(): Record length is out of range: %d\n",
@@ -285,14 +292,15 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
   
   /* Pack samples into records */
   *HPnumsamples = 0;
-  *packedsamples = 0;
+  totalpackedsamples = 0;
+  if ( *packedsamples ) *packedsamples = 0;
   packoffset = 0;
-
-  while ( (msr->numsamples - *packedsamples) > maxsamples || flush )
+  
+  while ( (msr->numsamples - totalpackedsamples) > maxsamples || flush )
     {
       packret = msr_pack_data (rawrec + dataoffset,
 			       (char *) msr->datasamples + packoffset,
-			       (msr->numsamples - *packedsamples), maxdatabytes,
+			       (msr->numsamples - totalpackedsamples), maxdatabytes,
 			       &packsamples, msr->sampletype,
 			       msr->encoding, dataswapflag, verbose);
       
@@ -315,7 +323,8 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
       /* Send record to handler */
       record_handler (rawrec, msr->reclen);
       
-      *packedsamples += packsamples;
+      totalpackedsamples += packsamples;
+      if ( *packedsamples ) *packedsamples = totalpackedsamples;
       
       /* Update record header for next record */
       msr->sequence_number = ( msr->sequence_number >= 999999) ? 1 : msr->sequence_number + 1;
@@ -324,12 +333,12 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
 
       recordcnt++;
       
-      if ( *packedsamples >= msr->numsamples )
+      if ( totalpackedsamples >= msr->numsamples )
 	break;
     }
 
   if ( verbose > 2 )
-    fprintf (stderr, "Packed %d total samples for %s_%s_%s_%s\n", *packedsamples,
+    fprintf (stderr, "Packed %d total samples for %s_%s_%s_%s\n", totalpackedsamples,
 	     msr->network, msr->station, msr->location, msr->channel);
 
   free (rawrec);

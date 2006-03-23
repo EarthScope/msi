@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2006.079
+ * modified: 2006.082
  ***************************************************************************/
 
 #include <stdio.h>
@@ -16,6 +16,7 @@
 
 #include "libmseed.h"
 
+static int readpackinfo (int chksumlen, int hdrlen, int sizelen, FILE *stream);
 static int myfread (char *buf, int size, int num, FILE *stream);
 static int ateof (FILE *stream);
 
@@ -66,6 +67,10 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
   static char filename[512];
   static int autodet = 1;
   static int readlen = MINRECLEN;
+  static int packinfolen = 0;
+  static off_t packinfooffset = 0;
+  static off_t filepos = 0;
+  int packdatasize;
   int autodetexp = 8;
   int prevreadlen;
   int detsize;
@@ -80,11 +85,14 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
       
       if ( rawrec != NULL )
 	free (rawrec);
-
+      
       fp = NULL;
       rawrec = NULL;
       autodet = 1;
       readlen = MINRECLEN;
+      packinfolen = 0;
+      packinfooffset = 0;
+      filepos = 0;
       
       return NULL;
     }
@@ -100,6 +108,9 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
       fp = NULL;
       autodet = 1;
       readlen = MINRECLEN;
+      packinfolen = 0;
+      packinfooffset = 0;
+      filepos = 0;
     }
   
   /* Open the file if needed, redirect to stdin if file is "-" */
@@ -145,14 +156,40 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
     {
       detsize = 0;
       prevreadlen = 0;
-      
+
       while ( detsize <= 0 && readlen <= 8192 )
 	{
 	  rawrec = (char *) realloc (rawrec, readlen);
 	  
-	  if ( fpos != NULL )
-	    *fpos = lmp_ftello (fp);
+	  /* Set file position if requested or packed file detected */
+	  if ( fpos != NULL || packinfolen )
+	    {
+	      filepos = lmp_ftello (fp);
+	      if ( fpos != NULL )
+		*fpos = filepos;
+	    }
 	  
+	  /* Read packed file info */
+	  if ( packinfolen && filepos == packinfooffset )
+	    {
+	      if ( (packdatasize = readpackinfo (8, packinfolen, 8, fp)) == 0 )
+		{
+		  if ( fp )
+		    { fclose (fp); fp = NULL; }
+		  msr_free (&msr);
+		  free (rawrec); rawrec = NULL;
+		  return NULL;
+		}
+	      
+	      /* File position + chksum + pack info + data size */
+	      packinfooffset = filepos + 8 + packinfolen + packdatasize;
+	      
+	      if ( verbose > 1 )
+		fprintf (stderr, "Read packed file info at offset %lld (%d bytes follow)\n",
+			 (long long int) filepos, packdatasize);
+	    }
+	  
+	  /* Read data into record buffer */
 	  if ( (myfread (rawrec + prevreadlen, 1, (readlen - prevreadlen), fp)) < (readlen - prevreadlen) )
 	    {
 	      if ( ! feof (fp) )
@@ -170,26 +207,77 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
 	    {
 	      break;
 	    }
+
+	  /* Test for packed file signature at the beginning of the file */
+	  if ( *rawrec == 'P' && filepos == 0 && detsize == -1 )
+	    {
+	      int packtype;
+	      
+	      packinfolen = 0;
+	      packtype = 0;
+	      
+	      /* Set pack spacer length according to type */
+	      if ( ! memcmp ("PED", rawrec, 3) )
+		{ packinfolen = 8; packtype = 1; }
+	      else if ( ! memcmp ("PSD", rawrec, 3) )
+		{ packinfolen = 11; packtype = 2; }
+	      else if ( ! memcmp ("PLC", rawrec, 3) )
+		{ packinfolen = 13; packtype = 6; }
+	      else if ( ! memcmp ("PQI", rawrec, 3) )
+		{ packinfolen = 15; packtype = 7; }
+	      
+	      /* Read first pack info section, compensate for "pack identifier" (10 bytes) */
+	      if ( packinfolen )
+		{
+		  char infostr[30];
+		  
+		  if ( verbose )
+		    fprintf (stderr, "Detected packed file (%3.3s: type %d)\n", rawrec, packtype);
+		  
+		  /* Assuming data size length is 8 bytes at the end of the pack info */
+		  sprintf (infostr, "%8.8s", rawrec + (packinfolen + 10 - 8));
+		  sscanf (infostr, " %d", &packdatasize);
+		  
+		  /* Pack ID + pack info + data size */
+		  packinfooffset = 10 + packinfolen + packdatasize;
+		  
+		  if ( verbose > 1 )
+		    fprintf (stderr, "Read packed file info at beginning of file (%d bytes follow)\n",
+			     packdatasize);
+		}
+	    }
 	  
-	  /* Skip if data record not detected */
-	  if ( skipnotdata && detsize == -1 )
+	  /* Skip if data record or packed file not detected */
+	  if ( detsize == -1 && skipnotdata && ! packinfolen )
 	    {
 	      detsize = -1;
-
+	      
 	      if ( verbose > 1 )
 		{
-		  if ( fpos != NULL )
-		    fprintf (stderr, "Skipped non-data record at byte offset %lld\n", (long long) *fpos);
+		  if ( filepos )
+		    fprintf (stderr, "Skipped non-data record at byte offset %lld\n", (long long) filepos);
 		  else
 		    fprintf (stderr, "Skipped non-data record\n");		
 		}
 	    }
-	  /* Otherwise increase read length to the next record size up */
+	  /* Otherwise read more */
 	  else
 	    {
-	      prevreadlen = readlen;
-	      autodetexp++;
-	      readlen = (unsigned int) 1 << autodetexp;
+	      /* Compensate for first packed file info section */
+	      if ( filepos == 0 && packinfolen )
+		{
+		  /* Shift first data record to beginning of buffer */
+		  memmove (rawrec, rawrec + (packinfolen + 10), readlen - (packinfolen + 10));
+		  
+		  prevreadlen = readlen - (packinfolen + 10);
+		}
+	      /* Increase read length to the next record size up */
+	      else
+		{
+		  prevreadlen = readlen;
+		  autodetexp++;
+		  readlen = (unsigned int) 1 << autodetexp;
+		}
 	    }
 	}
       
@@ -261,9 +349,35 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
   /* Read subsequent records */
   for (;;)
     {
-      if ( fpos != NULL )
-	*fpos = lmp_ftello (fp);
+      /* Set file position if requested or packed file detected */
+      if ( fpos != NULL || packinfolen )
+	{
+	  filepos = lmp_ftello (fp);
+	  if ( fpos != NULL )
+	    *fpos = filepos;
+	}
       
+      /* Read packed file info */
+      if ( packinfolen && filepos == packinfooffset )
+	{
+	  if ( (packdatasize = readpackinfo (8, packinfolen, 8, fp)) == 0 )
+	    {
+	      if ( fp )
+		{ fclose (fp); fp = NULL; }
+	      msr_free (&msr);
+	      free (rawrec); rawrec = NULL;
+	      return NULL;
+	    }
+	  
+	  /* File position + chksum + pack info + data size */
+	  packinfooffset = filepos + 8 + packinfolen + packdatasize;
+	  
+	  if ( verbose > 1 )
+	    fprintf (stderr, "Read packed file info at offset %lld (%d bytes follow)\n",
+		     (long long int) filepos, packdatasize);
+	}
+      
+      /* Read data into record buffer */
       if ( (myfread (rawrec, 1, readlen, fp)) < readlen )
 	{
 	  if ( fp )
@@ -285,8 +399,8 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
 	    }
 	  else if ( verbose > 1 )
 	    {
-	      if ( fpos != NULL )
-		fprintf (stderr, "Skipped non-data record at byte offset %lld\n", (long long) *fpos);
+	      if ( filepos )
+		fprintf (stderr, "Skipped non-data record at byte offset %lld\n", (long long) filepos);
 	      else
 		fprintf (stderr, "Skipped non-data record\n");		
 	    }
@@ -361,6 +475,64 @@ ms_readtraces (char *msfile, int reclen, double timetol, double sampratetol,
 
 
 /***************************************************************************
+ * readpackinfo:
+ *
+ * Read packed file info: chksum and header, parse and return the size
+ * in bytes for the following data records.
+ *
+ * In general a pack file includes a packed file identifier at the
+ * very beginning, followed by pack info for a data block, followed by
+ * the data block, followed by a chksum for the data block.  The
+ * packinfo, data block and chksum are then repeated for each data
+ * block in the file:
+ *
+ *   ID    INFO     DATA    CHKSUM    INFO     DATA    CHKSUM
+ * |----|--------|--....--|--------|--------|--....--|--------| ...
+ *
+ *      |_________ repeats ________|
+ *
+ * The INFO section contains fixed width ASCII fields identifying the
+ * data in the next section and it's length in bytes.  With this
+ * information the offset of the next CHKSUM and INFO are completely
+ * predictable.
+ *
+ * This routine's purpose is to read the CHKSUM and INFO bytes in
+ * between the DATA sections and parse the size of the data section
+ * from the info section.
+ *
+ * chksumlen = length in bytes of chksum following data blocks, skipped
+ * infolen   = length of the info section
+ * sizelen   = length of the size field at the end of the info section
+ *
+ * Returns the data size of the block that follows and 0 on EOF or error.
+ ***************************************************************************/
+static int
+readpackinfo (int chksumlen, int infolen, int sizelen, FILE *stream)
+{
+  char infostr[30];
+  int datasize;
+
+  /* Skip CHKSUM section if expected */
+  if ( chksumlen )
+    if ( fseeko (stream, chksumlen, SEEK_CUR) )
+      {
+	return 0;
+      }
+  
+  /* Read INFO section */
+  if ( (myfread (infostr, 1, infolen, stream)) < infolen )
+    {
+      return 0;
+    }
+  
+  sprintf (infostr, "%8.8s", &infostr[infolen - sizelen]);
+  sscanf (infostr, " %d", &datasize);
+  
+  return datasize;
+}  /* End of readpackinfo() */
+
+
+/***************************************************************************
  * myfread:
  *
  * A wrapper for fread that handles EOF and error conditions.
@@ -384,9 +556,9 @@ myfread (char *buf, int size, int num, FILE *stream)
     }
   else if ( read < num && size )
     {
-      fprintf (stderr, "Premature end of file, only read %d of %d bytes\n",
+      fprintf (stderr, "Premature end of input, only read %d of %d bytes\n",
 	       (size * read), (size * num));
-      fprintf (stderr, "Either this is a partial record or the file is not SEED\n");
+      fprintf (stderr, "Either this is a partial record or the input is not SEED\n");
     }
   
   return read;

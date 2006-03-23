@@ -1,3 +1,7 @@
+2006.082: 1.8
+	- Update to libmseed 1.5.2.  Includes ability to read packed
+	files when autodetecting record length.
+
 2006.079: 1.7
 	- Update to libmseed 1.5.1.  Includes API support for data quality.
 	- Add '-Q' option to additionally group traces by quality.
