@@ -7,6 +7,7 @@
 	- Modify ms_readmsr() to be able to read packed files which are
 	indexed files used internally at the IRIS-DMC and probably no
 	where else.
+	- Add lmp_fseeko() portable function (used in fileutils.c).
 
 2006.079: version 1.5.1
 	- Add file name check in ms_readmsr() to make sure subsequent

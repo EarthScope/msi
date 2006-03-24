@@ -514,7 +514,7 @@ readpackinfo (int chksumlen, int infolen, int sizelen, FILE *stream)
 
   /* Skip CHKSUM section if expected */
   if ( chksumlen )
-    if ( fseeko (stream, chksumlen, SEEK_CUR) )
+    if ( lmp_fseeko (stream, chksumlen, SEEK_CUR) )
       {
 	return 0;
       }
