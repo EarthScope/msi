@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2006.058
+ * modified 2006.115
  ***************************************************************************/
 
 #include <stdio.h>
@@ -26,7 +26,7 @@ static int lisnumber (char *number);
 static void addfile (char *filename);
 static void usage (void);
 
-#define VERSION "1.8"
+#define VERSION "1.9"
 #define PACKAGE "msi"
 
 static flag    verbose      = 0;
@@ -257,7 +257,7 @@ main (int argc, char **argv)
       mst_groupsort (mstg);
       
       if ( traceheal )
-	mst_heal (mstg, -1.0, -1.0);
+	mst_groupheal (mstg, -1.0, -1.0);
       
       if ( tracegapsum == 1 || tracegaponly == 1 )
 	{

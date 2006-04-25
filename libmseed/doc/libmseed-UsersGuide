@@ -345,9 +345,9 @@ main() {
 For reading a file with ms_readtraces(3):
 
 main() {
-  MSRecord *mstg;
+  MSTraceGroup *mstg;
 
-  mstg = ms_readtraces (filename, 0, 0, -1.0, -1.0, 1, 0, 0, verbose);
+  mstg = ms_readtraces (filename, 0, -1.0, -1.0, 0, 1, 0, verbose);
 
   if ( ! mstg )
     {

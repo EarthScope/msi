@@ -1,4 +1,4 @@
-.TH MSI 1 2006/02/27
+.TH MSI 1 2006/04/25
 .SH NAME
 Mini-SEED Inspector
 
@@ -13,8 +13,8 @@ parsing and displaying the contents of Mini-SEED records, \fBmsi\fP
 will derive continuous trace information for Mini-SEED data.
 
 By default, \fBmsi\fP will output a single line of information to
-summarize each record processed.  More verbose ordifferent output can
-be specified via the numerous options.
+summarize each record parsed.  More verbose or different output can be
+specified via the numerous options.
 
 If '-' is specified standard input will be read.  Multiple input files
 will be processed in the order specified.
@@ -128,8 +128,7 @@ Only process \fIcount\fP input records.
 .IP "-r \fIbytes\fP"
 Specify the intput record length in \fIbytes\fP.  By default the
 length of the first Mini-SEED record is automatically detected, this
-option forces the record length.  The option is required when the
-input records do not contain a 1000 Blockette.
+option forces the record length.
 
 .IP "-e \fIencoding\fP"
 Specify the data encoding format.  These encoding values are the same

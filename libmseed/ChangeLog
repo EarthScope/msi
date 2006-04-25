@@ -1,3 +1,27 @@
+2006.115: version 1.6
+	- Rename mst_heal() to mst_groupheal().
+	- Change examples for ms_readtraces() in documentation that implied
+	an incorrect return type.
+	- Small changes to error messages for clarity (e.g. add file read
+	offset, print sample types as char not int).
+
+2006.107:
+	- Add MS_ISVALIDHEADER macro to fileutils.c, verifies that a
+	specified buffer contains a valid fixed section data header.
+	- ms_find_reclen(): moved to fileutils.c
+	- ms_find_reclen(): More data record verification by checking
+	for valid time values (e.g. 0 <= hour <= 23 ).
+        - ms_find_reclen(): Detect record lengths even when no blockette
+	1000 is found by reading the next 48 bytes from the file and
+	looking for another record header or EOF.  This check is not
+	performed if the specified FILE pointer is NULL.  The original
+	file read position is restored.  This required adding another
+	argument: FILE *fileptr.
+	- Change output of msr_print() to include record length for
+	the lowest detail output (single line per record).
+	- Change example msview program to autodetect each record by
+	default.
+
 2006.082: version 1.5.2
         - Make msr_pack() emit a warning with the function pointer to
 	the record_handler() is not set instead of bombing out.  The

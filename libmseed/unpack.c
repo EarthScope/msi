@@ -13,7 +13,7 @@
  *   ORFEUS/EC-Project MEREDIAN
  *   IRIS Data Management Center
  *
- * modified: 2006.080
+ * modified: 2006.107
  ***************************************************************************/
 
 #include <stdio.h>
@@ -580,7 +580,7 @@ msr_unpack ( char *record, int reclen, MSRecord **ppmsr,
     {
       msr->unpackerr = MS_NOBLKT1000;
       
-      if ( verbose > 0 )
+      if ( verbose > 1 )
 	{
 	  fprintf (stderr, "No Blockette 1000 found: %s_%s_%s_%s\n",
 		   msr->network, msr->station, msr->location, msr->channel);

@@ -5,13 +5,14 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2006.082
+ * modified: 2006.115
  ***************************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <ctype.h>
 #include <errno.h>
 
 #include "libmseed.h"
@@ -19,6 +20,32 @@
 static int readpackinfo (int chksumlen, int hdrlen, int sizelen, FILE *stream);
 static int myfread (char *buf, int size, int num, FILE *stream);
 static int ateof (FILE *stream);
+
+
+/* Check SEED data record header values at known byte offsets to
+ * determine if the memory contains a valid record.
+ * 
+ * Offset = Value
+ * [0-5]  = Digits, SEED sequence number
+ *     6  = Data record quality indicator
+ *     7  = Space or NULL [not valid SEED]
+ *     24 = Start hour (0-23)
+ *     25 = Start minute (0-59)
+ *     26 = Start second (0-60)
+ *
+ * Usage: MS_ISVALIDHEADER (char *X)
+ */
+#define MS_ISVALIDHEADER(X) (isdigit ((unsigned char) *(X)) &&		\
+			     isdigit ((unsigned char) *(X+1)) &&	\
+			     isdigit ((unsigned char) *(X+2)) &&	\
+			     isdigit ((unsigned char) *(X+3)) &&	\
+			     isdigit ((unsigned char) *(X+4)) &&	\
+			     isdigit ((unsigned char) *(X+5)) &&	\
+			     MS_ISDATAINDICATOR(*(X+6)) &&		\
+			     (*(X+7) == ' ' || *(X+7) == '\0') &&	\
+			     *(X+24) >= 0 && *(X+24) <= 23 &&		\
+			     *(X+25) >= 0 && *(X+25) <= 59 &&		\
+			     *(X+26) >= 0 && *(X+26) <= 60)
 
 
 /***************************************************************************
@@ -70,6 +97,7 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
   static int packinfolen = 0;
   static off_t packinfooffset = 0;
   static off_t filepos = 0;
+  static int recordcount = 0;
   int packdatasize;
   int autodetexp = 8;
   int prevreadlen;
@@ -93,6 +121,7 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
       packinfolen = 0;
       packinfooffset = 0;
       filepos = 0;
+      recordcount = 0;
       
       return NULL;
     }
@@ -103,7 +132,8 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
       fprintf (stderr, "ms_readmsr() called with a different file name before being reset\n");
       
       /* Close previous file and reset needed variables */
-      fclose (fp);
+      if ( fp != NULL )
+	fclose (fp);
       
       fp = NULL;
       autodet = 1;
@@ -111,6 +141,7 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
       packinfolen = 0;
       packinfooffset = 0;
       filepos = 0;
+      recordcount = 0;
     }
   
   /* Open the file if needed, redirect to stdin if file is "-" */
@@ -195,6 +226,9 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
 	      if ( ! feof (fp) )
 		fprintf (stderr, "Short read at %d bytes during length detection\n", readlen);
 	      
+	      if ( verbose && recordcount == 0 )
+		fprintf (stderr, "%s: No data records read, not SEED?\n", msfile);
+	      
 	      if ( fp )
 		{ fclose (fp); fp = NULL; }
 	      msr_free (&msr);
@@ -203,11 +237,11 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
 	    }
 	  
 	  /* Test for data record and return record length */
-	  if ( (detsize = ms_find_reclen (rawrec, readlen)) > 0 )
+	  if ( (detsize = ms_find_reclen (rawrec, readlen, fp)) > 0 )
 	    {
 	      break;
 	    }
-
+	  
 	  /* Test for packed file signature at the beginning of the file */
 	  if ( *rawrec == 'P' && filepos == 0 && detsize == -1 )
 	    {
@@ -250,8 +284,6 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
 	  /* Skip if data record or packed file not detected */
 	  if ( detsize == -1 && skipnotdata && ! packinfolen )
 	    {
-	      detsize = -1;
-	      
 	      if ( verbose > 1 )
 		{
 		  if ( filepos )
@@ -283,7 +315,11 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
       
       if ( detsize <= 0 )
 	{
-	  fprintf (stderr, "Cannot detect record length: %s\n", msfile);
+	  if ( filepos )
+	    fprintf (stderr, "Cannot detect record length at byte offset %lld: %s\n",
+		     (long long) filepos, msfile);
+	  else
+	    fprintf (stderr, "Cannot detect record length: %s\n", msfile);
 	  
 	  if ( fp )
 	    { fclose (fp); fp = NULL; }
@@ -315,6 +351,9 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
 	{
 	  if ( (myfread (rawrec+readlen, 1, detsize-readlen, fp)) < (detsize-readlen) )
 	    {
+	      if ( ! feof (fp) )
+		fprintf (stderr, "Short read at %d bytes during length detection\n", readlen);
+	      
 	      if ( fp )
 		{ fclose (fp); fp = NULL; }
 	      msr_free (&msr);
@@ -343,6 +382,7 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
       if ( msr->reclen == 0 )
 	msr->reclen = readlen;
       
+      recordcount++;
       return msr;
     }
   
@@ -380,6 +420,12 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
       /* Read data into record buffer */
       if ( (myfread (rawrec, 1, readlen, fp)) < readlen )
 	{
+	  if ( ! feof (fp) )
+	    fprintf (stderr, "Short read at %d bytes during length detection\n", readlen);
+	  
+	  if ( verbose && recordcount == 0 )
+	    fprintf (stderr, "%s: No data records read, not SEED?\n", msfile);
+	  
 	  if ( fp )
 	    { fclose (fp); fp = NULL; }
 	  msr_free (&msr);
@@ -430,6 +476,7 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
 	       msr->reclen, readlen);
     }
   
+  recordcount++;
   return msr;
 }  /* End of ms_readmsr() */
 
@@ -472,6 +519,129 @@ ms_readtraces (char *msfile, int reclen, double timetol, double sampratetol,
   
   return mstg;
 }  /* End of ms_readtraces() */
+
+
+/*********************************************************************
+ * ms_find_reclen:
+ *
+ * Determine SEED data record length with the following steps:
+ *
+ * 1) determine that the buffer contains a SEED data record by
+ * verifying known signatures (fields with known limited values)
+ *
+ * 2) search the record up to recbuflen bytes for a 1000 blockette.
+ *
+ * 3) If no blockette 1000 is found and fileptr is not NULL, read the
+ * next 48 bytes from the file and determine if it is the fixed second
+ * of another record, thereby implying the record length is recbuflen.
+ * The original read position of the file is restored.
+ *
+ * Returns:
+ * -1 : data record not detected or error
+ *  0 : data record detected but could not determine length
+ * >0 : size of the record in bytes
+ *********************************************************************/
+int
+ms_find_reclen ( const char *recbuf, int recbuflen, FILE *fileptr )
+{
+  uint16_t blkt_offset;    /* Byte offset for next blockette */
+  uint8_t swapflag  = 0;   /* Byte swapping flag */
+  uint8_t foundlen = 0;    /* Found record length */
+  int32_t reclen = -1;     /* Size of record in bytes */
+  
+  uint16_t blkt_type;
+  uint16_t next_blkt;
+  
+  struct fsdh_s *fsdh;
+  struct blkt_1000_s *blkt_1000;
+  const int nextlen = sizeof(struct fsdh_s);
+  char nextfsdh[nextlen];
+  
+  /* Check for valid fixed section of header */
+  if ( ! MS_ISVALIDHEADER(recbuf) )
+    return -1;
+  
+  fsdh = (struct fsdh_s *) recbuf;
+  
+  /* Check to see if byte swapping is needed (bogus year makes good test) */
+  if ( (fsdh->start_time.year < 1900) ||
+       (fsdh->start_time.year > 2050) )
+    swapflag = 1;
+  
+  blkt_offset = fsdh->blockette_offset;
+  
+  /* Swap order of blkt_offset if needed */
+  if ( swapflag ) gswap2 (&blkt_offset);
+  
+  /* Loop through blockettes as long as number is non-zero and viable */
+  while ((blkt_offset != 0) &&
+         (blkt_offset <= recbuflen))
+    {
+      memcpy (&blkt_type, recbuf + blkt_offset, 2);
+      memcpy (&next_blkt, recbuf + blkt_offset + 2, 2);
+      
+      if ( swapflag )
+	{
+	  gswap2 (&blkt_type);
+	  gswap2 (&next_blkt);
+	}
+      
+      if (blkt_type == 1000)  /* Found the 1000 blockette */
+        {
+          blkt_1000 = (struct blkt_1000_s *) (recbuf + blkt_offset + 4);
+	  
+          foundlen = 1;
+	  
+          /* Calculate record size in bytes as 2^(blkt_1000->reclen) */
+	  reclen = (unsigned int) 1 << blkt_1000->reclen;
+	  
+	  break;
+        }
+      
+      blkt_offset = next_blkt;
+    }
+  
+  if ( reclen == -1 && fileptr )
+    {
+      /* Read data into record buffer */
+      if ( (myfread (nextfsdh, 1, nextlen, fileptr)) < nextlen )
+	{
+	  /* If no the EOF an error occured (short read) */
+	  if ( ! feof (fileptr) )
+	    {
+	      fprintf (stderr, "ms_find_reclen(): Error reading file\n");
+	      return -1;
+	    }
+	  /* If EOF the record length is recbuflen */
+	  else
+	    {
+	      foundlen = 1;
+	      reclen = recbuflen;
+	    }
+	}
+      else
+	{
+	  /* Rewind file read pointer */
+	  if ( lmp_fseeko (fileptr, -nextlen, SEEK_CUR) )
+	    {
+	      fprintf (stderr, "ms_find_reclen(): %s\n", strerror(errno));
+	      return -1;
+	    }
+	  
+	  /* Check for fixed header */
+	  if ( MS_ISVALIDHEADER((char *)nextfsdh) )
+	    {
+	      foundlen = 1;
+	      reclen = recbuflen;
+	    }
+	}
+    }
+  
+  if ( ! foundlen )
+    return 0;
+  else
+    return reclen;
+}  /* End of ms_find_reclen() */
 
 
 /***************************************************************************
@@ -553,12 +723,6 @@ myfread (char *buf, int size, int num, FILE *stream)
       
       else if ( ! feof (stream) )
 	fprintf (stderr, "Unknown return from fread()\n");
-    }
-  else if ( read < num && size )
-    {
-      fprintf (stderr, "Premature end of input, only read %d of %d bytes\n",
-	       (size * read), (size * num));
-      fprintf (stderr, "Either this is a partial record or the input is not SEED\n");
     }
   
   return read;

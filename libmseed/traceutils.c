@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2006.079
+ * modified: 2006.111
  ***************************************************************************/
 
 #include <stdio.h>
@@ -634,7 +634,7 @@ mst_addtracetogroup ( MSTraceGroup *mstg, MSTrace *mst )
 
 
 /***************************************************************************
- * mst_heal:
+ * mst_groupheal:
  *
  * Check if traces in MSTraceGroup can be healed, if contiguous segments
  * belong together they will be merged.  This routine is only useful
@@ -648,10 +648,10 @@ mst_addtracetogroup ( MSTraceGroup *mstg, MSTrace *mst )
  * is -1.0 the default tolerance check of abs(1-sr1/sr2) < 0.0001 is
  * used (defined in libmseed.h).
  *
- * Return number of trace mergings on success otherwise -1.
+ * Return number of trace mergings on success otherwise -1 on error.
  ***************************************************************************/
 int
-mst_heal ( MSTraceGroup *mstg, double timetol, double sampratetol )
+mst_groupheal ( MSTraceGroup *mstg, double timetol, double sampratetol )
 {
   int mergings = 0;
   MSTrace *curtrace = 0;
@@ -758,26 +758,24 @@ mst_heal ( MSTraceGroup *mstg, double timetol, double sampratetol )
 	  if ( merged )
 	    {
 	      /* Re-link trace chain and free searchtrace */
-	      if ( searchtrace == mstg->traces )
-		mstg->traces = nexttrace;
-	      else
-		prevtrace->next = nexttrace;
+	      prevtrace->next = nexttrace;
 	      
 	      mst_free (&searchtrace);
 	      
 	      mstg->numtraces--;
 	      mergings++;
-	      break;
 	    }
-	  
-	  prevtrace = searchtrace;
+	  else
+	    {
+	      prevtrace = searchtrace;
+	    }
 	}
       
       curtrace = curtrace->next;
     }
 
   return mergings;
-}  /* End of mst_heal() */
+}  /* End of mst_groupheal() */
 
 
 /***************************************************************************

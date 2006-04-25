@@ -1,4 +1,4 @@
-.TH MS_INTRO 3 2006/02/28
+.TH MS_INTRO 3 2006/04/20
 .SH NAME
 Introduction to libmseed
 
@@ -405,9 +405,9 @@ For reading a file with ms_readtraces(3):
 .nf
 
 main() {
-  MSRecord *mstg;
+  MSTraceGroup *mstg;
 
-  mstg = ms_readtraces (filename, 0, 0, -1.0, -1.0, 1, 0, 0, verbose);
+  mstg = ms_readtraces (filename, 0, -1.0, -1.0, 0, 1, 0, verbose);
 
   if ( ! mstg )
     {

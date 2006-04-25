@@ -1,3 +1,8 @@
+2006.115: 1.9
+	- Update to libmseed 1.6.  Includes ability to detect record
+	lengths when no Blockette 1000 is present.  Also adds record
+	length to single-line output mode of msr_print().
+
 2006.082: 1.8
 	- Update to libmseed 1.5.2.  Includes ability to read packed
 	files when autodetecting record length.

@@ -30,8 +30,8 @@ extern "C" {
 
 #include "lmplatform.h"
 
-#define LIBMSEED_VERSION "1.5.2"
-#define LIBMSEED_RELEASE "2006.082"
+#define LIBMSEED_VERSION "1.6"
+#define LIBMSEED_RELEASE "2006.115"
 
 #define MINRECLEN   256      /* Minimum Mini-SEED record length, 2^8 bytes */
 #define MAXRECLEN   1048576  /* Maximum Mini-SEED record length, 2^20 bytes */
@@ -387,7 +387,7 @@ extern int          mst_addspan (MSTrace *mst, hptime_t starttime,  hptime_t end
 extern MSTrace*     mst_addmsrtogroup (MSTraceGroup *mstg, MSRecord *msr, flag dataquality,
 				       double timetol, double sampratetol);
 extern MSTrace*     mst_addtracetogroup (MSTraceGroup *mstg, MSTrace *mst);
-extern int          mst_heal (MSTraceGroup *mstg, double timetol, double sampratetol);
+extern int          mst_groupheal (MSTraceGroup *mstg, double timetol, double sampratetol);
 extern int          mst_groupsort (MSTraceGroup *mstg);
 extern char *       mst_srcname (MSTrace *mst, char *srcname);
 extern void         mst_printtracelist (MSTraceGroup *mstg, flag timeformat,
@@ -409,10 +409,11 @@ extern MSRecord*    ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last
 				flag skipnotdata, flag dataflag, flag verbose);
 extern MSTraceGroup*  ms_readtraces (char *msfile, int reclen, double timetol, double sampratetol,
 				     flag dataquality, flag skipnotdata, flag dataflag, flag verbose);
+extern int            ms_find_reclen (const char *recbuf, int recbuflen, FILE *fileptr);
 
 
 /* General use functions */
-extern int      ms_find_reclen (const char *msrecord, int maxheaderlen);
+extern int      ms_verify_header (struct fsdh_s *fsdh);
 extern int      ms_strncpclean (char *dest, const char *source, int length);
 extern int      ms_strncpopen (char *dest, const char *source, int length);
 extern int      ms_doy2md (int year, int jday, int *month, int *mday);

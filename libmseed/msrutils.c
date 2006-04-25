@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2006.058
+ * modified: 2006.107
  ***************************************************************************/
 
 #include <stdio.h>
@@ -501,8 +501,9 @@ msr_print (MSRecord *msr, flag details)
     }
   else
     {
-      printf ("%s, %06d, %c, %d samples, %-.10g Hz, time: %s\n",
-	      srcname, msr->sequence_number, msr->dataquality, msr->samplecnt, msr->samprate, time);
+      printf ("%s, %06d, %c, %d, %d samples, %-.10g Hz, %s\n",
+	      srcname, msr->sequence_number, msr->dataquality,
+	      msr->reclen, msr->samplecnt, msr->samprate, time);
     }
 
   /* Report information in the blockette chain */

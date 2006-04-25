@@ -7,7 +7,7 @@
  * Written by Chad Trabant,
  *   IRIS Data Management Center
  *
- * modified: 2006.082
+ * modified: 2006.110
  ***************************************************************************/
 
 #include <stdio.h>
@@ -869,7 +869,7 @@ msr_pack_data (void *dest, void *src,
     case ASCII:
       if ( sampletype != 'a' )
 	{
-	  fprintf (stderr, "Sample type must be ascii (a) for ASCII encoding not '%d'\n",
+	  fprintf (stderr, "Sample type must be ascii (a) for ASCII encoding not '%c'\n",
 		   sampletype);
 	  return -1;
 	}
@@ -885,7 +885,7 @@ msr_pack_data (void *dest, void *src,
     case INT16:
       if ( sampletype != 'i' )
 	{
-	  fprintf (stderr, "Sample type must be integer (i) for integer-16 encoding not '%d'\n",
+	  fprintf (stderr, "Sample type must be integer (i) for integer-16 encoding not '%c'\n",
 		   sampletype);
 	  return -1;
 	}
@@ -901,7 +901,7 @@ msr_pack_data (void *dest, void *src,
     case INT32:
       if ( sampletype != 'i' )
 	{
-	  fprintf (stderr, "Sample type must be integer (i) for integer-32 encoding not '%d'\n",
+	  fprintf (stderr, "Sample type must be integer (i) for integer-32 encoding not '%c'\n",
 		   sampletype);
 	  return -1;
 	}
@@ -917,7 +917,7 @@ msr_pack_data (void *dest, void *src,
     case FLOAT32:
       if ( sampletype != 'f' )
 	{
-	  fprintf (stderr, "Sample type must be float (f) for float-32 encoding not '%d'\n",
+	  fprintf (stderr, "Sample type must be float (f) for float-32 encoding not '%c'\n",
 		   sampletype);
 	  return -1;
 	}
@@ -933,7 +933,7 @@ msr_pack_data (void *dest, void *src,
     case FLOAT64:
       if ( sampletype != 'd' )
 	{
-	  fprintf (stderr, "Sample type must be double (d) for float-64 encoding not '%d'\n",
+	  fprintf (stderr, "Sample type must be double (d) for float-64 encoding not '%c'\n",
 		   sampletype);
 	  return -1;
 	}
@@ -949,7 +949,7 @@ msr_pack_data (void *dest, void *src,
     case STEIM1:
       if ( sampletype != 'i' )
 	{
-	  fprintf (stderr, "Sample type must be integer (i) for Steim-1 compression not '%d'\n",
+	  fprintf (stderr, "Sample type must be integer (i) for Steim-1 compression not '%c'\n",
 		   sampletype);
 	  return -1;
 	}
@@ -982,7 +982,7 @@ msr_pack_data (void *dest, void *src,
     case STEIM2:
       if ( sampletype != 'i' )
 	{
-	  fprintf (stderr, "Sample type must be integer (i) for Steim-2 compression not '%d'\n",
+	  fprintf (stderr, "Sample type must be integer (i) for Steim-2 compression not '%c'\n",
 		   sampletype);
 	  return -1;
 	}
