@@ -192,14 +192,6 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
 	{
 	  rawrec = (char *) realloc (rawrec, readlen);
 	  
-	  /* Set file position if requested or packed file detected */
-	  if ( fpos != NULL || packinfolen )
-	    {
-	      filepos = lmp_ftello (fp);
-	      if ( fpos != NULL )
-		*fpos = filepos;
-	    }
-	  
 	  /* Read packed file info */
 	  if ( packinfolen && filepos == packinfooffset )
 	    {
@@ -212,12 +204,14 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
 		  return NULL;
 		}
 	      
-	      /* File position + chksum + pack info + data size */
-	      packinfooffset = filepos + 8 + packinfolen + packdatasize;
+	      filepos = lmp_ftello (fp);
+	      
+	      /* File position + data size */
+	      packinfooffset = filepos + packdatasize;
 	      
 	      if ( verbose > 1 )
 		fprintf (stderr, "Read packed file info at offset %lld (%d bytes follow)\n",
-			 (long long int) filepos, packdatasize);
+			 (long long int) (filepos - packinfolen - 8), packdatasize);
 	    }
 	  
 	  /* Read data into record buffer */
@@ -236,14 +230,23 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
 	      return NULL;
 	    }
 	  
-	  /* Test for data record and return record length */
-	  if ( (detsize = ms_find_reclen (rawrec, readlen, fp)) > 0 )
+	  filepos = lmp_ftello (fp);
+	  
+	  /* Determine record length:
+	   * If packed file and we are at the next info, length is implied.
+	   * Otherwise use ms_find_reclen() */
+	  if ( packinfolen && packinfooffset == filepos )
+	    {
+	      detsize = readlen;
+	      break;
+	    }
+	  else if ( (detsize = ms_find_reclen (rawrec, readlen, fp)) > 0 )
 	    {
 	      break;
 	    }
 	  
 	  /* Test for packed file signature at the beginning of the file */
-	  if ( *rawrec == 'P' && filepos == 0 && detsize == -1 )
+	  if ( *rawrec == 'P' && filepos == MINRECLEN && detsize == -1 )
 	    {
 	      int packtype;
 	      
@@ -285,18 +288,14 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
 	  if ( detsize == -1 && skipnotdata && ! packinfolen )
 	    {
 	      if ( verbose > 1 )
-		{
-		  if ( filepos )
-		    fprintf (stderr, "Skipped non-data record at byte offset %lld\n", (long long) filepos);
-		  else
-		    fprintf (stderr, "Skipped non-data record\n");		
-		}
+		fprintf (stderr, "Skipped non-data record at byte offset %lld\n",
+			 (long long) filepos - readlen);
 	    }
 	  /* Otherwise read more */
 	  else
 	    {
 	      /* Compensate for first packed file info section */
-	      if ( filepos == 0 && packinfolen )
+	      if ( filepos == MINRECLEN && packinfolen )
 		{
 		  /* Shift first data record to beginning of buffer */
 		  memmove (rawrec, rawrec + (packinfolen + 10), readlen - (packinfolen + 10));
@@ -315,11 +314,8 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
       
       if ( detsize <= 0 )
 	{
-	  if ( filepos )
-	    fprintf (stderr, "Cannot detect record length at byte offset %lld: %s\n",
-		     (long long) filepos, msfile);
-	  else
-	    fprintf (stderr, "Cannot detect record length: %s\n", msfile);
+	  fprintf (stderr, "Cannot detect record length at byte offset %lld: %s\n",
+		   (long long) filepos - readlen, msfile);
 	  
 	  if ( fp )
 	    { fclose (fp); fp = NULL; }
@@ -360,8 +356,15 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
 	      free (rawrec); rawrec = NULL;
 	      return NULL;
 	    }
+
+	  filepos = lmp_ftello (fp);
 	}
       
+      /* Set file position offset for beginning of record */
+      if ( fpos != NULL )
+	*fpos = filepos - detsize;
+
+      /* Test if this is the last record */
       if ( last )
 	if ( ateof (fp) )
 	  *last = 1;
@@ -389,14 +392,6 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
   /* Read subsequent records */
   for (;;)
     {
-      /* Set file position if requested or packed file detected */
-      if ( fpos != NULL || packinfolen )
-	{
-	  filepos = lmp_ftello (fp);
-	  if ( fpos != NULL )
-	    *fpos = filepos;
-	}
-      
       /* Read packed file info */
       if ( packinfolen && filepos == packinfooffset )
 	{
@@ -409,12 +404,14 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
 	      return NULL;
 	    }
 	  
-	  /* File position + chksum + pack info + data size */
-	  packinfooffset = filepos + 8 + packinfolen + packdatasize;
+	  filepos = lmp_ftello (fp);
+	  
+	  /* File position + data size */
+	  packinfooffset = filepos + packdatasize;
 	  
 	  if ( verbose > 1 )
 	    fprintf (stderr, "Read packed file info at offset %lld (%d bytes follow)\n",
-		     (long long int) filepos, packdatasize);
+		     (long long int) (filepos - packinfolen - 8), packdatasize);
 	}
       
       /* Read data into record buffer */
@@ -433,6 +430,12 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
 	  return NULL;
 	}
       
+      filepos = lmp_ftello (fp);
+      
+      /* Set file position offset for beginning of record */
+      if ( fpos != NULL )
+	*fpos = filepos - readlen;
+      
       if ( last )
 	if ( ateof (fp) )
 	  *last = 1;
@@ -445,16 +448,14 @@ ms_readmsr (char *msfile, int reclen, off_t *fpos, int *last,
 	    }
 	  else if ( verbose > 1 )
 	    {
-	      if ( filepos )
-		fprintf (stderr, "Skipped non-data record at byte offset %lld\n", (long long) filepos);
-	      else
-		fprintf (stderr, "Skipped non-data record\n");		
+	      fprintf (stderr, "Skipped non-data record at byte offset %lld\n",
+		       (long long) filepos - readlen);
 	    }
 	}
       else
 	break;
     }
-      
+  
   if ( msr_unpack (rawrec, readlen, &msr, dataflag, verbose) == NULL )
     {
       if ( fp )

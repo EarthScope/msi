@@ -4,6 +4,8 @@
 	an incorrect return type.
 	- Small changes to error messages for clarity (e.g. add file read
 	offset, print sample types as char not int).
+	- Fix offset determination for packed files and files without
+	blockette 1000s.
 
 2006.107:
 	- Add MS_ISVALIDHEADER macro to fileutils.c, verifies that a
