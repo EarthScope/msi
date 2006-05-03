@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2006.107
+ * modified: 2006.122
  ***************************************************************************/
 
 #include <stdio.h>
@@ -377,8 +377,8 @@ msr_endtime (MSRecord *msr)
   
   if ( ! msr )
     return HPTERROR;
-  
-  if ( msr->samprate > 0.0 )
+
+  if ( msr->samprate > 0.0 && msr->samplecnt > 0 )
     span = ((double) (msr->samplecnt - 1) / msr->samprate * HPTMODULUS) + 0.5;
   
   return (msr->starttime + span);
@@ -916,7 +916,7 @@ msr_host_latency (MSRecord *msr)
     return 0.0;
   
   /* Calculate the time covered by the samples */
-  if ( msr->samprate > 0.0 )
+  if ( msr->samprate > 0.0 && msr->samplecnt > 0 )
     span = (1.0 / msr->samprate) * (msr->samplecnt - 1);
   
   /* Grab UTC time according to the system clock */

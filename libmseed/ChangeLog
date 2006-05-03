@@ -1,3 +1,12 @@
+2006.122: version 1.6.2
+	- More fixes for sampling rate == 0 when calculating the sample
+	period.
+
+2006.121: version 1.6.1
+	- msr_endtime() now checks that the sample count is greater than
+	zero.  If the sampling rate or sample count is less than or equal
+	to zero msr_endtime() returns the starttime.
+
 2006.115: version 1.6
 	- Rename mst_heal() to mst_groupheal().
 	- Change examples for ms_readtraces() in documentation that implied

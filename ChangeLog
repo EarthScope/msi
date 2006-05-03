@@ -1,3 +1,7 @@
+2006.122: 1.10
+	- Update to libmseed.1.6.2.  Includes fixes for fringe
+	combinations of sampling rate and sample count being zero.
+
 2006.115: 1.9
 	- Update to libmseed 1.6.  Includes ability to detect record
 	lengths when no Blockette 1000 is present.  Also adds record

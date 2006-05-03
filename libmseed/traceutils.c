@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2006.111
+ * modified: 2006.122
  ***************************************************************************/
 
 #include <stdio.h>
@@ -219,7 +219,7 @@ mst_findadjacent ( MSTraceGroup *mstg, flag *whence, char dataquality,
 		   hptime_t starttime, hptime_t endtime, double timetol )
 {
   MSTrace *mst = 0;
-  double pregap, postgap;
+  double pregap, postgap, delta;
   
   if ( ! mstg )
     return 0;
@@ -253,9 +253,11 @@ mst_findadjacent ( MSTraceGroup *mstg, flag *whence, char dataquality,
       /* post/pregap are negative when the record overlaps the trace
        * segment and positive when there is a time gap.
        */
-      postgap = ((double)(starttime - mst->endtime)/HPTMODULUS) - (1.0 / samprate);
+      delta = ( samprate ) ? (1.0 / samprate) : 0.0;
       
-      pregap = ((double)(mst->starttime - endtime)/HPTMODULUS) - (1.0 / samprate);
+      postgap = ((double)(starttime - mst->endtime)/HPTMODULUS) - delta;
+      
+      pregap = ((double)(mst->starttime - endtime)/HPTMODULUS) - delta;
       
       /* If not checking the time tolerance decide if beginning or end is a better fit */
       if ( timetol == -2.0 )
@@ -271,7 +273,7 @@ mst_findadjacent ( MSTraceGroup *mstg, flag *whence, char dataquality,
 	{
 	  /* Calculate default time tolerance (1/2 sample period) if needed */
 	  if ( timetol == -1.0 )
-	    timetol = 0.5 / samprate;
+	    timetol = 0.5 * delta;
 	  
 	  if ( ms_dabs(postgap) <= timetol ) /* Span fits right at the end of the trace */
 	    {
@@ -545,7 +547,7 @@ mst_addmsrtogroup ( MSTraceGroup *mstg, MSRecord *msr, flag dataquality,
   if ( mst )
     {
       /* Records with no time coverage do not contribute to a trace */
-      if ( msr->samplecnt == 0 || msr->samprate <= 0.0 )
+      if ( msr->samplecnt <= 0 || msr->samprate <= 0.0 )
 	return mst;
       
       if ( mst_addmsr (mst, msr, whence) )
@@ -659,8 +661,7 @@ mst_groupheal ( MSTraceGroup *mstg, double timetol, double sampratetol )
   MSTrace *searchtrace = 0;
   MSTrace *prevtrace = 0;
   int8_t merged = 0;
-  double postgap;
-  double pregap;
+  double postgap, pregap, delta;
   
   if ( ! mstg )
     return -1;
@@ -715,15 +716,15 @@ mst_groupheal ( MSTraceGroup *mstg, double timetol, double sampratetol )
 	  /* post/pregap are negative when searchtrace overlaps curtrace
 	   * segment and positive when there is a time gap.
 	   */
-	  postgap = ((double)(searchtrace->starttime - curtrace->endtime)/HPTMODULUS)
-	    - (1.0 / curtrace->samprate);
+	  delta = ( curtrace->samprate ) ? (1.0 / curtrace->samprate) : 0.0;
 	  
-	  pregap = ((double)(curtrace->starttime - searchtrace->endtime)/HPTMODULUS)
-	    - (1.0 / curtrace->samprate);
+	  postgap = ((double)(searchtrace->starttime - curtrace->endtime)/HPTMODULUS) - delta;
+	  
+	  pregap = ((double)(curtrace->starttime - searchtrace->endtime)/HPTMODULUS) - delta;
 	  
 	  /* Calculate default time tolerance (1/2 sample period) if needed */
 	  if ( timetol == -1.0 )
-	    timetol = 0.5 / searchtrace->samprate;
+	    timetol = 0.5 * delta;
 	  
 	  /* Fits right at the end of curtrace */
 	  if ( ms_dabs(postgap) <= timetol )
@@ -940,6 +941,7 @@ mst_printtracelist ( MSTraceGroup *mstg, flag timeformat,
   char etime[30];
   char gapstr[20];
   double gap;
+  double delta;
   double prevsamprate;
   hptime_t prevendtime;
   int tracecnt = 0;
@@ -1003,8 +1005,12 @@ mst_printtracelist ( MSTraceGroup *mstg, flag timeformat,
 	  
 	  /* Check that any overlap is not larger than the trace coverage */
 	  if ( gap < 0.0 )
-	    if ( (gap * -1.0) > (((double)(mst->endtime - mst->starttime)/HPTMODULUS) + (1.0 / mst->samprate)) )
-	      gap = -(((double)(mst->endtime - mst->starttime)/HPTMODULUS) + (1.0 / mst->samprate));
+	    {
+	      delta = ( mst->samprate ) ? (1.0 / mst->samprate) : 0.0;
+	      
+	      if ( (gap * -1.0) > (((double)(mst->endtime - mst->starttime)/HPTMODULUS) + delta) )
+		gap = -(((double)(mst->endtime - mst->starttime)/HPTMODULUS) + delta);
+	    }
 	  
 	  /* Fix up gap display */
 	  if ( gap >= 86400.0 || gap <= -86400.0 )
@@ -1071,10 +1077,12 @@ mst_printgaplist (MSTraceGroup *mstg, flag timeformat,
   char src1[50], src2[50];
   char time1[30], time2[30];
   char gapstr[30];
-  double gap, nsamples;
+  double gap;
+  double delta;
+  double nsamples;
   flag printflag;
   int gapcnt = 0;
-
+  
   if ( ! mstg )
     return;
   
@@ -1112,9 +1120,13 @@ mst_printgaplist (MSTraceGroup *mstg, flag timeformat,
 	  
 	  /* Check that any overlap is not larger than the trace coverage */
 	  if ( gap < 0.0 )
-	    if ( (gap * -1.0) > (((double)(mst->next->endtime - mst->next->starttime)/HPTMODULUS) + (1.0 / mst->next->samprate)) )
-	      gap = -(((double)(mst->next->endtime - mst->next->starttime)/HPTMODULUS) + (1.0 / mst->next->samprate));
-	  
+	    {
+	      delta = ( mst->next->samprate ) ? (1.0 / mst->next->samprate) : 0,0;
+	      
+	      if ( (gap * -1.0) > (((double)(mst->next->endtime - mst->next->starttime)/HPTMODULUS) + delta) )
+		gap = -(((double)(mst->next->endtime - mst->next->starttime)/HPTMODULUS) + delta);
+	    }
+
 	  printflag = 1;
 
 	  /* Check gap/overlap criteria */
