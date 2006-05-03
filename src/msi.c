@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2006.115
+ * modified 2006.122
  ***************************************************************************/
 
 #include <stdio.h>
@@ -577,7 +577,7 @@ usage (void)
 	   " -te time     Limit to records that end before time\n"
 	   "                time format: 'YYYY[,DDD,HH,MM,SS,FFFFFF]' delimiters: [,:.]\n"
 	   " -n count     Only process count number of records\n"
-	   " -r bytes     Specify record length in bytes, required if no 1000 Blockettes\n"
+	   " -r bytes     Specify record length in bytes, default is autodetection\n"
 	   " -e encoding  Specify encoding format of data samples\n"
 	   " -d           Unpack/decompress data and print samples\n"
 	   " -b binfile   Unpack/decompress data and write binary samples to binfile\n"
