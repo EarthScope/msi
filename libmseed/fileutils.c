@@ -1,11 +1,10 @@
 /***************************************************************************
- * fileutils.c:
  *
  * Routines to manage files of Mini-SEED.
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2006.115
+ * modified: 2006.124
  ***************************************************************************/
 
 #include <stdio.h>
@@ -16,6 +15,8 @@
 #include <errno.h>
 
 #include "libmseed.h"
+
+#define NEXTHDRLEN 48
 
 static int readpackinfo (int chksumlen, int hdrlen, int sizelen, FILE *stream);
 static int myfread (char *buf, int size, int num, FILE *stream);
@@ -35,17 +36,17 @@ static int ateof (FILE *stream);
  *
  * Usage: MS_ISVALIDHEADER (char *X)
  */
-#define MS_ISVALIDHEADER(X) (isdigit ((unsigned char) *(X)) &&		\
-			     isdigit ((unsigned char) *(X+1)) &&	\
-			     isdigit ((unsigned char) *(X+2)) &&	\
-			     isdigit ((unsigned char) *(X+3)) &&	\
-			     isdigit ((unsigned char) *(X+4)) &&	\
-			     isdigit ((unsigned char) *(X+5)) &&	\
-			     MS_ISDATAINDICATOR(*(X+6)) &&		\
-			     (*(X+7) == ' ' || *(X+7) == '\0') &&	\
-			     *(X+24) >= 0 && *(X+24) <= 23 &&		\
-			     *(X+25) >= 0 && *(X+25) <= 59 &&		\
-			     *(X+26) >= 0 && *(X+26) <= 60)
+#define MS_ISVALIDHEADER(X) (isdigit ((unsigned char) *(X)) &&              \
+			     isdigit ((unsigned char) *(X+1)) &&            \
+			     isdigit ((unsigned char) *(X+2)) &&            \
+			     isdigit ((unsigned char) *(X+3)) &&            \
+			     isdigit ((unsigned char) *(X+4)) &&            \
+			     isdigit ((unsigned char) *(X+5)) &&            \
+			     MS_ISDATAINDICATOR(*(X+6)) &&                  \
+			     (*(X+7) == ' ' || *(X+7) == '\0') &&           \
+			     (int)(*(X+24)) >= 0 && (int)(*(X+24)) <= 23 && \
+			     (int)(*(X+25)) >= 0 && (int)(*(X+25)) <= 59 && \
+			     (int)(*(X+26)) >= 0 && (int)(*(X+26)) <= 60)
 
 
 /***************************************************************************
@@ -555,8 +556,7 @@ ms_find_reclen ( const char *recbuf, int recbuflen, FILE *fileptr )
   
   struct fsdh_s *fsdh;
   struct blkt_1000_s *blkt_1000;
-  const int nextlen = sizeof(struct fsdh_s);
-  char nextfsdh[nextlen];
+  char nextfsdh[NEXTHDRLEN];
   
   /* Check for valid fixed section of header */
   if ( ! MS_ISVALIDHEADER(recbuf) )
@@ -605,7 +605,7 @@ ms_find_reclen ( const char *recbuf, int recbuflen, FILE *fileptr )
   if ( reclen == -1 && fileptr )
     {
       /* Read data into record buffer */
-      if ( (myfread (nextfsdh, 1, nextlen, fileptr)) < nextlen )
+      if ( (myfread (nextfsdh, 1, NEXTHDRLEN, fileptr)) < NEXTHDRLEN )
 	{
 	  /* If no the EOF an error occured (short read) */
 	  if ( ! feof (fileptr) )
@@ -623,7 +623,7 @@ ms_find_reclen ( const char *recbuf, int recbuflen, FILE *fileptr )
       else
 	{
 	  /* Rewind file read pointer */
-	  if ( lmp_fseeko (fileptr, -nextlen, SEEK_CUR) )
+	  if ( lmp_fseeko (fileptr, -NEXTHDRLEN, SEEK_CUR) )
 	    {
 	      fprintf (stderr, "ms_find_reclen(): %s\n", strerror(errno));
 	      return -1;

@@ -1,3 +1,7 @@
+2006.124: version 1.6.3
+	- Fix (int *)packedsamples handling for packing routines.
+	- Fix compilation under Open Watcom (Win32).
+
 2006.122: version 1.6.2
 	- More fixes for sampling rate == 0 when calculating the sample
 	period.

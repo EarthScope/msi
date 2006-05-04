@@ -7,7 +7,7 @@
  * Written by Chad Trabant,
  *   IRIS Data Management Center
  *
- * modified: 2006.110
+ * modified: 2006.124
  ***************************************************************************/
 
 #include <stdio.h>
@@ -293,7 +293,7 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
   /* Pack samples into records */
   *HPnumsamples = 0;
   totalpackedsamples = 0;
-  if ( *packedsamples ) *packedsamples = 0;
+  if ( packedsamples ) *packedsamples = 0;
   packoffset = 0;
   
   while ( (msr->numsamples - totalpackedsamples) > maxsamples || flush )
@@ -324,7 +324,7 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
       record_handler (rawrec, msr->reclen);
       
       totalpackedsamples += packsamples;
-      if ( *packedsamples ) *packedsamples = totalpackedsamples;
+      if ( packedsamples ) *packedsamples = totalpackedsamples;
       
       /* Update record header for next record */
       msr->sequence_number = ( msr->sequence_number >= 999999) ? 1 : msr->sequence_number + 1;
