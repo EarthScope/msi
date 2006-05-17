@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2006.122
+ * modified 2006.137
  ***************************************************************************/
 
 #include <stdio.h>
@@ -73,11 +73,11 @@ main (int argc, char **argv)
 
   char envvariable[100];
   int dataflag   = 0;
-  int totalrecs  = 0;
-  int totalsamps = 0;
-  int totalfiles = 0;
+  long long int totalrecs  = 0;
+  long long int totalsamps = 0;
+  long long int totalfiles = 0;
   off_t filepos  = 0;
-
+  
   /* Process given parameters (command line and parameter file) */
   if (parameter_proc (argc, argv) < 0)
     return -1;
@@ -250,7 +250,7 @@ main (int argc, char **argv)
     fclose (ofp);
   
   if ( basicsum )
-    printf ("Files: %d, Records: %d, Samples: %d\n", totalfiles, totalrecs, totalsamps);
+    printf ("Files: %lld, Records: %lld, Samples: %lld\n", totalfiles, totalrecs, totalsamps);
     
   if ( tracegapsum || tracegaponly )
     {
