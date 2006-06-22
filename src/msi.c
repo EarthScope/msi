@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2006.137
+ * modified 2006.172
  ***************************************************************************/
 
 #include <stdio.h>
@@ -26,7 +26,7 @@ static int lisnumber (char *number);
 static void addfile (char *filename);
 static void usage (void);
 
-#define VERSION "1.11"
+#define VERSION "1.12dev"
 #define PACKAGE "msi"
 
 static flag    verbose      = 0;
@@ -70,6 +70,7 @@ main (int argc, char **argv)
   MSTraceGroup *mstg = 0;
   FILE *bfp = 0;
   FILE *ofp = 0;
+  int retcode = MS_NOERROR;
 
   char envvariable[100];
   int dataflag   = 0;
@@ -140,7 +141,8 @@ main (int argc, char **argv)
       /* Loop over the input file */
       while ( reccntdown != 0 )
 	{
-	  if ( ! (msr = ms_readmsr (flp->filename, reclen, &filepos, NULL, 1, dataflag, verbose)))
+	  if ( (retcode = ms_readmsr (&msr, flp->filename, reclen, &filepos,
+				      NULL, 1, dataflag, verbose)) != MS_NOERROR )
 	    break;
 	  
 	  /* Check if record matches start/end time criteria */
@@ -236,8 +238,12 @@ main (int argc, char **argv)
 	    }
 	}
       
+      if ( retcode != MS_ENDOFFILE )
+	fprintf (stderr, "Error reading file (%d) '%s'\n",
+		 retcode, flp->filename);
+      
       /* Make sure everything is cleaned up */
-      ms_readmsr (NULL, 0, NULL, NULL, 0, 0, 0);
+      ms_readmsr (&msr, NULL, 0, NULL, NULL, 0, 0, 0);
 
       totalfiles++;
       flp = flp->next;
