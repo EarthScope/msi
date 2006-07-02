@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified 2006.172
+ * modified 2006.173
  ***************************************************************************/
 
 #include <stdio.h>
@@ -42,7 +42,7 @@ main (int argc, char **argv)
 {
   MSRecord *msr = 0;
 
-  int dataflag   = 1;
+  int dataflag   = 0;
   int totalrecs  = 0;
   int totalsamps = 0;
   int retcode;

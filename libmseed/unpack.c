@@ -13,7 +13,7 @@
  *   ORFEUS/EC-Project MEREDIAN
  *   IRIS Data Management Center
  *
- * modified: 2006.171
+ * modified: 2006.182
  ***************************************************************************/
 
 #include <stdio.h>
@@ -483,12 +483,10 @@ msr_unpack ( char *record, int reclen, MSRecord **ppmsr,
 	  msr->reclen = (unsigned int) 1 << blkt_1000->reclen;
 	  
 	  /* Compare against the specified length */
-	  if ( msr->reclen != reclen )
+	  if ( msr->reclen != reclen && verbose )
 	    {
 	      fprintf (stderr, "Record length in Blockette 1000 (%d) != specified length (%d)\n",
 		       msr->reclen, reclen);
-	      
-	      msr->reclen = reclen;
 	    }
 	  
 	  msr->encoding = blkt_1000->encoding;

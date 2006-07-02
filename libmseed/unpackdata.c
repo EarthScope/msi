@@ -13,7 +13,7 @@
  *  (previously) ORFEUS/EC-Project MEREDIAN
  *  (currently) IRIS Data Management Center
  *
- *  modified: 2006.171
+ *  modified: 2006.173
  ************************************************************************/
 
 /*
@@ -70,8 +70,8 @@ int msr_unpack_int_16
   int		nd = 0;		/* # of data points in packet.		*/
   uint16_t	stmp;
   
-  if (num_samples < 0) return MS_BADSAMPCOUNT;
-  if (req_samples < 0) return MS_BADSAMPCOUNT;
+  if (num_samples < 0) return 0;
+  if (req_samples < 0) return 0;
   
   for (nd=0; nd<req_samples && nd<num_samples; nd++) {
     stmp = ibuf[nd];
@@ -98,8 +98,8 @@ int msr_unpack_int_32
   int		nd = 0;		/* # of data points in packet.		*/
   int32_t    	itmp;
   
-  if (num_samples < 0) return MS_BADSAMPCOUNT;
-  if (req_samples < 0) return MS_BADSAMPCOUNT;
+  if (num_samples < 0) return 0;
+  if (req_samples < 0) return 0;
   
   for (nd=0; nd<req_samples && nd<num_samples; nd++) {
     itmp = ibuf[nd];
@@ -126,8 +126,8 @@ int msr_unpack_float_32
   int		nd = 0;		/* # of data points in packet.		*/
   float    	ftmp;
   
-  if (num_samples < 0) return MS_BADSAMPCOUNT;
-  if (req_samples < 0) return MS_BADSAMPCOUNT;
+  if (num_samples < 0) return 0;
+  if (req_samples < 0) return 0;
   
   for (nd=0; nd<req_samples && nd<num_samples; nd++) {
     ftmp = fbuf[nd];
@@ -154,8 +154,8 @@ int msr_unpack_float_64
   int		nd = 0;		/* # of data points in packet.		*/
   double  	dtmp;
   
-  if (num_samples < 0) return MS_BADSAMPCOUNT;
-  if (req_samples < 0) return MS_BADSAMPCOUNT;
+  if (num_samples < 0) return 0;
+  if (req_samples < 0) return 0;
   
   for (nd=0; nd<req_samples && nd<num_samples; nd++) {
     dtmp = fbuf[nd];
@@ -200,9 +200,9 @@ int msr_unpack_steim1
   int16_t	stmp;
   uint32_t	ctrl;
   
-  if (num_samples < 0) return MS_BADSAMPCOUNT;
+  if (num_samples < 0) return 0;
   if (num_samples == 0) return 0;
-  if (req_samples < 0) return MS_BADSAMPCOUNT;
+  if (req_samples < 0) return 0;
   
   /* Extract forward and reverse integration constants in first frame */
   *px0 = X0;
@@ -286,7 +286,6 @@ int msr_unpack_steim1
     {
       fprintf (stderr, "msr_unpack_steim1(): number of samples indicated in header (%d) does not equal data (%d)\n",
 	       num_samples, nd);
-      return MS_SAMPMISMATCH;
     }
   
   /*	For now, assume sample count in header to be correct.		*/
@@ -327,7 +326,6 @@ int msr_unpack_steim1
     {
       fprintf (stderr, "Data integrity check for Steim-1 failed, last_data=%d, xn=%d\n",
 	       last_data, *pxn);
-      return MS_STBADLASTMATCH;
     }
   
   return ((req_samples < num_samples) ? req_samples : num_samples);
@@ -368,9 +366,9 @@ int msr_unpack_steim2
   int8_t	dnib;
   uint32_t	ctrl;
   
-  if (num_samples < 0) return MS_BADSAMPCOUNT;
+  if (num_samples < 0) return 0;
   if (num_samples == 0) return 0;
-  if (req_samples < 0) return MS_BADSAMPCOUNT;
+  if (req_samples < 0) return 0;
   
   /* Extract forward and reverse integration constants in first frame.*/
   *px0 = X0;
@@ -480,7 +478,6 @@ int msr_unpack_steim2
     {
       fprintf (stderr, "msr_unpack_steim2(): number of samples indicated in header (%d) does not equal data (%d)\n",
 	       num_samples, nd);
-      return MS_SAMPMISMATCH;
     }
 
   /*	For now, assume sample count in header to be correct.		*/
@@ -521,7 +518,6 @@ int msr_unpack_steim2
     {
       fprintf (stderr, "Data integrity check for Steim-2 failed, last_data=%d, xn=%d\n",
 	       last_data, *pxn);
-      return MS_STBADLASTMATCH;
     }
   
   return ((req_samples < num_samples) ? req_samples : num_samples);

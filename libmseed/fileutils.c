@@ -518,7 +518,7 @@ ms_readmsr (MSRecord **ppmsr, char *msfile, int reclen, off_t *fpos,
 	{ fclose (fp); fp = NULL; }
       msr_free (ppmsr);
       free (rawrec); rawrec = NULL;
-
+      
       return retcode;
     }
   
@@ -532,6 +532,8 @@ ms_readmsr (MSRecord **ppmsr, char *msfile, int reclen, off_t *fpos,
     {
       fprintf (stderr, "Error: detected record length (%d) != read length (%d)\n",
 	       (*ppmsr)->reclen, readlen);
+
+      return MS_WRONGLENGTH;
     }
   
   recordcount++;

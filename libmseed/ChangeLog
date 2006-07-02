@@ -1,3 +1,20 @@
+2006.182: version 1.7
+	- Add MS_WRONGLENGTH error code and have msr_unpack() and the
+	file reading routines return it when the read length does not match
+	length specified in the Blockette 1000.  This most commonly occurs
+	when either the specified record length or the length of the first
+	record is auto detected and the following record lengths assumed
+	do not match the actual records.
+	- Use MS_ISRATETOLERABLE macro in mst_groupsort() to compare the
+	sampling rates of adjacent trace segments.  This is how sampling
+	rates are compared in other routines and will avoid problems
+	associated with testing the equality of floating point values.
+
+2006.173:
+	- Remove some of the useless error codes.
+	- Steim compression integrity check failure and sample count
+	mismatch are not fatal unpacking errors, only warnings are printed.
+
 2006.172:
 	- Changed return type of ms_readmsr() to int and added a pointer
 	to a pointer to an MSRecord to the arguments.  Function now returns

@@ -1,3 +1,7 @@
+2006.183: 1.12
+	- Update to libmseed 1.7.  Includes fixes for fringe cases
+	MSTraceGroup sorting and includes API change.
+
 2006.137:
 	- Change total[recs,samps,files] counter variables to long
 	long ints to avoid int overflow.

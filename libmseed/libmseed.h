@@ -30,8 +30,8 @@ extern "C" {
 
 #include "lmplatform.h"
 
-#define LIBMSEED_VERSION "1.7dev"
-#define LIBMSEED_RELEASE "2006.172"
+#define LIBMSEED_VERSION "1.7"
+#define LIBMSEED_RELEASE "2006.182"
 
 #define MINRECLEN   256      /* Minimum Mini-SEED record length, 2^8 bytes */
 #define MAXRECLEN   1048576  /* Maximum Mini-SEED record length, 2^20 bytes */
@@ -50,12 +50,10 @@ extern "C" {
 #define MS_NOERROR          0        /* No error */
 #define MS_GENERROR        -1        /* Generic unspecified error */
 #define MS_NOTSEED         -2        /* Data not SEED */
-#define MS_OUTOFRANGE      -3        /* SEED record length out of range */
-#define MS_UNKNOWNFORMAT   -4        /* Unknown data encoding format */
-#define MS_SAMPMISMATCH    -5        /* Num. samples in header is not the number unpacked */
-#define MS_BADSAMPCOUNT    -6        /* Sample count is bad, negative? */
-#define MS_STBADLASTMATCH  -7        /* Steim, last sample != reverse integration constant */
-#define MS_STBADCOMPFLAG   -8        /* Steim, invalid compression flag(s) */
+#define MS_WRONGLENGTH     -3        /* Length of data read was not correct */
+#define MS_OUTOFRANGE      -4        /* SEED record length out of range */
+#define MS_UNKNOWNFORMAT   -5        /* Unknown data encoding format */
+#define MS_STBADCOMPFLAG   -6        /* Steim, invalid compression flag(s) */
 
 /* Define the high precision time tick interval as 1/modulus seconds */
 #define HPTMODULUS 1000000
