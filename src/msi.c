@@ -1,14 +1,14 @@
 /***************************************************************************
  * msi.c - Mini-SEED Inspector
  *
- * A rather useful example of using the Mini-SEED record library.
+ * A rather useful example of using the libmseed Mini-SEED library.
  *
  * Opens a user specified file, parses the Mini-SEED records and prints
  * details for each record, trace list or gap list.
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2006.172
+ * modified 2006.191
  ***************************************************************************/
 
 #include <stdio.h>
@@ -26,7 +26,7 @@ static int lisnumber (char *number);
 static void addfile (char *filename);
 static void usage (void);
 
-#define VERSION "1.12"
+#define VERSION "1.13"
 #define PACKAGE "msi"
 
 static flag    verbose      = 0;
@@ -238,7 +238,8 @@ main (int argc, char **argv)
 	    }
 	}
       
-      if ( retcode != MS_ENDOFFILE )
+      /* Print error if not EOF and not counting down records */
+      if ( retcode != MS_ENDOFFILE && reccntdown != 0 )
 	fprintf (stderr, "Error reading file (%d) '%s'\n",
 		 retcode, flp->filename);
       

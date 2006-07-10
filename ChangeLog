@@ -1,3 +1,9 @@
+2006.191: 1.13
+	- Do not print error message when only processing limited
+	records (-n) and no real error was encountered.  The message
+	was being triggered by not being at the EOF, so add a test
+	of reccntdown != 0.
+
 2006.183: 1.12
 	- Update to libmseed 1.7.  Includes fixes for fringe cases
 	MSTraceGroup sorting and includes API change.
