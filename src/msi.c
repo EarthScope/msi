@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2006.191
+ * modified 2006.208
  ***************************************************************************/
 
 #include <stdio.h>
@@ -26,7 +26,7 @@ static int lisnumber (char *number);
 static void addfile (char *filename);
 static void usage (void);
 
-#define VERSION "1.13"
+#define VERSION "1.14"
 #define PACKAGE "msi"
 
 static flag    verbose      = 0;
@@ -240,8 +240,8 @@ main (int argc, char **argv)
       
       /* Print error if not EOF and not counting down records */
       if ( retcode != MS_ENDOFFILE && reccntdown != 0 )
-	fprintf (stderr, "Error reading file (%d) '%s'\n",
-		 retcode, flp->filename);
+	fprintf (stderr, "Error reading %s: %s\n",
+		 flp->filename, get_errorstr(retcode));
       
       /* Make sure everything is cleaned up */
       ms_readmsr (&msr, NULL, 0, NULL, NULL, 0, 0, 0);
