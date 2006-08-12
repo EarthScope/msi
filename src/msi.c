@@ -583,7 +583,7 @@ usage (void)
 	   " -te time     Limit to records that end before time\n"
 	   "                time format: 'YYYY[,DDD,HH,MM,SS,FFFFFF]' delimiters: [,:.]\n"
 	   " -n count     Only process count number of records\n"
-	   " -r bytes     Specify record length in bytes, default is autodetection\n"
+	   " -r reclen    Specify record length in bytes, default is autodetection\n"
 	   " -e encoding  Specify encoding format of data samples\n"
 	   " -d           Unpack/decompress data and print samples\n"
 	   " -b binfile   Unpack/decompress data and write binary samples to binfile\n"
