@@ -1,4 +1,4 @@
-.TH MSI 1 2006/04/25
+.TH MSI 1 2006/08/12
 .SH NAME
 Mini-SEED Inspector
 
@@ -38,12 +38,6 @@ Be more verbose.  This flag can be used multiple times ("-v -v" or
 Print details of each record header.  This flag can be used multiple
 times ("-p -p" or "-pp") for more verbosity.  Specifying two flags
 will result in all header details being printed.
-
-.IP "-a         "
-Autodetect every input record length.  By default the program will
-autodetect the record length of the first record and assume all
-following records are the same length.  This option is needed when the
-input record lengths are different.
 
 .IP "-O         "
 Include the offset into the file in bytes when printing header
@@ -127,8 +121,8 @@ Only process \fIcount\fP input records.
 
 .IP "-r \fIbytes\fP"
 Specify the intput record length in \fIbytes\fP.  By default the
-length of the first Mini-SEED record is automatically detected, this
-option forces the record length.
+record length of each input Mini-SEED record is automatically
+detected, this option forces the record length.
 
 .IP "-e \fIencoding\fP"
 Specify the data encoding format.  These encoding values are the same

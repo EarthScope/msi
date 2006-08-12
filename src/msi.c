@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2006.208
+ * modified 2006.224
  ***************************************************************************/
 
 #include <stdio.h>
@@ -26,7 +26,7 @@ static int lisnumber (char *number);
 static void addfile (char *filename);
 static void usage (void);
 
-#define VERSION "1.14"
+#define VERSION "1.15"
 #define PACKAGE "msi"
 
 static flag    verbose      = 0;
@@ -47,7 +47,7 @@ static double  maxgap       = 0;    /* Maximum gap/overlap seconds when printing
 static double *maxgapptr    = NULL;
 static flag    traceheal    = 0;    /* Controls healing of trace group */
 static int     reccntdown   = -1;
-static int     reclen       = 0;
+static int     reclen       = -1;
 static char   *encodingstr  = 0;
 static char   *binfile      = 0;
 static char   *outfile      = 0;
@@ -564,7 +564,6 @@ usage (void)
 	   " -h           Show this usage message\n"
 	   " -v           Be more verbose, multiple flags can be used\n"
 	   " -p           Print details of header, multiple flags can be used\n"
-	   " -a           Autodetect every record length, only needed with mixed lengths\n"
 	   " -O           Include offset into file when printing header details\n"
 	   " -s           Print a basic summary after processing file(s)\n"
 	   " -t           Print a sorted trace list after processing file(s)\n"
