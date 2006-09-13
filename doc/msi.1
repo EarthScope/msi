@@ -55,8 +55,17 @@ The format of the \fItime\fP arguement
 is: 'YYYY[,DDD,HH,MM,SS,FFFFFF]' where valid delimiters are either
 commas (,), colons (:) or periods (.).
 
+.IP "-M \fImatch\fP"
+Limit processing to Mini-SEED records that match the \fImatch\fP
+regular expression.  For each input record a source name string
+composed of 'NET_STA_LOC_CHAN_QUAL' is created and compared to the
+regular expression.
 
--M-R
+.IP "-R \fIreject\fP"
+Limit processing to Mini-SEED records that do not match the
+\fIreject\fP regular expression.  For each input record a source name
+string composed of 'NET_STA_LOC_CHAN_QUAL' is created and compared to
+the regular expression.
 
 .IP "-n \fIcount\fP"
 Only process \fIcount\fP input records.
@@ -138,7 +147,6 @@ Specify the time stamp format for trace and gap/overlap lists.  The
   1 = ISO time, e.g. "2005-03-09T00:00:01.000000"
   2 = Epoch seconds, e.g. "1110326401.000000"
 .fi
-
 
 .IP "-b \fIbinfile\fP"
 Decompress/unpack data in input records and write the binary samples

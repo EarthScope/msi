@@ -28,7 +28,7 @@ static int lisnumber (char *number);
 static void addfile (char *filename);
 static void usage (void);
 
-#define VERSION "2.0"
+#define VERSION "2.0pre"
 #define PACKAGE "msi"
 
 static flag    verbose      = 0;
@@ -82,6 +82,10 @@ main (int argc, char **argv)
   long long int totalsamps = 0;
   long long int totalfiles = 0;
   off_t filepos  = 0;
+  
+  char basesrc[50];
+  char srcname[50];
+  char stime[30];
   
   /* Process given parameters (command line and parameter file) */
   if ( processparam (argc, argv) < 0 )
@@ -154,10 +158,9 @@ main (int argc, char **argv)
 	    {
 	      if ( verbose >= 3 )
 		{
-		  char srcname[100], stime[100];
 		  msr_srcname (msr, srcname);
 		  ms_hptime2seedtimestr (msr->starttime, stime);
-		  fprintf (stderr, "Skipping %s, %s\n", srcname, stime);
+		  fprintf (stderr, "Skipping (starttime) %s, %s\n", srcname, stime);
 		}
 	      continue;
 	    }
@@ -166,12 +169,46 @@ main (int argc, char **argv)
 	    {
 	      if ( verbose >= 3 )
 		{
-		  char srcname[100], stime[100];
 		  msr_srcname (msr, srcname);
 		  ms_hptime2seedtimestr (msr->starttime, stime);
-		  fprintf (stderr, "Skipping %s, %s\n", srcname, stime);
+		  fprintf (stderr, "Skipping (starttime) %s, %s\n", srcname, stime);
 		}
 	      continue;
+	    }
+	  
+	  if ( match || reject )
+	    {
+	      /* Generate the srcname and add the quality code */
+	      msr_srcname (msr, basesrc);
+	      snprintf (srcname, sizeof(srcname), "%s_%c", basesrc, msr->dataquality);
+	      
+	      /* Check if record is matched by the match regex */
+	      if ( match )
+		{
+		  if ( regexec ( match, srcname, 0, 0, 0) != 0 )
+		    {
+		      if ( verbose >= 3 )
+			{
+			  ms_hptime2seedtimestr (msr->starttime, stime);
+			  fprintf (stderr, "Skipping (match) %s, %s\n", srcname, stime);
+			}
+		      continue;
+		    }
+		}
+	      
+	      /* Check if record is rejected by the reject regex */
+	      if ( reject )
+		{
+		  if ( regexec ( reject, srcname, 0, 0, 0) == 0 )
+		    {
+		      if ( verbose >= 3 )
+			{
+			  ms_hptime2seedtimestr (msr->starttime, stime);
+			  fprintf (stderr, "Skipping (reject) %s, %s\n", srcname, stime);
+			}
+		      continue;
+		    }
+		}
 	    }
 	  
 	  if ( reccntdown > 0 )
