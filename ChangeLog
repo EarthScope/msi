@@ -1,3 +1,10 @@
+2006.254: 2.0
+	- Add -M and -R match/reject on regex options, including
+	expansion of regex's listed in a file (using the @ character).
+	- Add -D option to print all sample values and change the -d
+	option to only print the first 6 sample values.
+	- Clean up the usage/help message and catagorize.
+
 2006.224: 1.15
 	- Remove the -a option, each input record length is automatically
 	detected.

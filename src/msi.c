@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2006.224
+ * modified 2006.256
  ***************************************************************************/
 
 #include <stdio.h>
@@ -17,21 +17,23 @@
 #include <time.h>
 #include <errno.h>
 #include <ctype.h>
+#include <regex.h>
 
 #include <libmseed.h>
 
-static int parameter_proc (int argcount, char **argvec);
+static int processparam (int argcount, char **argvec);
 static char *getoptval (int argcount, char **argvec, int argopt);
+static int readregexfile (char *regexfile, char **pppattern);
 static int lisnumber (char *number);
 static void addfile (char *filename);
 static void usage (void);
 
-#define VERSION "1.15"
+#define VERSION "2.0"
 #define PACKAGE "msi"
 
 static flag    verbose      = 0;
 static flag    ppackets     = 0;    /* Controls printing of header/blockettes */
-static flag    printdata    = 0;    /* Controls printing of sample values */
+static flag    printdata    = 0;    /* Controls printing of sample values: 1=first 6, 2=all*/
 static flag    printoffset  = 0;    /* Controls printing offset into input file */
 static flag    basicsum     = 0;    /* Controls printing of basic summary */
 static flag    tracegapsum  = 0;    /* Controls printing of trace or gap list */
@@ -51,8 +53,10 @@ static int     reclen       = -1;
 static char   *encodingstr  = 0;
 static char   *binfile      = 0;
 static char   *outfile      = 0;
-static hptime_t starttime   = HPTERROR;
-static hptime_t endtime     = HPTERROR;
+static hptime_t starttime   = HPTERROR;  /* Limit to records after starttime */
+static hptime_t endtime     = HPTERROR;  /* Limit to records before endtime */
+static regex_t *match       = 0;    /* Compiled match regex */
+static regex_t *reject      = 0;    /* Compiled reject regex */
 
 struct filelink {
   char *filename;
@@ -80,7 +84,7 @@ main (int argc, char **argv)
   off_t filepos  = 0;
   
   /* Process given parameters (command line and parameter file) */
-  if (parameter_proc (argc, argv) < 0)
+  if ( processparam (argc, argv) < 0 )
     return -1;
   
   /* Setup encoding environment variable if specified, ugly kludge */
@@ -199,7 +203,7 @@ main (int argc, char **argv)
 		    {
 		      fprintf (stderr, "Unrecognized sample type: %c\n", msr->sampletype);
 		    }
-
+		  
 		  if ( msr->sampletype == 'a' )
 		    printf ("ASCII Data:\n%.*s\n", msr->numsamples, (char *)msr->datasamples);
 		  else
@@ -224,6 +228,10 @@ main (int argc, char **argv)
 			      }
 			  }
 			printf ("\n");
+			
+			/* If only printing the first 6 samples break out here */
+			if ( printdata == 1 )
+			  break;
 		      }
 		}
 	      if ( binfile )
@@ -287,10 +295,13 @@ main (int argc, char **argv)
  * Returns 0 on success, and -1 on failure
  ***************************************************************************/
 static int
-parameter_proc (int argcount, char **argvec)
+processparam (int argcount, char **argvec)
 {
   int optind;
-
+  char *matchpattern = 0;
+  char *rejectpattern = 0;
+  char *tptr;
+  
   /* Process all command line arguments */
   for (optind = 1; optind < argcount; optind++)
     {
@@ -308,13 +319,41 @@ parameter_proc (int argcount, char **argvec)
 	{
 	  verbose += strspn (&argvec[optind][1], "v");
 	}
+      else if (strcmp (argvec[optind], "-r") == 0)
+	{
+	  reclen = strtol (getoptval(argcount, argvec, optind++), NULL, 10);
+	}
+      else if (strcmp (argvec[optind], "-e") == 0)
+	{
+	  encodingstr = getoptval(argcount, argvec, optind++);
+	}
+      else if (strcmp (argvec[optind], "-ts") == 0)
+	{
+	  starttime = ms_seedtimestr2hptime (getoptval(argcount, argvec, optind++));
+	  if ( starttime == HPTERROR )
+	    return -1;
+	}
+      else if (strcmp (argvec[optind], "-te") == 0)
+	{
+	  endtime = ms_seedtimestr2hptime (getoptval(argcount, argvec, optind++));
+	  if ( endtime == HPTERROR )
+	    return -1;
+	}
+      else if (strcmp (argvec[optind], "-M") == 0)
+	{
+	  matchpattern = getoptval(argcount, argvec, optind++);
+	}
+      else if (strcmp (argvec[optind], "-R") == 0)
+	{
+	  rejectpattern = getoptval(argcount, argvec, optind++);
+	}
+      else if (strcmp (argvec[optind], "-n") == 0)
+	{
+	  reccntdown = strtol (getoptval(argcount, argvec, optind++), NULL, 10);
+	}
       else if (strncmp (argvec[optind], "-p", 2) == 0)
 	{
 	  ppackets += strspn (&argvec[optind][1], "p");
-	}
-      else if (strcmp (argvec[optind], "-a") == 0)
-	{
-	  reclen = -1;
 	}
       else if (strcmp (argvec[optind], "-O") == 0)
 	{
@@ -323,6 +362,14 @@ parameter_proc (int argcount, char **argvec)
       else if (strcmp (argvec[optind], "-s") == 0)
 	{
 	  basicsum = 1;
+	}
+      else if (strcmp (argvec[optind], "-d") == 0)
+	{
+	  printdata = 1;
+	}
+      else if (strcmp (argvec[optind], "-D") == 0)
+	{
+	  printdata = 2;
 	}
       else if (strcmp (argvec[optind], "-t") == 0)
 	{
@@ -374,34 +421,6 @@ parameter_proc (int argcount, char **argvec)
 	{
 	  timeformat = strtol (getoptval(argcount, argvec, optind++), NULL, 10);
 	}
-      else if (strcmp (argvec[optind], "-ts") == 0)
-	{
-	  starttime = ms_seedtimestr2hptime (getoptval(argcount, argvec, optind++));
-	  if ( starttime == HPTERROR )
-	    return -1;
-	}
-      else if (strcmp (argvec[optind], "-te") == 0)
-	{
-	  endtime = ms_seedtimestr2hptime (getoptval(argcount, argvec, optind++));
-	  if ( endtime == HPTERROR )
-	    return -1;
-	}
-      else if (strcmp (argvec[optind], "-n") == 0)
-	{
-	  reccntdown = strtol (getoptval(argcount, argvec, optind++), NULL, 10);
-	}
-      else if (strcmp (argvec[optind], "-r") == 0)
-	{
-	  reclen = strtol (getoptval(argcount, argvec, optind++), NULL, 10);
-	}
-      else if (strcmp (argvec[optind], "-e") == 0)
-	{
-	  encodingstr = getoptval(argcount, argvec, optind++);
-	}
-      else if (strcmp (argvec[optind], "-d") == 0)
-	{
-	  printdata = 1;
-	}
       else if (strcmp (argvec[optind], "-b") == 0)
 	{
 	  binfile = getoptval(argcount, argvec, optind++);
@@ -430,7 +449,60 @@ parameter_proc (int argcount, char **argvec)
       fprintf (stderr, "Try %s -h for usage\n", PACKAGE);
       exit (1);
     }
-
+  
+  /* Expand match pattern from a file if prefixed by '@' */
+  if ( matchpattern )
+    {
+      if ( *matchpattern == '@' )
+	{
+	  tptr = matchpattern + 1; /* Skip the @ sign */
+	  matchpattern = 0;
+	  
+	  if ( readregexfile (tptr, &matchpattern) <= 0 )
+	    {
+	      fprintf (stderr, "ERROR reading match pattern regex file\n");
+	      exit (1);
+	    }
+	}
+    }
+  
+  /* Expand reject pattern from a file if prefixed by '@' */
+  if ( rejectpattern )
+    {
+      if ( *rejectpattern == '@' )
+	{
+	  tptr = rejectpattern + 1; /* Skip the @ sign */
+	  rejectpattern = 0;
+	  
+	  if ( readregexfile (tptr, &rejectpattern) <= 0 )
+	    {
+	      fprintf (stderr, "ERROR reading reject pattern regex file\n");
+	      exit (1);
+	    }
+	}
+    }
+  
+  /* Compile match and reject patterns */
+  if ( matchpattern )
+    {
+      match = (regex_t *) malloc (sizeof(regex_t));
+      
+      if ( regcomp (match, matchpattern, REG_EXTENDED) != 0)
+	{
+	  fprintf (stderr, "ERROR compiling match regex: '%s'\n", matchpattern);
+	}
+    }
+  
+  if ( rejectpattern )
+    {
+      reject = (regex_t *) malloc (sizeof(regex_t));
+      
+      if ( regcomp (reject, rejectpattern, REG_EXTENDED) != 0)
+	{
+	  fprintf (stderr, "ERROR compiling reject regex: '%s'\n", rejectpattern);
+	}
+    }
+  
   /* Report the program version */
   if ( verbose )
     fprintf (stderr, "%s version: %s\n", PACKAGE, VERSION);
@@ -478,6 +550,72 @@ getoptval (int argcount, char **argvec, int argopt)
   exit (1);
   return 0;
 }  /* End of getoptval() */
+
+
+/***************************************************************************
+ * readregexfile:
+ *
+ * Read a list of regular expressions from a file and combine them
+ * into a single, compound expression which is returned in *pppattern.
+ * The return buffer is reallocated as need to hold the growing
+ * pattern.  When called *pppattern should not point to any associated
+ * memory.
+ *
+ * Returns the number of regexes parsed from the file or -1 on error.
+ ***************************************************************************/
+static int
+readregexfile (char *regexfile, char **pppattern)
+{
+  FILE *fp;
+  char  line[1024];
+  char  linepattern[1024];
+  int   regexcnt = 0;
+  int   newpatternsize;
+  
+  /* Open the regex list file */
+  if ( (fp = fopen (regexfile, "rb")) == NULL )
+    {
+      fprintf (stderr, "ERROR opening regex list file %s: %s\n",
+	       regexfile, strerror (errno));
+      return -1;
+    }
+  
+  if ( verbose )
+    fprintf (stderr, "Reading regex list from %s\n", regexfile);
+  
+  *pppattern = NULL;
+  
+  while ( (fgets (line, sizeof(line), fp)) !=  NULL)
+    {
+      /* Trim spaces and skip if empty lines */
+      if ( sscanf (line, " %s ", linepattern) != 1 )
+	continue;
+      
+      /* Skip comment lines */
+      if ( *linepattern == '#' )
+	continue;
+      
+      regexcnt++;
+      
+      /* Add regex to compound regex */
+      if ( *pppattern )
+	{
+	  newpatternsize = strlen(*pppattern) + strlen(linepattern) + 4;
+	  *pppattern = realloc (*pppattern, newpatternsize);	  
+	  snprintf (*pppattern, newpatternsize, "%s|(%s)", *pppattern, linepattern);
+	}
+      else
+	{
+	  newpatternsize = strlen(linepattern) + 3;
+	  *pppattern = realloc (*pppattern, newpatternsize);
+	  snprintf (*pppattern, newpatternsize, "(%s)", linepattern);
+	}
+    }
+  
+  fclose (fp);
+  
+  return regexcnt;
+}  /* End readregexfile() */
 
 
 /***************************************************************************
@@ -559,13 +697,30 @@ usage (void)
   fprintf (stderr, "%s - Mini-SEED Inspector version: %s\n\n", PACKAGE, VERSION);
   fprintf (stderr, "Usage: %s [options] file1 [file2] [file3] ...\n\n", PACKAGE);
   fprintf (stderr,
-	   " ## Options ##\n"
+	   " ## General options ##\n"
 	   " -V           Report program version\n"
 	   " -h           Show this usage message\n"
 	   " -v           Be more verbose, multiple flags can be used\n"
+	   " -r reclen    Specify record length in bytes, default is autodetection\n"
+	   " -e encoding  Specify encoding format of data samples\n"
+	   "\n"
+	   " ## Data selection options ##\n"
+	   " -ts time     Limit to records that start after time\n"
+	   " -te time     Limit to records that end before time\n"
+	   "                time format: 'YYYY[,DDD,HH,MM,SS,FFFFFF]' delimiters: [,:.]\n"
+	   " -M match     Limit to records matching the specified regular expression\n"
+	   " -R reject    Limit to records not matchint the specfied regular expression\n"
+	   "                Regular expressions are applied to: 'NET_STA_LOC_CHAN_QUAL'\n"
+	   " -n count     Only process count number of records\n"
+	   "\n"
+	   " ## Output options ##\n"
 	   " -p           Print details of header, multiple flags can be used\n"
 	   " -O           Include offset into file when printing header details\n"
 	   " -s           Print a basic summary after processing file(s)\n"
+	   " -d           Unpack/decompress data and print the first 6 samples/record\n"
+	   " -D           Unpack/decompress data and print all samples\n"
+	   "\n"
+	   " ## Trace and gap list output options ##\n"
 	   " -t           Print a sorted trace list after processing file(s)\n"
 	   " -T           Only print a sorted trace list\n"
 	   " -tg          Include gap estimates when printing trace list\n"
@@ -579,13 +734,8 @@ usage (void)
 	   " -H           Heal trace segments, for out of time order data\n"
 	   " -tf format   Specify a time string format for trace and gap lists\n"
 	   "                format: 0 = SEED time, 1 = ISO time, 2 = epoch time\n"
-	   " -ts time     Limit to records that start after time\n"
-	   " -te time     Limit to records that end before time\n"
-	   "                time format: 'YYYY[,DDD,HH,MM,SS,FFFFFF]' delimiters: [,:.]\n"
-	   " -n count     Only process count number of records\n"
-	   " -r reclen    Specify record length in bytes, default is autodetection\n"
-	   " -e encoding  Specify encoding format of data samples\n"
-	   " -d           Unpack/decompress data and print samples\n"
+	   "\n"
+	   " ## Data output options ##\n"
 	   " -b binfile   Unpack/decompress data and write binary samples to binfile\n"
 	   " -o outfile   Write processed records to outfile\n"
 	   "\n"
