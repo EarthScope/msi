@@ -1,4 +1,4 @@
-.TH MSI 1 2006/08/12
+.TH MSI 1 2006/09/13
 .SH NAME
 Mini-SEED Inspector
 
@@ -34,6 +34,33 @@ Print program usage and exit.
 Be more verbose.  This flag can be used multiple times ("-v -v" or
 "-vv") for more verbosity.
 
+.IP "-r \fIreclen\fP"
+Specify the input record length in bytes.  By default the
+record length of each input Mini-SEED record is automatically
+detected, this option forces the record length.
+
+.IP "-e \fIencoding\fP"
+Specify the data encoding format.  These encoding values are the same
+as those specified in the SEED 1000 Blockette.
+
+.IP "-ts \fItime\fP"
+Limit processing to Mini-SEED records that start after \fItime\fP.
+The format of the \fItime\fP arguement
+is: 'YYYY[,DDD,HH,MM,SS,FFFFFF]' where valid delimiters are either
+commas (,), colons (:) or periods (.).
+
+.IP "-te \fItime\fP"
+Limit processing to Mini-SEED records that end before \fItime\fP.
+The format of the \fItime\fP arguement
+is: 'YYYY[,DDD,HH,MM,SS,FFFFFF]' where valid delimiters are either
+commas (,), colons (:) or periods (.).
+
+
+-M-R
+
+.IP "-n \fIcount\fP"
+Only process \fIcount\fP input records.
+
 .IP "-p         "
 Print details of each record header.  This flag can be used multiple
 times ("-p -p" or "-pp") for more verbosity.  Specifying two flags
@@ -46,6 +73,14 @@ details.
 .IP "-s         "
 Print a basic summary including the number of records and the number
 of samples they included after processing all input records.
+
+.IP "-d          "
+Decompress/unpack data in input records and print the first 6 sample
+values from each record.
+
+.IP "-D          "
+Decompress/unpack data in input records and print all the sample
+values.
 
 .IP "-t         "
 Print a sorted trace list after processing all input records.
@@ -104,32 +139,6 @@ Specify the time stamp format for trace and gap/overlap lists.  The
   2 = Epoch seconds, e.g. "1110326401.000000"
 .fi
 
-.IP "-ts \fItime\fP"
-Limit processing to Mini-SEED records that start after \fItime\fP.
-The format of the \fItime\fP arguement
-is: 'YYYY[,DDD,HH,MM,SS,FFFFFF]' where valid delimiters are either
-commas (,), colons (:) or periods (.).
-
-.IP "-te \fItime\fP"
-Limit processing to Mini-SEED records that end before \fItime\fP.
-The format of the \fItime\fP arguement
-is: 'YYYY[,DDD,HH,MM,SS,FFFFFF]' where valid delimiters are either
-commas (,), colons (:) or periods (.).
-
-.IP "-n \fIcount\fP"
-Only process \fIcount\fP input records.
-
-.IP "-r \fIreclen\fP"
-Specify the input record length in bytes.  By default the
-record length of each input Mini-SEED record is automatically
-detected, this option forces the record length.
-
-.IP "-e \fIencoding\fP"
-Specify the data encoding format.  These encoding values are the same
-as those specified in the SEED 1000 Blockette.
-
-.IP "-d          "
-Decompress/unpack data in input records and print the sample values.
 
 .IP "-b \fIbinfile\fP"
 Decompress/unpack data in input records and write the binary samples
