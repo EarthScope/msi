@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2006.256
+ * modified 2006.279
  ***************************************************************************/
 
 #include <stdio.h>
@@ -746,7 +746,7 @@ usage (void)
 	   " -te time     Limit to records that end before time\n"
 	   "                time format: 'YYYY[,DDD,HH,MM,SS,FFFFFF]' delimiters: [,:.]\n"
 	   " -M match     Limit to records matching the specified regular expression\n"
-	   " -R reject    Limit to records not matchint the specfied regular expression\n"
+	   " -R reject    Limit to records not matching the specfied regular expression\n"
 	   "                Regular expressions are applied to: 'NET_STA_LOC_CHAN_QUAL'\n"
 	   " -n count     Only process count number of records\n"
 	   "\n"
