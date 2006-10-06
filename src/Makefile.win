@@ -1,5 +1,5 @@
 #
-# Nmake file for msi - Windows version
+# Nmake file - Windows version
 # Use 'nmake -f Makefile.win'
 #
 # THIS HAS NEVER BEEN TESTED

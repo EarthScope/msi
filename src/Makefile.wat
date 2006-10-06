@@ -1,5 +1,5 @@
 #
-# Wmake File for msi - For Watcom's wmake
+# Wmake file - For Watcom's wmake
 # Use 'wmake -f Makefile.wat'
 
 .BEFORE
