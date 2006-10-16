@@ -1,3 +1,6 @@
+2006.289: 2.0pre
+	- Update to libmseed 2.0pre.
+
 2006.254:
 	- Add -M and -R match/reject on regex options, including
 	expansion of regex's listed in a file (using the @ character).

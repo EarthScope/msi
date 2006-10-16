@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2006.279
+ * modified 2006.289
  ***************************************************************************/
 
 #include <stdio.h>
@@ -83,7 +83,6 @@ main (int argc, char **argv)
   long long int totalfiles = 0;
   off_t filepos  = 0;
   
-  char basesrc[50];
   char srcname[50];
   char stime[30];
   
@@ -158,7 +157,7 @@ main (int argc, char **argv)
 	    {
 	      if ( verbose >= 3 )
 		{
-		  msr_srcname (msr, srcname);
+		  msr_srcname (msr, srcname, 1);
 		  ms_hptime2seedtimestr (msr->starttime, stime);
 		  fprintf (stderr, "Skipping (starttime) %s, %s\n", srcname, stime);
 		}
@@ -169,7 +168,7 @@ main (int argc, char **argv)
 	    {
 	      if ( verbose >= 3 )
 		{
-		  msr_srcname (msr, srcname);
+		  msr_srcname (msr, srcname, 1);
 		  ms_hptime2seedtimestr (msr->starttime, stime);
 		  fprintf (stderr, "Skipping (starttime) %s, %s\n", srcname, stime);
 		}
@@ -178,9 +177,8 @@ main (int argc, char **argv)
 	  
 	  if ( match || reject )
 	    {
-	      /* Generate the srcname and add the quality code */
-	      msr_srcname (msr, basesrc);
-	      snprintf (srcname, sizeof(srcname), "%s_%c", basesrc, msr->dataquality);
+	      /* Generate the srcname with the quality code */
+	      msr_srcname (msr, srcname, 1);
 	      
 	      /* Check if record is matched by the match regex */
 	      if ( match )
@@ -436,12 +434,12 @@ processparam (int argcount, char **argvec)
 	{
 	  tracegaponly = 2;
 	}
-      else if (strcmp (argvec[optind], "-min") == 0)
+      else if (strcmp (argvec[optind], "-gmin") == 0)
 	{
 	  mingap = strtod (getoptval(argcount, argvec, optind++), NULL);
 	  mingapptr = &mingap;
 	}
-      else if (strcmp (argvec[optind], "-max") == 0)
+      else if (strcmp (argvec[optind], "-gmax") == 0)
 	{
 	  maxgap = strtod (getoptval(argcount, argvec, optind++), NULL);
 	  maxgapptr = &maxgap;
@@ -574,9 +572,9 @@ getoptval (int argcount, char **argvec, int argopt)
     if ( strcmp (argvec[argopt+1], "-") == 0 )
       return argvec[argopt+1];
   
-  /* Special cases of '-min' and '-max' with negative numbers */
+  /* Special cases of '-gmin' and '-gmax' with negative numbers */
   if ( (argopt+1) < argcount &&
-       (strcmp (argvec[argopt], "-min") == 0 || (strcmp (argvec[argopt], "-max") == 0)))
+       (strcmp (argvec[argopt], "-gmin") == 0 || (strcmp (argvec[argopt], "-gmax") == 0)))
     if ( lisnumber(argvec[argopt+1]) )
       return argvec[argopt+1];
   
@@ -765,8 +763,8 @@ usage (void)
 	   " -rt diff     Specify a sample rate tolerance for continuous traces\n"
 	   " -g           Print a sorted gap/overlap list after processing file(s)\n"
 	   " -G           Only print a sorted gap/overlap list\n"
-	   " -min secs    Only report gaps/overlaps larger or equal to specified seconds\n"
-	   " -max secs    Only report gaps/overlaps smaller or equal to specified seconds\n"
+	   " -gmin secs   Only report gaps/overlaps larger or equal to specified seconds\n"
+	   " -gmax secs   Only report gaps/overlaps smaller or equal to specified seconds\n"
 	   " -Q           Additionally group traces by data quality\n"
 	   " -H           Heal trace segments, for out of time order data\n"
 	   " -tf format   Specify a time string format for trace and gap lists\n"
