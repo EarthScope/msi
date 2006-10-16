@@ -1,4 +1,4 @@
-.TH MST_PACK 3 2006/02/27 "Libmseed API"
+.TH MST_PACK 3 2006/10/10 "Libmseed API"
 .SH DESCRIPTION
 Packing of Mini-SEED records from MSTrace segments.
 
@@ -87,10 +87,10 @@ record created on success and -1 on error.
 
 .SH CAVEATS
 When using a MSRecord template (\fImstemplate\fP) the dataquality
-element must be set to a valid value.  It is also advisable to set the
+member must be set to a valid value.  It is also advisable to set the
 network, station, location and channel indicators to appropriate
 values.  Unless these source indicators need to change they can simply
-be copied from the matching MSTrace elements.
+be copied from the matching MSTrace members.
 
 .SH EXAMPLE
 Skeleton code for creating (packing) Mini-SEED records with

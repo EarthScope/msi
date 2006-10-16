@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2006.208
+ * modified: 2006.283
  ***************************************************************************/
 
 #include <stdio.h>
@@ -32,8 +32,8 @@ mst_init ( MSTrace *mst )
       if ( mst->datasamples )
 	free (mst->datasamples);
 
-      if ( mst->private )
-	free (mst->private);
+      if ( mst->prvtptr )
+	free (mst->prvtptr);
     }
   else
     {
@@ -68,8 +68,8 @@ mst_free ( MSTrace **ppmst )
         free ((*ppmst)->datasamples);
 
       /* Free private memory if present */
-      if ( (*ppmst)->private )
-        free ((*ppmst)->private);
+      if ( (*ppmst)->prvtptr )
+        free ((*ppmst)->prvtptr);
       
       free (*ppmst);
       

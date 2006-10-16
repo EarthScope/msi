@@ -9,7 +9,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified 2006.208
+ * modified 2006.283
  ***************************************************************************/
 
 #include <stdio.h>
@@ -134,7 +134,7 @@ main (int argc, char **argv)
       /* If no samples in the record just pack the header */
       if ( outfile && msr->numsamples == 0 )
 	{
-	  msr_pack_header (msr, verbose);
+	  msr_pack_header (msr, 1, verbose);
 	  record_handler (msr->record, msr->reclen);
 	}
       
@@ -164,14 +164,14 @@ main (int argc, char **argv)
 	  tp = mstg->traces;
 	  while ( tp )
 	    {
-	      if (! tp->private )
+	      if (! tp->prvtptr )
 		{
-		  tp->private = (int32_t *) malloc (sizeof (int32_t));
+		  tp->prvtptr = (int32_t *) malloc (sizeof (int32_t));
 		  msr->sequence_number = 1;
 		}
 	      else
 		{
-		  msr->sequence_number = *(int32_t *)tp->private;
+		  msr->sequence_number = *(int32_t *)tp->prvtptr;
 		}
 	      tp = tp->next;
 	    }
@@ -194,7 +194,7 @@ main (int argc, char **argv)
 	  tp = mstg->traces;
 	  while ( tp )
 	    {
-	      *(int32_t*)tp->private = msr->sequence_number;
+	      *(int32_t*)tp->prvtptr = msr->sequence_number;
 	      tp = tp->next;
 	    }
 	}

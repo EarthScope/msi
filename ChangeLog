@@ -1,4 +1,4 @@
-2006.254: 2.0
+2006.254:
 	- Add -M and -R match/reject on regex options, including
 	expansion of regex's listed in a file (using the @ character).
 	- Add -D option to print all sample values and change the -d

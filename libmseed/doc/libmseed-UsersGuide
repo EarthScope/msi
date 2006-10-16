@@ -207,7 +207,7 @@ typedef struct MSTrace_s {
   void           *datasamples;     /* Data samples, 'numsamples' of type 'sampletype'*/
   int32_t         numsamples;      /* Number of data samples in datasamples */
   char            sampletype;      /* Sample type code: a, i, f, d */
-  void           *private;         /* Private pointer for general use */
+  void           *prvtptr;         /* Private pointer for general use */
   struct MSTrace_s *next;            /* Pointer to next trace */
 }
 MSTrace;
@@ -268,7 +268,7 @@ sampletype:
   'd' (double).  The size of each sample type in bytes is returned
   by the get_samplesize(3) lookup routine.
 
-private:
+prvtptr:
   A private pointer for general use.  This pointer is not used by
   libmseed and can safely be used by the calling program.
 

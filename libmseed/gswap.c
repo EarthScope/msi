@@ -1,13 +1,13 @@
 /***************************************************************************
  * gswap.c:
  *
- * Functions for generalized byte in-place swapping between LSBF and
+ * Functions for generalized, in-pace byte swapping between LSBF and
  * MSBF byte orders.
  *
  * Some standard integer types are needed, namely uint8_t and
  * uint32_t, (these are normally declared by including inttypes.h or
  * stdint.h).  Each function expects it's input to be a void pointer
- * to an quantity of the appropriate size.
+ * to a quantity of the appropriate size.
  *
  * There are two versions of most routines, one that works on
  * quantities regardless of alignment (gswapX) and one that works on

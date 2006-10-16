@@ -4,14 +4,13 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2006.172
+ * modified: 2006.283
  ***************************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <ctype.h>
 #include <errno.h>
 
 #include "libmseed.h"
@@ -22,32 +21,6 @@
 static int readpackinfo (int chksumlen, int hdrlen, int sizelen, FILE *stream);
 static int myfread (char *buf, int size, int num, FILE *stream);
 static int ateof (FILE *stream);
-
-
-/* Check SEED data record header values at known byte offsets to
- * determine if the memory contains a valid record.
- * 
- * Offset = Value
- * [0-5]  = Digits, SEED sequence number
- *     6  = Data record quality indicator
- *     7  = Space or NULL [not valid SEED]
- *     24 = Start hour (0-23)
- *     25 = Start minute (0-59)
- *     26 = Start second (0-60)
- *
- * Usage: MS_ISVALIDHEADER (char *X)
- */
-#define MS_ISVALIDHEADER(X) (isdigit ((unsigned char) *(X)) &&              \
-			     isdigit ((unsigned char) *(X+1)) &&            \
-			     isdigit ((unsigned char) *(X+2)) &&            \
-			     isdigit ((unsigned char) *(X+3)) &&            \
-			     isdigit ((unsigned char) *(X+4)) &&            \
-			     isdigit ((unsigned char) *(X+5)) &&            \
-			     MS_ISDATAINDICATOR(*(X+6)) &&                  \
-			     (*(X+7) == ' ' || *(X+7) == '\0') &&           \
-			     (int)(*(X+24)) >= 0 && (int)(*(X+24)) <= 23 && \
-			     (int)(*(X+25)) >= 0 && (int)(*(X+25)) <= 59 && \
-			     (int)(*(X+26)) >= 0 && (int)(*(X+26)) <= 60)
 
 
 /**********************************************************************

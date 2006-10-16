@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2006.172
+ * modified: 2006.283
  ***************************************************************************/
 
 #include <stdio.h>
@@ -237,6 +237,122 @@ msr_addblockette (MSRecord *msr, char *blktdata, int length, int blkttype,
 
 
 /***************************************************************************
+ * msr_normalize_header:
+ *
+ * Normalize header values between the MSRecord struct and the
+ * associated fixed-section of the header and blockettes.  Essentially
+ * this updates the SEED structured data in the MSRecord.fsdh struct
+ * and MSRecord.blkts chain with values stored at the MSRecord level.
+ *
+ * Returns the header length in bytes on success or -1 on error.
+ ***************************************************************************/
+int
+msr_normalize_header ( MSRecord *msr, flag verbose )
+{
+  struct blkt_link_s *cur_blkt;
+  char seqnum[7];
+  int offset = 0;
+  int blktcnt = 0;
+  int reclenexp = 0;
+  int reclenfind;
+  
+  if ( ! msr )
+    return -1;
+  
+  /* Update values in fixed section of data header */
+  if ( msr->fsdh )
+    {
+      if ( verbose > 2 )
+	fprintf (stderr, "Normalizing fixed section of data header\n");
+      
+      /* Roll-over sequence number if necessary */
+      if ( msr->sequence_number > 999999 )
+	msr->sequence_number = 1;
+      
+      /* Update values in the MSRecord.fsdh struct */
+      snprintf (seqnum, 7, "%06d", msr->sequence_number);
+      memcpy (msr->fsdh->sequence_number, seqnum, 6);
+      msr->fsdh->dataquality = msr->dataquality;
+      msr->fsdh->reserved = ' ';
+      ms_strncpopen (msr->fsdh->network, msr->network, 2);
+      ms_strncpopen (msr->fsdh->station, msr->station, 5);
+      ms_strncpopen (msr->fsdh->location, msr->location, 2);
+      ms_strncpopen (msr->fsdh->channel, msr->channel, 3);
+      ms_hptime2btime (msr->starttime, &(msr->fsdh->start_time));
+      ms_genfactmult (msr->samprate, &(msr->fsdh->samprate_fact), &(msr->fsdh->samprate_mult));
+      
+      offset += 48;
+      
+      if ( msr->blkts )
+	msr->fsdh->blockette_offset = offset;
+      else
+	msr->fsdh->blockette_offset = 0;
+    }
+  
+  /* Traverse blockette chain and performs necessary updates*/
+  cur_blkt = msr->blkts;
+  
+  if ( cur_blkt && verbose > 2 )
+    fprintf (stderr, "Normalizing blockette chain\n");
+  
+  while ( cur_blkt )
+    {
+      offset += 4;
+      
+      if ( cur_blkt->blkt_type == 100 && msr->Blkt100 )
+	{
+	  msr->Blkt100->samprate = msr->samprate;
+	  offset += sizeof (struct blkt_100_s);
+	}
+      else if ( cur_blkt->blkt_type == 1000 && msr->Blkt1000 )
+	{
+	  msr->Blkt1000->byteorder = msr->byteorder;
+	  msr->Blkt1000->encoding = msr->encoding;
+	  
+	  /* Calculate the record length as an exponent of 2 */
+	  for (reclenfind=1, reclenexp=1; reclenfind <= MAXRECLEN; reclenexp++)
+	    {
+	      reclenfind *= 2;
+	      if ( reclenfind == msr->reclen ) break;
+	    }
+	  
+	  if ( reclenfind != msr->reclen )
+	    {
+	      fprintf (stderr, "msr_normalize_header(): Record length %d is not a power of 2\n",
+		       msr->reclen);
+	      return -1;
+	    }
+	  
+	  msr->Blkt1000->reclen = reclenexp;
+	  
+	  offset += sizeof (struct blkt_1000_s);
+	}
+      
+      else if ( cur_blkt->blkt_type == 1001 )
+	{
+	  hptime_t sec, usec;
+	  
+	  /* Insert microseconds offset */
+	  sec = msr->starttime / (HPTMODULUS / 10000);
+	  usec = msr->starttime - (sec * (HPTMODULUS / 10000));
+	  usec /= (HPTMODULUS / 1000000);
+	  
+	  msr->Blkt1001->usec = (int8_t) usec;
+	  offset += sizeof (struct blkt_1001_s);
+	}
+      
+      blktcnt++;
+      cur_blkt = cur_blkt->next;
+    }
+
+  if ( msr->fsdh )
+    msr->fsdh->numblockettes = blktcnt;
+  
+  return offset;
+} /* End of msr_normalize_header() */
+
+
+/***************************************************************************
  * msr_samprate:
  *
  * Calculate and return a double precision sample rate for the
@@ -312,7 +428,7 @@ msr_nomsamprate (MSRecord *msr)
 hptime_t
 msr_starttime (MSRecord *msr)
 {
-  double starttime = msr_starttime_uc (msr);
+  hptime_t starttime = msr_starttime_uc (msr);
   
   if ( ! msr || starttime == HPTERROR )
     return HPTERROR;
@@ -388,21 +504,29 @@ msr_endtime (MSRecord *msr)
  * msr_srcname:
  *
  * Generate a source name string for a specified MSRecord in the
- * format: 'NET_STA_LOC_CHAN'.  The passed srcname must have enough
- * room for the resulting string.
+ * format: 'NET_STA_LOC_CHAN' or, if the quality flag is true:
+ * 'NET_STA_LOC_CHAN_QUAL'.  The passed srcname must have enough room
+ * for the resulting string.
  *
  * Returns a pointer to the resulting string or NULL on error.
  ***************************************************************************/
 char *
-msr_srcname (MSRecord *msr, char *srcname)
+msr_srcname (MSRecord *msr, char *srcname, flag quality)
 {
   if ( msr == NULL )
     return NULL;
   
-  /* Build the source name string */
-  sprintf (srcname, "%s_%s_%s_%s",
-	   msr->network, msr->station,
-	   msr->location, msr->channel);
+  /* Build the source name string including the quality indicator*/
+  if ( quality )
+    sprintf (srcname, "%s_%s_%s_%s_%c",
+	     msr->network, msr->station,
+	     msr->location, msr->channel, msr->dataquality);
+  
+  /* Build the source name string without the quality indicator*/
+  else
+    sprintf (srcname, "%s_%s_%s_%s",
+	     msr->network, msr->station,
+	     msr->location, msr->channel);
   
   return srcname;
 } /* End of msr_srcname() */
@@ -431,7 +555,7 @@ msr_print (MSRecord *msr, flag details)
   
   /* Generate a source name string */
   srcname[0] = '\0';
-  msr_srcname (msr, srcname);
+  msr_srcname (msr, srcname, 0);
   
   /* Generate a start time string */
   ms_hptime2seedtimestr (msr->starttime, time);

@@ -18,7 +18,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2006.082
+ * modified: 2006.283
  ***************************************************************************/
 
 #ifndef LMPLATFORM_H
@@ -49,6 +49,7 @@ extern "C" {
   #include <netdb.h>
   #include <sys/time.h>
   #include <string.h>
+  #include <ctype.h>
   #include <features.h>
    
 #elif defined(__sun__) || defined(__sun)
@@ -64,6 +65,7 @@ extern "C" {
   #include <netdb.h>
   #include <sys/time.h>
   #include <string.h>
+  #include <ctype.h>
 
 #elif defined(__APPLE__)
   #define LMP_DARWIN 1
@@ -78,6 +80,7 @@ extern "C" {
   #include <netdb.h>
   #include <sys/time.h>
   #include <string.h>
+  #include <ctype.h>
 
 #elif defined(WIN32)
   #define LMP_WIN32 1
@@ -87,6 +90,7 @@ extern "C" {
   #include <winsock.h>
   #include <stdio.h>
   #include <sys/types.h>
+  #include <ctype.h>
 
   #define snprintf _snprintf
   #define vsnprintf _vsnprintf

@@ -30,8 +30,8 @@ extern "C" {
 
 #include "lmplatform.h"
 
-#define LIBMSEED_VERSION "1.8"
-#define LIBMSEED_RELEASE "2006.208"
+#define LIBMSEED_VERSION "2.0pre"
+#define LIBMSEED_RELEASE "2006.283"
 
 #define MINRECLEN   256      /* Minimum Mini-SEED record length, 2^8 bytes */
 #define MAXRECLEN   1048576  /* Maximum Mini-SEED record length, 2^20 bytes */
@@ -72,6 +72,33 @@ extern "C" {
 
 /* Macro to test default sample rate tolerance: abs(1-sr1/sr2) < 0.0001 */
 #define MS_ISRATETOLERABLE(A,B) (ms_dabs (1.0 - (A / B)) < 0.0001)
+
+/* Macro to test memory for a SEED data record signature by checking
+ * SEED data record header values at known byte offsets to determine
+ * if the memory contains a valid record.
+ * 
+ * Offset = Value
+ * [0-5]  = Digits, SEED sequence number
+ *     6  = Data record quality indicator
+ *     7  = Space or NULL [not valid SEED]
+ *     24 = Start hour (0-23)
+ *     25 = Start minute (0-59)
+ *     26 = Start second (0-60)
+ *
+ * Usage:
+ *   MS_ISVALIDHEADER ((char *)X)  X buffer must contain at least 27 bytes
+ */
+#define MS_ISVALIDHEADER(X) (isdigit ((unsigned char) *(X)) &&              \
+			     isdigit ((unsigned char) *(X+1)) &&            \
+			     isdigit ((unsigned char) *(X+2)) &&            \
+			     isdigit ((unsigned char) *(X+3)) &&            \
+			     isdigit ((unsigned char) *(X+4)) &&            \
+			     isdigit ((unsigned char) *(X+5)) &&            \
+			     MS_ISDATAINDICATOR(*(X+6)) &&                  \
+			     (*(X+7) == ' ' || *(X+7) == '\0') &&           \
+			     (int)(*(X+24)) >= 0 && (int)(*(X+24)) <= 23 && \
+			     (int)(*(X+25)) >= 0 && (int)(*(X+25)) <= 59 && \
+			     (int)(*(X+26)) >= 0 && (int)(*(X+26)) <= 60)
 
 /* Require a large (>= 64-bit) integer type for hptime_t */
 typedef int64_t hptime_t;
@@ -308,7 +335,7 @@ typedef struct MSRecord_s {
   double          samprate;          /* Nominal sample rate (Hz) */
   int32_t         samplecnt;         /* Number of samples in record */
   int8_t          encoding;          /* Data encoding format */
-  int8_t          byteorder;         /* Orignal/Final byte order of record */
+  int8_t          byteorder;         /* Original/Final byte order of record */
   
   /* Data sample fields */
   void           *datasamples;       /* Data samples, 'numsamples' of type 'sampletype'*/
@@ -332,7 +359,7 @@ typedef struct MSTrace_s {
   void           *datasamples;       /* Data samples, 'numsamples' of type 'sampletype'*/
   int32_t         numsamples;        /* Number of data samples in datasamples */
   char            sampletype;        /* Sample type code: a, i, f, d */
-  void           *private;           /* Private pointer for general use, unused by libmseed */
+  void           *prvtptr;           /* Private pointer for general use, unused by libmseed */
   struct MSTrace_s *next;            /* Pointer to next trace */
 }
 MSTrace;
@@ -351,19 +378,20 @@ extern int          msr_unpack (char *record, int reclen, MSRecord **ppmsr,
 extern int          msr_pack (MSRecord *msr, void (*record_handler) (char *, int),
 			      int *packedsamples, flag flush, flag verbose );
 
-extern int          msr_pack_header (MSRecord *msr, flag verbose);
+extern int          msr_pack_header (MSRecord *msr, flag normalize, flag verbose);
 
 extern MSRecord*    msr_init (MSRecord *msr);
 extern void         msr_free (MSRecord **ppmsr);
 extern void         msr_free_blktchain (MSRecord *msr);
 extern BlktLink*    msr_addblockette (MSRecord *msr, char *blktdata, int length,
                                       int blkttype, int chainpos);
+extern int          msr_normalize_header ( MSRecord *msr, flag verbose );
 extern double       msr_samprate (MSRecord *msr);
 extern double       msr_nomsamprate (MSRecord *msr);
 extern hptime_t     msr_starttime (MSRecord *msr);
 extern hptime_t     msr_starttime_uc (MSRecord *msr);
 extern hptime_t     msr_endtime (MSRecord *msr);
-extern char*        msr_srcname (MSRecord *msr, char *srcname);
+extern char*        msr_srcname (MSRecord *msr, char *srcname, flag quality);
 extern void         msr_print (MSRecord *msr, flag details);
 extern double       msr_host_latency (MSRecord *msr);
 
@@ -412,7 +440,6 @@ extern int            ms_find_reclen (const char *recbuf, int recbuflen, FILE *f
 
 
 /* General use functions */
-extern int      ms_verify_header (struct fsdh_s *fsdh);
 extern int      ms_strncpclean (char *dest, const char *source, int length);
 extern int      ms_strncpopen (char *dest, const char *source, int length);
 extern int      ms_doy2md (int year, int jday, int *month, int *mday);

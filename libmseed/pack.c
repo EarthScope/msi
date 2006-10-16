@@ -7,7 +7,7 @@
  * Written by Chad Trabant,
  *   IRIS Data Management Center
  *
- * modified: 2006.124
+ * modified: 2006.251
  ***************************************************************************/
 
 #include <stdio.h>
@@ -20,7 +20,7 @@
 
 /* Function(s) internal to this file */
 static int msr_pack_header_raw (MSRecord *msr, char *rawrec, int maxheaderlen,
-				flag swapflag, flag verbose);
+				flag swapflag, flag normalize, flag verbose);
 static int msr_update_header (MSRecord * msr, char *rawrec, flag swapflag,
 			      flag verbose);
 static int msr_pack_data (void *dest, void *src,
@@ -232,7 +232,7 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
     }
 
   /* Add a blank 1000 Blockette if one is not present, the blockette values
-     will be populated in msr_pack_header_raw() */
+     will be populated in msr_pack_header_raw()/msr_normalize_header() */
   if ( ! msr->Blkt1000 )
     {
       struct blkt_1000_s blkt1000;
@@ -248,7 +248,7 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
 	}
     }
   
-  headerlen = msr_pack_header_raw (msr, rawrec, msr->reclen, headerswapflag, verbose);
+  headerlen = msr_pack_header_raw (msr, rawrec, msr->reclen, headerswapflag, 1, verbose);
   
   if ( headerlen == -1 )
     {
@@ -359,7 +359,7 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
  * Returns the header length in bytes on success and -1 on error.
  ***************************************************************************/
 int
-msr_pack_header ( MSRecord *msr, flag verbose )
+msr_pack_header ( MSRecord *msr, flag normalize, flag verbose )
 {
   char *envvariable;
   flag headerswapflag = 0;
@@ -442,7 +442,7 @@ msr_pack_header ( MSRecord *msr, flag verbose )
     }
   
   headerlen = msr_pack_header_raw (msr, msr->record, maxheaderlen,
-				   headerswapflag, verbose);
+				   headerswapflag, normalize, verbose);
   
   return headerlen;
 }
@@ -457,21 +457,37 @@ msr_pack_header ( MSRecord *msr, flag verbose )
  ***************************************************************************/
 static int
 msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
-		      flag swapflag, flag verbose )
+		      flag swapflag, flag normalize, flag verbose )
 {
   struct blkt_link_s *cur_blkt;
-  char seqnum[7];
   int16_t offset;
   int blktcnt = 0;
   int nextoffset;
-  int reclenexp = 0;
-  int reclenfind;
   
   struct fsdh_s *fsdh;
   
   if ( ! msr || ! rawrec )
     return -1;
   
+  /* Make sure a fixed section of data header is available */
+  if ( ! msr->fsdh )
+    {
+      msr->fsdh = (struct fsdh_s *) malloc (sizeof (struct fsdh_s));
+      if ( msr->fsdh == NULL )
+	{
+	  fprintf (stderr, "msr_pack_header_raw(): Error allocating memory\n");
+	  return -1;
+	}
+    }
+  
+  /* Update the SEED structures associated with the MSRecord */
+  if ( normalize )
+    if ( msr_normalize_header (msr, verbose) < 0 )
+      {
+	fprintf (stderr, "msr_pack_header_raw(): error normalizing header values\n");
+	return -1;
+      }
+
   if ( verbose > 2 )
     fprintf (stderr, "Packing fixed section of data header\n");
   
@@ -496,36 +512,18 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
   if ( msr->sequence_number > 999999 )
     msr->sequence_number = 1;
   
-  /* Use any existing msr->fsdh fixed section as a base template */
-  if ( msr->fsdh )
-    memcpy (fsdh, msr->fsdh, sizeof(struct fsdh_s));
-  else
-    memset (fsdh, 0, sizeof(struct fsdh_s));
-  
-  /* Pack values into the fixed section of header */
-  snprintf (seqnum, 7, "%06d", msr->sequence_number);
-  memcpy (fsdh->sequence_number, seqnum, 6);
-  fsdh->dataquality = msr->dataquality;
-  fsdh->reserved = ' ';
-  ms_strncpopen (fsdh->network, msr->network, 2);
-  ms_strncpopen (fsdh->station, msr->station, 5);
-  ms_strncpopen (fsdh->location, msr->location, 2);
-  ms_strncpopen (fsdh->channel, msr->channel, 3);
-  ms_hptime2btime (msr->starttime, &(fsdh->start_time));
-  ms_genfactmult (msr->samprate, &(fsdh->samprate_fact), &(fsdh->samprate_mult));
-  
-  if ( msr->blkts )
-    fsdh->blockette_offset = offset;
-  else
-    fsdh->blockette_offset = 0;
+  /* Copy FSDH associated with the MSRecord into the record */  
+  memcpy (fsdh, msr->fsdh, sizeof(struct fsdh_s));
   
   /* Swap byte order? */
   if ( swapflag )
     {
       SWAPBTIME (&fsdh->start_time);
+      gswap2 (&fsdh->numsamples);
       gswap2 (&fsdh->samprate_fact);
       gswap2 (&fsdh->samprate_mult);
       gswap4 (&fsdh->time_correct);
+      gswap2 (&fsdh->data_offset);
       gswap2 (&fsdh->blockette_offset);
     }
   
@@ -554,8 +552,6 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
 	  memcpy (blkt_100, cur_blkt->blktdata, sizeof (struct blkt_100_s));
 	  offset += sizeof (struct blkt_100_s);
 	  
-	  blkt_100->samprate = msr->samprate;
-
 	  if ( swapflag )
 	    {
 	      gswap4 (&blkt_100->samprate);
@@ -716,43 +712,16 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
 	  memcpy (blkt_1000, cur_blkt->blktdata, sizeof (struct blkt_1000_s));
 	  offset += sizeof (struct blkt_1000_s);
 	  
+	  /* This guarantees that the byte order is in sync with msr_pack() */
 	  if ( databyteorder >= 0 )
 	    blkt_1000->byteorder = databyteorder;
-	  else
-	    blkt_1000->byteorder = msr->byteorder;
-	  
-	  blkt_1000->encoding = msr->encoding;
-
-	  /* Calculate the record length as an exponent of 2 */
-	  for (reclenfind=1, reclenexp=1; reclenfind <= MAXRECLEN; reclenexp++)
-	    {
-	      reclenfind *= 2;
-	      if ( reclenfind == msr->reclen ) break;
-	    }
-	  
-	  if ( reclenfind != msr->reclen )
-	    {
-	      fprintf (stderr, "msr_pack_header_raw(): Record length %d is not a power of 2\n",
-		       msr->reclen);
-	      return -1;
-	    }
-	  
-	  blkt_1000->reclen = reclenexp;
 	}
       
       else if ( cur_blkt->blkt_type == 1001 )
 	{
-	  hptime_t sec, usec;
 	  struct blkt_1001_s *blkt_1001 = (struct blkt_1001_s *) (rawrec + offset);
 	  memcpy (blkt_1001, cur_blkt->blktdata, sizeof (struct blkt_1001_s));
 	  offset += sizeof (struct blkt_1001_s);
-	  
-	  /* Insert microseconds offset */
-	  sec = msr->starttime / (HPTMODULUS / 10000);
-	  usec = msr->starttime - (sec * (HPTMODULUS / 10000));
-	  usec /= (HPTMODULUS / 1000000);
-	  
-	  blkt_1001->usec = (int8_t) usec;
 	}
 
       else if ( cur_blkt->blkt_type == 2000 )

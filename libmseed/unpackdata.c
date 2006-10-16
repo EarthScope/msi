@@ -13,7 +13,7 @@
  *  (previously) ORFEUS/EC-Project MEREDIAN
  *  (currently) IRIS Data Management Center
  *
- *  modified: 2006.173
+ *  modified: 2006.283
  ************************************************************************/
 
 /*
@@ -248,10 +248,10 @@ int msr_unpack_steim1
 	      /* Next 4 bytes are 2 2-byte differences */
 	      for (i=0; i < 2 && nd < num_samples; i++, nd++)
 		{
-		  if (swapflag)
+		  if ( swapflag )
 		    {
 		      stmp = pf->w[wn].hw[i];
-		      if ( swapflag ) gswap2 (&stmp);
+		      gswap2 (&stmp);
 		      *diff++ = stmp;
 		    }
 		  else *diff++ = pf->w[wn].hw[i];
@@ -260,10 +260,10 @@ int msr_unpack_steim1
 	      
 	    case STEIM1_FULLWORD_MASK:
 	      /* Next 4 bytes are 1 4-byte difference */
-	      if (swapflag)
+	      if ( swapflag )
 		{
 		  itmp = pf->w[wn].fw;
-		  if ( swapflag ) gswap4 (&itmp);
+		  gswap4 (&itmp);
 		  *diff++ = itmp;
 		}
 	      else *diff++ = pf->w[wn].fw;
