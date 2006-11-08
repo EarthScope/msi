@@ -304,7 +304,7 @@ main (int argc, char **argv)
     
   if ( tracegapsum || tracegaponly )
     {
-      mst_groupsort (mstg);
+      mst_groupsort (mstg, dataquality);
       
       if ( traceheal )
 	mst_groupheal (mstg, -1.0, -1.0);
