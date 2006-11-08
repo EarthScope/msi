@@ -1,3 +1,13 @@
+2006.312: 2.0pre5
+	- Add MS_ISVALIDBLANK macro to libmseed.h to test memory for valid
+	blank/noise records: valid sequence number followed by ASCII spaces.
+	- Use MS_ISVALIDBLANK in ms_find_reclen() to implicitly find record
+	lengths, when reading ahead the record length can now be determined
+	if then next record is a real data record or a blank record.
+	- Use MS_ISVALIDBLANK in ms_readmsr() to print out a more specific
+	message when skipping blank records as opposed to non-data records
+	records.
+
 2006.311: 2.0pre4
 	- Use MS_ISVALIDHEADER instead of MS_ISDATAINDICATOR when verifying
 	data records when the record length is not autodetected in ms_readmsr().

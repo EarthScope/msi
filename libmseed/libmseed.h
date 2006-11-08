@@ -30,8 +30,8 @@ extern "C" {
 
 #include "lmplatform.h"
 
-#define LIBMSEED_VERSION "2.0pre4"
-#define LIBMSEED_RELEASE "2006.311"
+#define LIBMSEED_VERSION "2.0pre5"
+#define LIBMSEED_RELEASE "2006.312"
   
 #define MINRECLEN   256      /* Minimum Mini-SEED record length, 2^8 bytes */
 #define MAXRECLEN   1048576  /* Maximum Mini-SEED record length, 2^20 bytes */
@@ -99,6 +99,38 @@ extern "C" {
 			     (int)(*(X+24)) >= 0 && (int)(*(X+24)) <= 23 && \
 			     (int)(*(X+25)) >= 0 && (int)(*(X+25)) <= 59 && \
 			     (int)(*(X+26)) >= 0 && (int)(*(X+26)) <= 60)
+
+/* Macro to test memory for a blank/noise SEED data record signature
+ * by checking for a valid SEED sequence number and padding characters
+ * to determine if the memory contains a valid blank/noise record.
+ * 
+ * Offset = Value
+ * [0-5]  = Digits, SEED sequence number
+ * [6-47] = Space character (ASCII 32), remainder of fixed header
+ *
+ * Usage:
+ *   MS_ISVALIDBLANK ((char *)X)  X buffer must contain at least 27 bytes
+ */
+#define MS_ISVALIDBLANK(X) (isdigit ((unsigned char) *(X)) &&                 \
+			    isdigit ((unsigned char) *(X+1)) &&		      \
+			    isdigit ((unsigned char) *(X+2)) &&		      \
+			    isdigit ((unsigned char) *(X+3)) &&		      \
+			    isdigit ((unsigned char) *(X+4)) &&		      \
+			    isdigit ((unsigned char) *(X+5)) &&	 	      \
+			    (*(X+6)==' ')&&(*(X+7)==' ')&&(*(X+8)==' ') &&    \
+			    (*(X+9)==' ')&&(*(X+10)==' ')&&(*(X+11)==' ') &&  \
+			    (*(X+12)==' ')&&(*(X+13)==' ')&&(*(X+14)==' ') && \
+			    (*(X+15)==' ')&&(*(X+16)==' ')&&(*(X+17)==' ') && \
+			    (*(X+18)==' ')&&(*(X+19)==' ')&&(*(X+20)==' ') && \
+			    (*(X+21)==' ')&&(*(X+22)==' ')&&(*(X+23)==' ') && \
+			    (*(X+24)==' ')&&(*(X+25)==' ')&&(*(X+26)==' ') && \
+			    (*(X+27)==' ')&&(*(X+28)==' ')&&(*(X+29)==' ') && \
+			    (*(X+30)==' ')&&(*(X+31)==' ')&&(*(X+32)==' ') && \
+			    (*(X+33)==' ')&&(*(X+34)==' ')&&(*(X+35)==' ') && \
+			    (*(X+36)==' ')&&(*(X+37)==' ')&&(*(X+38)==' ') && \
+			    (*(X+39)==' ')&&(*(X+40)==' ')&&(*(X+41)==' ') && \
+			    (*(X+42)==' ')&&(*(X+43)==' ')&&(*(X+44)==' ') && \
+			    (*(X+45)==' ')&&(*(X+46)==' ')&&(*(X+47)==' ') )
 
 /* Require a large (>= 64-bit) integer type for hptime_t */
 typedef int64_t hptime_t;

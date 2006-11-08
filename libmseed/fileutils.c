@@ -4,7 +4,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2006.311
+ * modified: 2006.312
  ***************************************************************************/
 
 #include <stdio.h>
@@ -285,8 +285,14 @@ ms_readmsr (MSRecord **ppmsr, char *msfile, int reclen, off_t *fpos,
 	  if ( detsize == -1 && skipnotdata && ! packinfolen )
 	    {
 	      if ( verbose > 1 )
-		fprintf (stderr, "Skipped non-data record at byte offset %lld\n",
-			 (long long) filepos - readlen);
+		{
+		  if ( MS_ISVALIDBLANK((char *)rawrec) )
+		    fprintf (stderr, "Skipped %d bytes of blank/noise record at byte offset %lld\n",
+			     readlen, (long long) filepos - readlen);
+		  else
+		    fprintf (stderr, "Skipped %d bytes of non-data record at byte offset %lld\n",
+			     readlen, (long long) filepos - readlen);
+		}
 	    }
 	  /* Otherwise read more */
 	  else
@@ -477,8 +483,12 @@ ms_readmsr (MSRecord **ppmsr, char *msfile, int reclen, off_t *fpos,
 	    }
 	  else if ( verbose > 1 )
 	    {
-	      fprintf (stderr, "Skipped non-data record at byte offset %lld\n",
-		       (long long) filepos - readlen);
+	      if ( MS_ISVALIDBLANK((char *)rawrec) )
+		fprintf (stderr, "Skipped %d bytes of blank/noise record at byte offset %lld\n",
+			 readlen, (long long) filepos - readlen);
+	      else
+		fprintf (stderr, "Skipped %d bytes of non-data record at byte offset %lld\n",
+			 readlen, (long long) filepos - readlen);
 	    }
 	}
       else
@@ -581,8 +591,9 @@ ms_readtraces (MSTraceGroup **ppmstg, char *msfile, int reclen,
  *
  * 3) If no blockette 1000 is found and fileptr is not NULL, read the
  * next 48 bytes from the file and determine if it is the fixed second
- * of another record, thereby implying the record length is recbuflen.
- * The original read position of the file is restored.
+ * of another record or blank/noise record, thereby implying the
+ * record length is recbuflen.  The original read position of the file
+ * is restored.
  *
  * Returns:
  * -1 : data record not detected or error
@@ -648,6 +659,8 @@ ms_find_reclen ( const char *recbuf, int recbuflen, FILE *fileptr )
       blkt_offset = next_blkt;
     }
   
+  /* If record length was not determined by a 1000 blockette scan the file
+   * and search for the next record */
   if ( reclen == -1 && fileptr )
     {
       /* Read data into record buffer */
@@ -675,8 +688,8 @@ ms_find_reclen ( const char *recbuf, int recbuflen, FILE *fileptr )
 	      return -1;
 	    }
 	  
-	  /* Check for fixed header */
-	  if ( MS_ISVALIDHEADER((char *)nextfsdh) )
+	  /* Check for next fixed header */
+	  if ( MS_ISVALIDHEADER((char *)nextfsdh) || MS_ISVALIDBLANK((char *)nextfsdh) )
 	    {
 	      foundlen = 1;
 	      reclen = recbuflen;
