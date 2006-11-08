@@ -13,7 +13,7 @@
  *   ORFEUS/EC-Project MEREDIAN
  *   IRIS Data Management Center
  *
- * modified: 2006.182
+ * modified: 2006.311
  ***************************************************************************/
 
 #include <stdio.h>
@@ -704,9 +704,15 @@ msr_unpack_data ( MSRecord *msr, int swapflag, int verbose )
   unpacksize = msr->samplecnt * samplesize;
   
   /* (Re)Allocate space for the unpacked data */
-  if ( unpacksize != 0 )
+  if ( unpacksize > 0 )
     {
       msr->datasamples = realloc (msr->datasamples, unpacksize);
+      
+      if ( msr->datasamples == NULL )
+	{
+	  fprintf (stderr, "msr_unpack_data(): Error (re)allocating memory\n");
+	  return MS_GENERROR;
+	}
     }
   else
     {
@@ -714,12 +720,6 @@ msr_unpack_data ( MSRecord *msr, int swapflag, int verbose )
 	free (msr->datasamples);
       msr->datasamples = 0;
       msr->numsamples = 0;
-    }
-  
-  if ( msr->datasamples == NULL )
-    {
-      fprintf (stderr, "msr_unpack_data(): Error (re)allocating memory\n");
-      return MS_GENERROR;
     }
   
   datasize = msr->reclen - msr->fsdh->data_offset;
@@ -809,7 +809,7 @@ msr_unpack_data ( MSRecord *msr, int swapflag, int verbose )
       
       if ( verbose > 1 )
 	fprintf (stderr, "Unpacking Steim-2 data frames\n");
-
+      
       nsamples = msr_unpack_steim2 ((FRAME *)dbuf, datasize, msr->samplecnt,
 				    msr->samplecnt, msr->datasamples, diffbuff,
 				    &x0, &xn, swapflag, verbose);
@@ -818,8 +818,8 @@ msr_unpack_data ( MSRecord *msr, int swapflag, int verbose )
       break;
       
     default:
-      fprintf (stderr, "Unable to unpack encoding format %d for %s_%s_%s_%s\n",
-	       msr->encoding,
+      fprintf (stderr, "Unsupported encoding format %d (%s) for %s_%s_%s_%s\n",
+	       msr->encoding, (char *) get_encoding(msr->encoding),
 	       msr->network, msr->station,
 	       msr->location, msr->channel);
       

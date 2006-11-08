@@ -4,7 +4,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2006.283
+ * modified: 2006.311
  ***************************************************************************/
 
 #include <stdio.h>
@@ -214,7 +214,7 @@ ms_readmsr (MSRecord **ppmsr, char *msfile, int reclen, off_t *fpos,
 
 	      if ( recordcount == 0 )
 		{
-		  if ( verbose )
+		  if ( verbose > 0 )
 		    fprintf (stderr, "%s: No data records read, not SEED?\n", msfile);
 		  retcode = MS_NOTSEED;
 		}
@@ -265,7 +265,7 @@ ms_readmsr (MSRecord **ppmsr, char *msfile, int reclen, off_t *fpos,
 		{
 		  char infostr[30];
 		  
-		  if ( verbose )
+		  if ( verbose > 0 )
 		    fprintf (stderr, "Detected packed file (%3.3s: type %d)\n", rawrec, packtype);
 		  
 		  /* Assuming data size length is 8 bytes at the end of the pack info */
@@ -356,7 +356,7 @@ ms_readmsr (MSRecord **ppmsr, char *msfile, int reclen, off_t *fpos,
 
 	      if ( recordcount == 0 )
 		{
-		  if ( verbose )
+		  if ( verbose > 0 )
 		    fprintf (stderr, "%s: No data records read, not SEED?\n", msfile);
 		  retcode = MS_NOTSEED;
 		}
@@ -402,7 +402,7 @@ ms_readmsr (MSRecord **ppmsr, char *msfile, int reclen, off_t *fpos,
       return MS_NOERROR;
     }
   
-  /* Read subsequent records */
+  /* Read subsequent records or initial forced length record */
   for (;;)
     {
       /* Read packed file info */
@@ -446,7 +446,7 @@ ms_readmsr (MSRecord **ppmsr, char *msfile, int reclen, off_t *fpos,
 	  
 	  if ( recordcount == 0 )
 	    {
-	      if ( verbose )
+	      if ( verbose > 0 )
 		fprintf (stderr, "%s: No data records read, not SEED?\n", msfile);
 	      retcode = MS_NOTSEED;
 	    }
@@ -471,7 +471,7 @@ ms_readmsr (MSRecord **ppmsr, char *msfile, int reclen, off_t *fpos,
       
       if ( skipnotdata )
 	{
-	  if ( MS_ISDATAINDICATOR(*(rawrec+6)) )
+	  if ( MS_ISVALIDHEADER(rawrec) )
 	    {
 	      break;
 	    }
@@ -529,8 +529,8 @@ ms_readmsr (MSRecord **ppmsr, char *msfile, int reclen, off_t *fpos,
  * detected.
  *
  * Returns MS_NOERROR and populates an MSTraceGroup struct at *ppmstg
- * on successful read, returns MS_ENDOFFILE on EOF, otherwise returns
- * a libmseed error code (listed in libmseed.h).
+ * on successful read, otherwise returns a libmseed error code (listed
+ * in libmseed.h).
  *********************************************************************/
 int
 ms_readtraces (MSTraceGroup **ppmstg, char *msfile, int reclen,
@@ -538,7 +538,7 @@ ms_readtraces (MSTraceGroup **ppmstg, char *msfile, int reclen,
 	       flag skipnotdata, flag dataflag, flag verbose)
 {
   MSRecord *msr = 0;
-  int retcode = MS_NOERROR;
+  int retcode;
   
   if ( ! ppmstg )
     return MS_GENERROR;
@@ -558,6 +558,10 @@ ms_readtraces (MSTraceGroup **ppmstg, char *msfile, int reclen,
     {
       mst_addmsrtogroup (*ppmstg, msr, dataquality, timetol, sampratetol);
     }
+  
+  /* Reset return code to MS_NOERROR on successful read by ms_readmsr() */
+  if ( retcode == MS_ENDOFFILE )
+    retcode = MS_NOERROR;
   
   ms_readmsr (&msr, NULL, 0, NULL, NULL, 0, 0, 0);
   

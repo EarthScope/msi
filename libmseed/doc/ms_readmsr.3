@@ -1,4 +1,4 @@
-.TH MS_READMSR 3 2006/06/21 "Libmseed API"
+.TH MS_READMSR 3 2006/10/18 "Libmseed API"
 .SH DESCRIPTION
 Read Mini-SEED data from files
 
@@ -80,9 +80,8 @@ MS_ENDOFFILE.  On error \fBms_readmsr\fP returns a libmseed error code
 
 On the sucessful read and parsing of a file \fBms_readtraces\fP
 returns MS_NOERROR and populates the MSTraceGroup struct at
-\fI*ppmstg\fP.  Upon reaching the end of the input file
-\fBms_readmstg\fP returns MS_ENDOFFILE.  On error \fBms_readmsr\fP
-returns a libmseed error code (defined in libmseed.h)
+\fI*ppmstg\fP.  On error \fBms_readtraces\fP returns a libmseed error
+code (defined in libmseed.h)
 
 .SH PACKED FILES
 \fBms_readmsr\fP and \fBms_readtraces\fP will read packed Mini-SEED
@@ -126,12 +125,12 @@ main() {
 
   retcode = msr_readtraces (&mstg, filename, 0, -1.0, -1.0, 0, 1, 0, verbose);
 
-  if ( retcode != MS_ENDOFFILE )
+  if ( retcode != MS_NOERROR )
     fprintf (stderr, "Error reading input file %s\\n", filename);
 
   retcode = msr_readtraces (&mstg, filename2, 0, -1.0, -1.0, 0, 1, 0, verbose);
 
-  if ( retcode != MS_ENDOFFILE )
+  if ( retcode != MS_NOERROR )
     fprintf (stderr, "Error reading input file %s\\n", filename2);
 
   if ( ! mstg )

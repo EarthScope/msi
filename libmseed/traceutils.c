@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2006.283
+ * modified: 2006.296
  ***************************************************************************/
 
 #include <stdio.h>
@@ -243,7 +243,7 @@ mst_findadjacent ( MSTraceGroup *mstg, flag *whence, char dataquality,
 		}
 	    }
 	  /* Otherwise check against the specified sample rate tolerance */
-	  else if ( ms_dabs (samprate - mst->samprate) > sampratetol )
+	  else if ( ms_dabs(samprate - mst->samprate) > sampratetol )
 	    {
 	      mst = mst->next;
 	      continue;
@@ -705,7 +705,7 @@ mst_groupheal ( MSTraceGroup *mstg, double timetol, double sampratetol )
 		}
 	    }
 	  /* Otherwise check against the specified sample rates tolerance */
-	  else if ( ms_dabs (searchtrace->samprate - curtrace->samprate) > sampratetol )
+	  else if ( ms_dabs(searchtrace->samprate - curtrace->samprate) > sampratetol )
 	    {
 	      prevtrace = searchtrace;
 	      continue;
@@ -789,7 +789,7 @@ mst_groupheal ( MSTraceGroup *mstg, double timetol, double sampratetol )
  * Return 0 on success and -1 on error.
  ***************************************************************************/
 int
-mst_groupsort ( MSTraceGroup *mstg )
+mst_groupsort ( MSTraceGroup *mstg, flag quality )
 {
   MSTrace *mst, *pmst;
   char src1[50], src2[50];
@@ -814,8 +814,8 @@ mst_groupsort ( MSTraceGroup *mstg )
       while ( mst->next ) {
 	swap = 0;
 	
-	mst_srcname (mst, src1);
-	mst_srcname (mst->next, src2);
+	mst_srcname (mst, src1, quality);
+	mst_srcname (mst->next, src2, quality);
 	
 	strcmpval = strcmp (src1, src2);
 	
@@ -888,20 +888,21 @@ mst_groupsort ( MSTraceGroup *mstg )
  * mst_srcname:
  *
  * Generate a source name string for a specified MSTrace in the
- * format: 'NET_STA_LOC_CHAN[_QUAL]'.  If mst->dataquality is not zero
- * the quality indicator is appended to the source name.  The passed
- * srcname must have enough room for the resulting string.
+ * format: 'NET_STA_LOC_CHAN[_QUAL]'.  The quality is added to the
+ * srcname if the quality flag argument is 1 and mst->dataquality is
+ * not zero.  The passed srcname must have enough room for the
+ * resulting string.
  *
  * Returns a pointer to the resulting string or NULL on error.
  ***************************************************************************/
 char *
-mst_srcname (MSTrace *mst, char *srcname)
+mst_srcname (MSTrace *mst, char *srcname, flag quality)
 {
   if ( ! mst )
     return NULL;
   
   /* Build the source name string */
-  if ( mst->dataquality )
+  if ( quality == 1 && mst->dataquality )
     sprintf (srcname, "%s_%s_%s_%s_%c",
 	     mst->network, mst->station,
 	     mst->location, mst->channel, mst->dataquality);
@@ -970,7 +971,7 @@ mst_printtracelist ( MSTraceGroup *mstg, flag timeformat,
   
   while ( mst )
     {
-      mst_srcname (mst, srcname);
+      mst_srcname (mst, srcname, 1);
       
       /* Create formatted time strings */
       if ( timeformat == 2 )
@@ -1097,8 +1098,8 @@ mst_printgaplist (MSTraceGroup *mstg, flag timeformat,
   
   while ( mst->next )
     {
-      mst_srcname (mst, src1);
-      mst_srcname (mst->next, src2);
+      mst_srcname (mst, src1, 1);
+      mst_srcname (mst->next, src2, 1);
       
       if ( ! strcmp (src1, src2) )
 	{
@@ -1289,7 +1290,7 @@ mst_pack ( MSTrace *mst, void (*record_handler) (char *, int),
   
   if ( verbose > 1 )
     {
-      fprintf (stderr, "Packed %d records for %s trace\n", packedrecords, mst_srcname (mst, srcname));
+      fprintf (stderr, "Packed %d records for %s trace\n", packedrecords, mst_srcname (mst, srcname, 1));
     }
   
   /* Adjust MSTrace start time, data array and sample count */
@@ -1378,7 +1379,7 @@ mst_packgroup ( MSTraceGroup *mstg, void (*record_handler) (char *, int),
 	{
 	  if ( verbose > 1 )
 	    {
-	      mst_srcname (mst, srcname);
+	      mst_srcname (mst, srcname, 1);
 	      fprintf (stderr, "No data samples for %s, skipping\n", srcname);
 	    }
 	}

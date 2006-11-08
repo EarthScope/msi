@@ -1,3 +1,25 @@
+2006.311: 2.0pre4
+	- Use MS_ISVALIDHEADER instead of MS_ISDATAINDICATOR when verifying
+	data records when the record length is not autodetected in ms_readmsr().
+	- In msr_unpack_data() move the test of reallocation directly after
+	the reallocation so it's only tested when actually done.
+	- In msr_unpack_data() include text description of encoding in the
+	unsupported encoding error message.
+
+2006.296: 2.0pre3
+	- Add 'quality' flag argument to mst_srcname() to control the 
+	addition of the quality indicator in the srcname.
+	- Add 'quality' flag argument to mst_groupsort() to control the
+	inclusion of quality indicator in the sorting.
+
+2006.292: 2.0pre2
+	- Use memory-aligned swap functions in unpackdata.c for speed.
+
+2006.291:
+	- Fix return type of ms_readtraces() on success and documentation.
+	- Tweak verbose flag checking in fileutils.c to avoid spurious msgs.
+        - Add gcc32gprof and gcc64gprof targets to Makefiles for profiling.
+
 2006.284: 2.0pre
 	- Fix dynamic target and update API version in Makefile.
         - Require GCC for shared and dynamic library building.

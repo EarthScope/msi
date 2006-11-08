@@ -13,7 +13,7 @@
  *  (previously) ORFEUS/EC-Project MEREDIAN
  *  (currently) IRIS Data Management Center
  *
- *  modified: 2006.283
+ *  modified: 2006.292
  ************************************************************************/
 
 /*
@@ -210,8 +210,8 @@ int msr_unpack_steim1
   
   if ( swapflag )
     {
-      gswap4 (px0);
-      gswap4 (pxn);
+      gswap4a (px0);
+      gswap4a (pxn);
     }
   
   if ( verbose > 2 )
@@ -223,7 +223,7 @@ int msr_unpack_steim1
     {
       
       ctrl = pf->ctrl;
-      if ( swapflag ) gswap4 (&ctrl);
+      if ( swapflag ) gswap4a (&ctrl);
 
       for (wn = 0; wn < VALS_PER_FRAME; wn++)
 	{
@@ -251,7 +251,7 @@ int msr_unpack_steim1
 		  if ( swapflag )
 		    {
 		      stmp = pf->w[wn].hw[i];
-		      gswap2 (&stmp);
+		      gswap2a (&stmp);
 		      *diff++ = stmp;
 		    }
 		  else *diff++ = pf->w[wn].hw[i];
@@ -263,7 +263,7 @@ int msr_unpack_steim1
 	      if ( swapflag )
 		{
 		  itmp = pf->w[wn].fw;
-		  gswap4 (&itmp);
+		  gswap4a (&itmp);
 		  *diff++ = itmp;
 		}
 	      else *diff++ = pf->w[wn].fw;
@@ -376,8 +376,8 @@ int msr_unpack_steim2
   
   if ( swapflag )
     {
-      gswap4 (px0);
-      gswap4 (pxn);
+      gswap4a (px0);
+      gswap4a (pxn);
     }
   
   if ( verbose > 2 )
@@ -389,7 +389,7 @@ int msr_unpack_steim2
     {
       
       ctrl = pf->ctrl;
-      if ( swapflag ) gswap4 (&ctrl);
+      if ( swapflag ) gswap4a (&ctrl);
       
       for (wn = 0; wn < VALS_PER_FRAME; wn++)
 	{
@@ -411,7 +411,7 @@ int msr_unpack_steim2
 	      
 	    case STEIM2_123_MASK:
 	      val = pf->w[wn].fw;
-	      if ( swapflag ) gswap4 (&val);
+	      if ( swapflag ) gswap4a (&val);
 	      dnib =  val >> 30 & 0x3;
 	      switch (dnib)
 		{
@@ -437,7 +437,7 @@ int msr_unpack_steim2
 	      
 	    case STEIM2_567_MASK:
 	      val = pf->w[wn].fw;
-	      if ( swapflag ) gswap4 (&val);
+	      if ( swapflag ) gswap4a (&val);
 	      dnib =  val >> 30 & 0x3;
 	      switch (dnib)
 		{

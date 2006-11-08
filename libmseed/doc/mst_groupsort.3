@@ -1,4 +1,4 @@
-.TH MST_GROUPSORT 3 2006/04/21 "Libmseed API"
+.TH MST_GROUPSORT 3 2006/10/23 "Libmseed API"
 .SH DESCRIPTION
 Manipulate MSTrace segments in a MSTraceGroup
 
@@ -6,16 +6,20 @@ Manipulate MSTrace segments in a MSTraceGroup
 .nf
 .B #include <libmseed.h>
 
-.BI "MSTrace  *\fBmst_groupsort\fP ( MSTraceGroup *" mstg " );
+.BI "MSTrace  *\fBmst_groupsort\fP ( MSTraceGroup *" mstg ", flag " quality " );
 
 .BI "MSTrace  *\fBmst_groupheal\fP ( MSTraceGroup *" mstg ", double " timetol ",
 .BI "                          double " sampratetol " );"
 .fi
 
 .SH DESCRIPTION
-\fBmst_groupsort\fP will sort the MSTrace segments in a MSTraceGroup first
-on the source name (as returned by \fBmst_srcname\fP), then on sample
-rate, then on start time and finally on descending end time.
+\fBmst_groupsort\fP will sort the MSTrace segments in a MSTraceGroup
+first on the source name (as returned by \fBmst_srcname\fP), then on
+sample rate, then on start time and finally on descending end time.
+The \fIquality\fP flag, passed directly to \fBmst_srcname\fP, controls
+the addition of the quality indicator to the source name and thus the
+addition of sorting on the quality indicator (but only if the MSTrace
+has an associated quality, see \fBmst_srcname(3)\fP for more details).
 
 \fBmst_groupheal\fP will attempt to heal MSTrace segments in a MSTraceGroup if
 they fit within the specified time and sample rate tolerance

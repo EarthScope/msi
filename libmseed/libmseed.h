@@ -30,9 +30,9 @@ extern "C" {
 
 #include "lmplatform.h"
 
-#define LIBMSEED_VERSION "2.0pre"
-#define LIBMSEED_RELEASE "2006.283"
-
+#define LIBMSEED_VERSION "2.0pre4"
+#define LIBMSEED_RELEASE "2006.311"
+  
 #define MINRECLEN   256      /* Minimum Mini-SEED record length, 2^8 bytes */
 #define MAXRECLEN   1048576  /* Maximum Mini-SEED record length, 2^20 bytes */
 
@@ -62,7 +62,7 @@ extern "C" {
  * The time value corresponds to '1902/1/1 00:00:00.000000' with the
  * default HPTMODULUS */
 #define HPTERROR -2145916800000000LL
-
+  
 /* Macros to scale between Unix/POSIX epoch time & high precision time */
 #define MS_EPOCH2HPTIME(X) X * (hptime_t) HPTMODULUS
 #define MS_HPTIME2EPOCH(X) X / HPTMODULUS
@@ -372,71 +372,71 @@ typedef struct MSTraceGroup_s {
 MSTraceGroup;
 
 /* Mini-SEED record related functions */
-extern int          msr_unpack (char *record, int reclen, MSRecord **ppmsr,
-				flag dataflag, flag verbose);
+extern int           msr_unpack (char *record, int reclen, MSRecord **ppmsr,
+				 flag dataflag, flag verbose);
 
-extern int          msr_pack (MSRecord *msr, void (*record_handler) (char *, int),
-			      int *packedsamples, flag flush, flag verbose );
+extern int           msr_pack (MSRecord *msr, void (*record_handler) (char *, int),
+		 	       int *packedsamples, flag flush, flag verbose );
 
-extern int          msr_pack_header (MSRecord *msr, flag normalize, flag verbose);
+extern int           msr_pack_header (MSRecord *msr, flag normalize, flag verbose);
 
-extern MSRecord*    msr_init (MSRecord *msr);
-extern void         msr_free (MSRecord **ppmsr);
-extern void         msr_free_blktchain (MSRecord *msr);
-extern BlktLink*    msr_addblockette (MSRecord *msr, char *blktdata, int length,
-                                      int blkttype, int chainpos);
-extern int          msr_normalize_header ( MSRecord *msr, flag verbose );
-extern double       msr_samprate (MSRecord *msr);
-extern double       msr_nomsamprate (MSRecord *msr);
-extern hptime_t     msr_starttime (MSRecord *msr);
-extern hptime_t     msr_starttime_uc (MSRecord *msr);
-extern hptime_t     msr_endtime (MSRecord *msr);
-extern char*        msr_srcname (MSRecord *msr, char *srcname, flag quality);
-extern void         msr_print (MSRecord *msr, flag details);
-extern double       msr_host_latency (MSRecord *msr);
+extern MSRecord*     msr_init (MSRecord *msr);
+extern void          msr_free (MSRecord **ppmsr);
+extern void          msr_free_blktchain (MSRecord *msr);
+extern BlktLink*     msr_addblockette (MSRecord *msr, char *blktdata, int length,
+				       int blkttype, int chainpos);
+extern int           msr_normalize_header ( MSRecord *msr, flag verbose );
+extern double        msr_samprate (MSRecord *msr);
+extern double        msr_nomsamprate (MSRecord *msr);
+extern hptime_t      msr_starttime (MSRecord *msr);
+extern hptime_t      msr_starttime_uc (MSRecord *msr);
+extern hptime_t      msr_endtime (MSRecord *msr);
+extern char*         msr_srcname (MSRecord *msr, char *srcname, flag quality);
+extern void          msr_print (MSRecord *msr, flag details);
+extern double        msr_host_latency (MSRecord *msr);
 
 
 /* MSTrace related functions */
-extern MSTrace*     mst_init (MSTrace *mst);
-extern void         mst_free (MSTrace **ppmst);
-extern MSTraceGroup*  mst_initgroup (MSTraceGroup *mstg);
-extern void         mst_freegroup (MSTraceGroup **ppmstg);
-extern MSTrace*     mst_findmatch (MSTrace *startmst, char dataquality,
-				   char *network, char *station, char *location, char *channel);
-extern MSTrace*     mst_findadjacent (MSTraceGroup *mstg, flag *whence, char dataquality,
-				      char *network, char *station, char *location, char *channel,
-				      double samprate, double sampratetol,
-				      hptime_t starttime, hptime_t endtime, double timetol);
-extern int          mst_addmsr (MSTrace *mst, MSRecord *msr, flag whence);
-extern int          mst_addspan (MSTrace *mst, hptime_t starttime,  hptime_t endtime,
-				 void *datasamples, int numsamples,
-				 char sampletype, flag whence);
-extern MSTrace*     mst_addmsrtogroup (MSTraceGroup *mstg, MSRecord *msr, flag dataquality,
-				       double timetol, double sampratetol);
-extern MSTrace*     mst_addtracetogroup (MSTraceGroup *mstg, MSTrace *mst);
-extern int          mst_groupheal (MSTraceGroup *mstg, double timetol, double sampratetol);
-extern int          mst_groupsort (MSTraceGroup *mstg);
-extern char *       mst_srcname (MSTrace *mst, char *srcname);
-extern void         mst_printtracelist (MSTraceGroup *mstg, flag timeformat,
-					flag details, flag gaps);
-extern void         mst_printgaplist (MSTraceGroup *mstg, flag timeformat,
-				      double *mingap, double *maxgap);
-extern int          mst_pack (MSTrace *mst, void (*record_handler) (char *, int),
-			      int reclen, flag encoding, flag byteorder,
-			      int *packedsamples, flag flush, flag verbose,
-			      MSRecord *mstemplate);
-extern int          mst_packgroup (MSTraceGroup *mstg, void (*record_handler) (char *, int),
-				   int reclen, flag encoding, flag byteorder,
-				   int *packedsamples, flag flush, flag verbose,
-				   MSRecord *mstemplate);
+extern MSTrace*      mst_init (MSTrace *mst);
+extern void          mst_free (MSTrace **ppmst);
+extern MSTraceGroup* mst_initgroup (MSTraceGroup *mstg);
+extern void          mst_freegroup (MSTraceGroup **ppmstg);
+extern MSTrace*      mst_findmatch (MSTrace *startmst, char dataquality,
+				    char *network, char *station, char *location, char *channel);
+extern MSTrace*      mst_findadjacent (MSTraceGroup *mstg, flag *whence, char dataquality,
+				       char *network, char *station, char *location, char *channel,
+				       double samprate, double sampratetol,
+				       hptime_t starttime, hptime_t endtime, double timetol);
+extern int           mst_addmsr (MSTrace *mst, MSRecord *msr, flag whence);
+extern int           mst_addspan (MSTrace *mst, hptime_t starttime,  hptime_t endtime,
+				  void *datasamples, int numsamples,
+				  char sampletype, flag whence);
+extern MSTrace*      mst_addmsrtogroup (MSTraceGroup *mstg, MSRecord *msr, flag dataquality,
+					double timetol, double sampratetol);
+extern MSTrace*      mst_addtracetogroup (MSTraceGroup *mstg, MSTrace *mst);
+extern int           mst_groupheal (MSTraceGroup *mstg, double timetol, double sampratetol);
+extern int           mst_groupsort (MSTraceGroup *mstg, flag quality);
+extern char *        mst_srcname (MSTrace *mst, char *srcname, flag quality);
+extern void          mst_printtracelist (MSTraceGroup *mstg, flag timeformat,
+					 flag details, flag gaps);
+extern void          mst_printgaplist (MSTraceGroup *mstg, flag timeformat,
+				       double *mingap, double *maxgap);
+extern int           mst_pack (MSTrace *mst, void (*record_handler) (char *, int),
+			       int reclen, flag encoding, flag byteorder,
+			       int *packedsamples, flag flush, flag verbose,
+			       MSRecord *mstemplate);
+extern int           mst_packgroup (MSTraceGroup *mstg, void (*record_handler) (char *, int),
+				    int reclen, flag encoding, flag byteorder,
+				    int *packedsamples, flag flush, flag verbose,
+				    MSRecord *mstemplate);
 
 
 /* Reading Mini-SEED records from files */
-extern int          ms_readmsr (MSRecord **ppmsr, char *msfile, int reclen, off_t *fpos, int *last,
-				flag skipnotdata, flag dataflag, flag verbose);
-extern int          ms_readtraces (MSTraceGroup **ppmstg, char *msfile, int reclen, double timetol, double sampratetol,
-				     flag dataquality, flag skipnotdata, flag dataflag, flag verbose);
-extern int            ms_find_reclen (const char *recbuf, int recbuflen, FILE *fileptr);
+extern int      ms_readmsr (MSRecord **ppmsr, char *msfile, int reclen, off_t *fpos, int *last,
+			    flag skipnotdata, flag dataflag, flag verbose);
+extern int      ms_readtraces (MSTraceGroup **ppmstg, char *msfile, int reclen, double timetol, double sampratetol,
+			       flag dataquality, flag skipnotdata, flag dataflag, flag verbose);
+extern int      ms_find_reclen (const char *recbuf, int recbuflen, FILE *fileptr);
 
 
 /* General use functions */
@@ -459,23 +459,23 @@ extern int      ms_bigendianhost ();
 extern double   ms_dabs (double val);
 
 /* Lookup functions */
-extern uint8_t   get_samplesize (const char sampletype);
-extern char     *get_encoding (const char encoding);
-extern char     *get_blktdesc (uint16_t blkttype);
-extern uint16_t  get_blktlen (uint16_t blkttype, const char *blktdata, flag swapflag);
-extern char *    get_errorstr (int errorcode);
+extern uint8_t  get_samplesize (const char sampletype);
+extern char*    get_encoding (const char encoding);
+extern char*    get_blktdesc (uint16_t blkttype);
+extern uint16_t get_blktlen (uint16_t blkttype, const char *blktdata, flag swapflag);
+extern char *   get_errorstr (int errorcode);
 
 
 /* Generic byte swapping routines */
-extern void   gswap2 ( void *data2 );
-extern void   gswap3 ( void *data3 );
-extern void   gswap4 ( void *data4 );
-extern void   gswap8 ( void *data8 );
+extern void     gswap2 ( void *data2 );
+extern void     gswap3 ( void *data3 );
+extern void     gswap4 ( void *data4 );
+extern void     gswap8 ( void *data8 );
 
 /* Generic byte swapping routines for memory aligned quantities */
-extern void   gswap2a ( void *data2 );
-extern void   gswap4a ( void *data4 );
-extern void   gswap8a ( void *data8 );
+extern void     gswap2a ( void *data2 );
+extern void     gswap4a ( void *data4 );
+extern void     gswap8a ( void *data8 );
 
 /* Byte swap macro for the BTime struct */
 #define SWAPBTIME(x) \

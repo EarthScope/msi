@@ -44,6 +44,12 @@ gcc32debug:
 gcc64debug:
 	$(MAKE) "CC=$(GCC)" "CFLAGS=-g -m64 $(GCCFLAGS)"
 
+gcc32gprof:
+	$(MAKE) "CC=$(GCC)" "CFLAGS=-pg -m32 $(GCCFLAGS)"
+
+gcc64gprof:
+	$(MAKE) "CC=$(GCC)" "CFLAGS=-pg -m64 $(GCCFLAGS)"
+
 install:
 	@echo
 	@echo "No install target, copy the executable(s) yourself"
