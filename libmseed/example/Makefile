@@ -7,7 +7,7 @@ GCC = gcc
 GCCFLAGS = -O2 -Wall -I..
 
 LDFLAGS = -L..
-LDLIBS = -lmseed
+LDLIBS = -lmseed -lm
 
 all: msview msrepack
 

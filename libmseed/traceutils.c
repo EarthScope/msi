@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2006.296
+ * modified: 2006.326
  ***************************************************************************/
 
 #include <stdio.h>
@@ -42,7 +42,7 @@ mst_init ( MSTrace *mst )
   
   if ( mst == NULL )
     {
-      fprintf (stderr, "mst_init(): error allocating memory\n");
+      ms_log (2, "mst_init(): error allocating memory\n");
       return NULL;
     }
   
@@ -111,7 +111,7 @@ mst_initgroup ( MSTraceGroup *mstg )
   
   if ( mstg == NULL )
     {
-      fprintf (stderr, "mst_initgroup(): Error allocating memory\n");
+      ms_log (2, "mst_initgroup(): Error allocating memory\n");
       return NULL;
     }
   
@@ -321,21 +321,21 @@ mst_addmsr ( MSTrace *mst, MSRecord *msr, flag whence )
       /* Check that the entire record was decompressed */
       if ( msr->samplecnt != msr->numsamples )
 	{
-	  fprintf (stderr, "mst_addmsr(): Sample counts do not match, record not fully decompressed?\n");
-	  fprintf (stderr, "  The sample buffer will likely contain a discontinuity.\n");
+	  ms_log (2, "mst_addmsr(): Sample counts do not match, record not fully decompressed?\n");
+	  ms_log (2, "  The sample buffer will likely contain a discontinuity.\n");
 	}
 
       if ( (samplesize = get_samplesize(msr->sampletype)) == 0 )
 	{
-	  fprintf (stderr, "mst_addmsr(): Unrecognized sample type: '%c'\n",
-		   msr->sampletype);
+	  ms_log (2, "mst_addmsr(): Unrecognized sample type: '%c'\n",
+		  msr->sampletype);
 	  return -1;
 	}
     
       if ( msr->sampletype != mst->sampletype )
 	{
-	  fprintf (stderr, "mst_addmsr(): Mismatched sample type, '%c' and '%c'\n",
-		   msr->sampletype, mst->sampletype);
+	  ms_log (2, "mst_addmsr(): Mismatched sample type, '%c' and '%c'\n",
+		  msr->sampletype, mst->sampletype);
 	  return -1;
 	}
       
@@ -345,7 +345,7 @@ mst_addmsr ( MSTrace *mst, MSRecord *msr, flag whence )
       
       if ( mst->datasamples == NULL )
 	{
-	  fprintf (stderr, "mst_addmsr(): Error allocating memory\n");
+	  ms_log (2, "mst_addmsr(): Error allocating memory\n");
 	  return -1;
 	}
     }
@@ -366,7 +366,7 @@ mst_addmsr ( MSTrace *mst, MSRecord *msr, flag whence )
       
       if ( mst->endtime == HPTERROR )
 	{
-	  fprintf (stderr, "mst_addmsr(): Error calculating record end time\n");
+	  ms_log (2, "mst_addmsr(): Error calculating record end time\n");
 	  return -1;
 	}
     }
@@ -432,15 +432,15 @@ mst_addspan ( MSTrace *mst, hptime_t starttime, hptime_t endtime,
     {
       if ( (samplesize = get_samplesize(sampletype)) == 0 )
 	{
-	  fprintf (stderr, "mst_addspan(): Unrecognized sample type: '%c'\n",
-		   sampletype);
+	  ms_log (2, "mst_addspan(): Unrecognized sample type: '%c'\n",
+		  sampletype);
 	  return -1;
 	}
       
       if ( sampletype != mst->sampletype )
 	{
-	  fprintf (stderr, "mst_addspan(): Mismatched sample type, '%c' and '%c'\n",
-		   sampletype, mst->sampletype);
+	  ms_log (2, "mst_addspan(): Mismatched sample type, '%c' and '%c'\n",
+		  sampletype, mst->sampletype);
 	  return -1;
 	}
       
@@ -450,7 +450,7 @@ mst_addspan ( MSTrace *mst, hptime_t starttime, hptime_t endtime,
       
       if ( mst->datasamples == NULL )
 	{
-	  fprintf (stderr, "mst_addspan(): Error allocating memory\n");
+	  ms_log (2, "mst_addspan(): Error allocating memory\n");
 	  return -1;
 	}
     }
@@ -532,7 +532,7 @@ mst_addmsrtogroup ( MSTraceGroup *mstg, MSRecord *msr, flag dataquality,
   
   if ( endtime == HPTERROR )
     {
-      fprintf (stderr, "mst_addmsrtogroup(): Error calculating record end time\n");
+      ms_log (2, "mst_addmsrtogroup(): Error calculating record end time\n");
       return 0;
     }
   
@@ -957,13 +957,13 @@ mst_printtracelist ( MSTraceGroup *mstg, flag timeformat,
   
   /* Print out the appropriate header */
   if ( details > 0 && gaps > 0 )
-    printf ("   Source                Start sample             End sample        Gap  Hz  Samples\n");
+    ms_log (0, "   Source                Start sample             End sample        Gap  Hz  Samples\n");
   else if ( details <= 0 && gaps > 0 )
-    printf ("   Source                Start sample             End sample        Gap\n");
+    ms_log (0, "   Source                Start sample             End sample        Gap\n");
   else if ( details > 0 && gaps <= 0 )
-    printf ("   Source                Start sample             End sample        Hz  Samples\n");
+    ms_log (0, "   Source                Start sample             End sample        Hz  Samples\n");
   else
-    printf ("   Source                Start sample             End sample\n");
+    ms_log (0, "   Source                Start sample             End sample\n");
   
   prevsrcname[0] = '\0';
   prevsamprate = -1.0;
@@ -982,18 +982,18 @@ mst_printtracelist ( MSTraceGroup *mstg, flag timeformat,
       else if ( timeformat == 1 )
 	{
 	  if ( ms_hptime2isotimestr (mst->starttime, stime) == NULL )
-	    fprintf (stderr, "Error converting trace start time for %s\n", srcname);
+	    ms_log (2, "Cannot convert trace start time for %s\n", srcname);
 	  
 	  if ( ms_hptime2isotimestr (mst->endtime, etime) == NULL )
-	    fprintf (stderr, "Error converting trace end time for %s\n", srcname);
+	    ms_log (2, "Cannot convert trace end time for %s\n", srcname);
 	}
       else
 	{
 	  if ( ms_hptime2seedtimestr (mst->starttime, stime) == NULL )
-	    fprintf (stderr, "Error converting trace start time for %s\n", srcname);
+	    ms_log (2, "Cannot convert trace start time for %s\n", srcname);
 	  
 	  if ( ms_hptime2seedtimestr (mst->endtime, etime) == NULL )
-	    fprintf (stderr, "Error converting trace end time for %s\n", srcname);
+	    ms_log (2, "Cannot convert trace end time for %s\n", srcname);
 	}
       
       /* Print trace info at varying levels */
@@ -1023,17 +1023,17 @@ mst_printtracelist ( MSTraceGroup *mstg, flag timeformat,
 	    snprintf (gapstr, sizeof(gapstr), "%-4.4g", gap);
 	  
 	  if ( details <= 0 )
-	    printf ("%-17s %-24s %-24s %-4s\n",
+	    ms_log (0, "%-17s %-24s %-24s %-4s\n",
 		    srcname, stime, etime, gapstr);
 	  else
-	    printf ("%-17s %-24s %-24s %-s %-3.3g %-d\n",
+	    ms_log (0, "%-17s %-24s %-24s %-s %-3.3g %-d\n",
 		    srcname, stime, etime, gapstr, mst->samprate, mst->samplecnt);
 	}
       else if ( details > 0 && gaps <= 0 )
-	printf ("%-17s %-24s %-24s %-3.3g %-d\n",
+	ms_log (0, "%-17s %-24s %-24s %-3.3g %-d\n",
 		srcname, stime, etime, mst->samprate, mst->samplecnt);
       else
-	printf ("%-17s %-24s %-24s\n", srcname, stime, etime);
+	ms_log (0, "%-17s %-24s %-24s\n", srcname, stime, etime);
       
       if ( gaps > 0 )
 	{
@@ -1047,10 +1047,10 @@ mst_printtracelist ( MSTraceGroup *mstg, flag timeformat,
     }
 
   if ( tracecnt != mstg->numtraces )
-    fprintf (stderr, "mst_printtracelist(): number of traces in trace group is inconsistent\n");
+    ms_log (2, "mst_printtracelist(): number of traces in trace group is inconsistent\n");
   
   if ( details > 0 )
-    printf ("Total: %d trace(s)\n", tracecnt);
+    ms_log (0, "Total: %d trace(s)\n", tracecnt);
   
 }  /* End of mst_printtracelist() */
 
@@ -1094,7 +1094,7 @@ mst_printgaplist (MSTraceGroup *mstg, flag timeformat,
   mst = mstg->traces;
   pmst = mst;
   
-  printf ("   Source                Last Sample              Next Sample       Gap  Samples\n");
+  ms_log (0, "   Source                Last Sample              Next Sample       Gap  Samples\n");
   
   while ( mst->next )
     {
@@ -1114,8 +1114,8 @@ mst_printgaplist (MSTraceGroup *mstg, flag timeformat,
 	  /* Check that sample rates match using default tolerance */
 	  if ( ! MS_ISRATETOLERABLE (mst->samprate, mst->next->samprate) )
 	    {
-	      fprintf (stderr, "%s Sample rate changed! %.10g -> %.10g\n",
-		       src1, mst->samprate, mst->next->samprate );
+	      ms_log (2, "%s Sample rate changed! %.10g -> %.10g\n",
+		      src1, mst->samprate, mst->next->samprate );
 	    }
 	  
 	  gap = (double) (mst->next->starttime - mst->endtime) / HPTMODULUS;
@@ -1166,21 +1166,21 @@ mst_printgaplist (MSTraceGroup *mstg, flag timeformat,
 	      else if ( timeformat == 1 )
 		{
 		  if ( ms_hptime2isotimestr (mst->endtime, time1) == NULL )
-		    fprintf (stderr, "Error converting trace end time for %s\n", src1);
+		    ms_log (2, "Cannot convert trace end time for %s\n", src1);
 		  
 		  if ( ms_hptime2isotimestr (mst->next->starttime, time2) == NULL )
-		    fprintf (stderr, "Error converting next trace start time for %s\n", src1);
+		    ms_log (2, "Cannot convert next trace start time for %s\n", src1);
 		}
 	      else
 		{
 		  if ( ms_hptime2seedtimestr (mst->endtime, time1) == NULL )
-		    fprintf (stderr, "Error converting trace end time for %s\n", src1);
+		    ms_log (2, "Cannot convert trace end time for %s\n", src1);
 		  
 		  if ( ms_hptime2seedtimestr (mst->next->starttime, time2) == NULL )
-		    fprintf (stderr, "Error converting next trace start time for %s\n", src1);
+		    ms_log (2, "Cannot convert next trace start time for %s\n", src1);
 		}
 	      
-	      printf ("%-17s %-24s %-24s %-4s %-.8g\n",
+	      ms_log (0, "%-17s %-24s %-24s %-4s %-.8g\n",
 		      src1, time1, time2, gapstr, nsamples);
 	      
 	      gapcnt++;
@@ -1191,7 +1191,7 @@ mst_printgaplist (MSTraceGroup *mstg, flag timeformat,
       mst = mst->next;
     }
   
-  printf ("Total: %d gap(s)\n", gapcnt);
+  ms_log (0, "Total: %d gap(s)\n", gapcnt);
   
 }  /* End of mst_printgaplist() */
 
@@ -1256,7 +1256,7 @@ mst_pack ( MSTrace *mst, void (*record_handler) (char *, int),
       
       if ( msr == NULL )
 	{
-	  fprintf (stderr, "mst_pack(): Error initializing msr\n");
+	  ms_log (2, "mst_pack(): Error initializing msr\n");
 	  return -1;
 	}
       
@@ -1281,7 +1281,7 @@ mst_pack ( MSTrace *mst, void (*record_handler) (char *, int),
   /* Sample count sanity check */
   if ( mst->samplecnt != mst->numsamples )
     {
-      fprintf (stderr, "mst_pack(): Sample counts do not match, abort\n");
+      ms_log (2, "mst_pack(): Sample counts do not match, abort\n");
       return -1;
     }
   
@@ -1290,7 +1290,7 @@ mst_pack ( MSTrace *mst, void (*record_handler) (char *, int),
   
   if ( verbose > 1 )
     {
-      fprintf (stderr, "Packed %d records for %s trace\n", packedrecords, mst_srcname (mst, srcname, 1));
+      ms_log (1, "Packed %d records for %s trace\n", packedrecords, mst_srcname (mst, srcname, 1));
     }
   
   /* Adjust MSTrace start time, data array and sample count */
@@ -1312,7 +1312,7 @@ mst_pack ( MSTrace *mst, void (*record_handler) (char *, int),
 	  
 	  if ( mst->datasamples == NULL )
 	    {
-	      fprintf (stderr, "mst_pack(): Error re-allocing datasamples buffer\n");
+	      ms_log (2, "mst_pack(): Error re-allocing datasamples buffer\n");
 	      return -1;
 	    }
 	}
@@ -1380,7 +1380,7 @@ mst_packgroup ( MSTraceGroup *mstg, void (*record_handler) (char *, int),
 	  if ( verbose > 1 )
 	    {
 	      mst_srcname (mst, srcname, 1);
-	      fprintf (stderr, "No data samples for %s, skipping\n", srcname);
+	      ms_log (1, "No data samples for %s, skipping\n", srcname);
 	    }
 	}
       else

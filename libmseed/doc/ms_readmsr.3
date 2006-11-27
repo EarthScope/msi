@@ -1,4 +1,4 @@
-.TH MS_READMSR 3 2006/10/18 "Libmseed API"
+.TH MS_READMSR 3 2006/11/22 "Libmseed API"
 .SH DESCRIPTION
 Read Mini-SEED data from files
 
@@ -10,6 +10,10 @@ Read Mini-SEED data from files
 .BI "                 off_t *" fpos ", int *" last ", flag " skipnotdata ",
 .BI "                 flag " dataflag ",flag " verbose " );
 
+.BI "int \fBms_readmsr_r\fP ( MSFileParam **ppmsfp, MSRecord **ppmsr, char *" msfile ",
+.BI "                    int " reclen ", off_t *" fpos ", int *" last ",
+.BI "                    flag " skipnotdata ", flag " dataflag ",flag " verbose " );
+
 .BI "int \fBms_readtraces\fP ( MSTraceGroup **ppmstg, char *" msfile ", int " reclen ", 
 .BI "                    double " timetol ", double " sampratetol ",
 .BI "                    flag " dataquality ", flag " skipnotdata ",
@@ -17,12 +21,19 @@ Read Mini-SEED data from files
 .fi
 
 .SH DESCRIPTION
-\fBms_readmsr\fP will open and read, with subsequent calls, all
-Mini-SEED records from a specified file.  Standard input will be
-opened if \fImsfile\fP is "-" (dash).  As each record is read it is
-unpacked using \fBmsr_unpack(3)\fP.  If the MSRecord struct at
-\fI*ppmsr\fP has not been initialized it must be set to NULL and it
-will be initialize it automatically.
+Both \fBms_readmsr\fP and \fBms_readmsr_r\fP will open and read, with
+subsequent calls, all Mini-SEED records from a specified file.
+Standard input will be opened if \fImsfile\fP is "-" (dash).  As each
+record is read it is unpacked using \fBmsr_unpack(3)\fP.  If the
+MSRecord struct at \fI*ppmsr\fP has not been initialized it must be
+set to NULL and it will be initialize it automatically.
+
+The \fBms_readmsr\fP version is not thread safe.  The reentrant
+\fBms_readmsr_r\fP version is thread safe and can be used to read more
+than one file in parallel.  \fBms_readmsr_r\fP stores all static file
+reading parameters in a MSFileParam struct.  A pointer to this struct
+must be supplied by the caller (\fIppmsfp\fP), memory will be
+allocated on the initial call if the pointer is NULL.
 
 If \fIreclen\fP is 0 the length of the first record is automatically
 detected, all subsequent records are then expected to have the same
@@ -53,17 +64,18 @@ After reading all the input records the controlling program should
 call it one last time with \fImsfile\fP set to NULL.  This will close
 the file and cleanup allocated memory.
 
-If \fBms_readmsr\fP is called with a different file than the one it
-currently has open it will close the currently open file, open the new
-file and print an error message.  Properly coded applications should
-reset the function when the end of file has been reached as described
-above and not rely on this behavior.
+If \fBms_readmsr\fP or \fBms_readmsr_r\fP are called with a different
+file than the one they currently has open they will close the
+currently open file, open the new file and print an error message.
+Properly coded applications should reset the function when the end of
+file has been reached as described above and not rely on this
+behavior.
 
 \fBms_readtraces\fP simply reads all Mini-SEED records from a file
-using \fBms_readmsr\fP and adds each one to a MSTraceGroup using
+using \fBms_readmsr_r\fP and adds each one to a MSTraceGroup using
 \fBmst_addmsrtogroup(3)\fP.  The \fImsfile\fP, \fIreclen\fP,
 \fIskipnotdata\fP and \fIdataflag\fP arguments are passed directly to
-\fBms_readmsr\fP.  The \fItimetol\fP, \fIsampratetol\fP and
+\fBms_readmsr_r\fP.  The \fItimetol\fP, \fIsampratetol\fP and
 \fIdataquality\fP arguments are passed directly to
 \fBmst_addmsrtogroup(3)\fP.  If the MSTraceGroup struct at
 \fI*ppmstg\fP has not been initialized it must be set to NULL and it
@@ -72,11 +84,11 @@ will be initialize it automatically.  The MSTraceGroup struct at
 is called, in this case the MSTraceGroup is extended.
 
 .SH RETURN VALUES
-On the sucessful read and parsing of a record \fBms_readmsr\fP returns
-MS_NOERROR and populates the MSRecord struct at \fI*ppmsr\fP.  Upon
-reaching the end of the input file \fBms_readmsr\fP returns
-MS_ENDOFFILE.  On error \fBms_readmsr\fP returns a libmseed error code
-(defined in libmseed.h)
+On the sucessful read and parsing of a record \fBms_readmsr\fP and
+\fBms_readmsr_r\fP return MS_NOERROR and populate the MSRecord struct
+at \fI*ppmsr\fP.  Upon reaching the end of the input file these
+routines return MS_ENDOFFILE.  On error these routines return a
+libmseed error code (defined in libmseed.h)
 
 On the sucessful read and parsing of a file \fBms_readtraces\fP
 returns MS_NOERROR and populates the MSTraceGroup struct at
@@ -113,6 +125,27 @@ main() {
 
   /* Cleanup memory and close file */
   ms_readmsr (&msr, NULL, 0, NULL, NULL, 0, 0);
+}
+
+For reading a file with the thread safe \fBms_readmsr_r(3)\fP:
+
+.nf
+main() {
+  MSRecord *msr = NULL;
+  MSFileParam *msfp = NULL;
+  int retcode;
+
+  while ( (retcode = msr_readmsr_r (&msfp, &msr, filename, 0, NULL, NULL, 1, 0, verbose)) == MS_NOERROR )
+    {
+       /* Do something with the record here, e.g. print */
+       msr_print (msr, verbose);
+    }
+
+  if ( retcode != MS_ENDOFFILE )
+    fprintf (stderr, "Error reading input file %s\\n", filename);
+
+  /* Cleanup memory and close file */
+  ms_readmsr_r (&msfp, &msr, NULL, 0, NULL, NULL, 0, 0);
 }
 
 .fi

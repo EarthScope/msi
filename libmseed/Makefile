@@ -11,7 +11,7 @@ LDLIBS =
 
 LIB_OBJS = fileutils.o genutils.o gswap.o lmplatform.o lookup.o \
            msrutils.o pack.o packdata.o traceutils.o unpack.o \
-           unpackdata.o
+           unpackdata.o logging.o
 
 CURRENT_VER = 2.0
 COMPAT_VER = 2.0

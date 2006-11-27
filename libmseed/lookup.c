@@ -79,11 +79,11 @@ get_encoding (const char encoding)
     case 19:
       return "STEIM 3 Compression";
     case 30:
-      return "SRO Format";
+      return "SRO Gain Ranged Format";
     case 31:
       return "HGLP Format";
     case 32:
-      return "DWWSSN Gain Ranged Format";
+      return "DWWSSN Format";
     case 33:
       return "RSTN 16 bit gain ranged";
     default:

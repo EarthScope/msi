@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2006.283
+ * modified: 2006.326
  ***************************************************************************/
 
 #include <stdio.h>
@@ -50,7 +50,7 @@ msr_init ( MSRecord *msr )
   
   if ( msr == NULL )
     {
-      fprintf (stderr, "msr_init(): error allocating memory\n");
+      ms_log (2, "msr_init(): error allocating memory\n");
       return NULL;
     }
   
@@ -186,7 +186,7 @@ msr_addblockette (MSRecord *msr, char *blktdata, int length, int blkttype,
       
       if ( blkt == NULL )
 	{
-	  fprintf (stderr, "msr_addblockette(): Error allocating memory\n");
+	  ms_log (2, "msr_addblockette(): Error allocating memory\n");
 	  return NULL;
 	}
     }
@@ -196,7 +196,7 @@ msr_addblockette (MSRecord *msr, char *blktdata, int length, int blkttype,
       
       if ( msr->blkts == NULL )
 	{
-	  fprintf (stderr, "msr_addblockette(): Error allocating memory\n");
+	  ms_log (2, "msr_addblockette(): Error allocating memory\n");
 	  return NULL;
 	}
       
@@ -211,7 +211,7 @@ msr_addblockette (MSRecord *msr, char *blktdata, int length, int blkttype,
   
   if ( blkt->blktdata == NULL )
     {
-      fprintf (stderr, "msr_addblockette(): Error allocating memory\n");
+      ms_log (2, "msr_addblockette(): Error allocating memory\n");
       return NULL;
     }
   
@@ -263,7 +263,7 @@ msr_normalize_header ( MSRecord *msr, flag verbose )
   if ( msr->fsdh )
     {
       if ( verbose > 2 )
-	fprintf (stderr, "Normalizing fixed section of data header\n");
+	ms_log (1, "Normalizing fixed section of data header\n");
       
       /* Roll-over sequence number if necessary */
       if ( msr->sequence_number > 999999 )
@@ -293,7 +293,7 @@ msr_normalize_header ( MSRecord *msr, flag verbose )
   cur_blkt = msr->blkts;
   
   if ( cur_blkt && verbose > 2 )
-    fprintf (stderr, "Normalizing blockette chain\n");
+    ms_log (1, "Normalizing blockette chain\n");
   
   while ( cur_blkt )
     {
@@ -318,8 +318,8 @@ msr_normalize_header ( MSRecord *msr, flag verbose )
 	  
 	  if ( reclenfind != msr->reclen )
 	    {
-	      fprintf (stderr, "msr_normalize_header(): Record length %d is not a power of 2\n",
-		       msr->reclen);
+	      ms_log (2, "msr_normalize_header(): Record length %d is not a power of 2\n",
+		      msr->reclen);
 	      return -1;
 	    }
 	  
@@ -565,66 +565,66 @@ msr_print (MSRecord *msr, flag details)
     {
       nomsamprate = msr_nomsamprate (msr);
       
-      printf ("%s, %06d, %c\n", srcname, msr->sequence_number, msr->dataquality);
-      printf ("             start time: %s\n", time);
-      printf ("      number of samples: %d\n", msr->fsdh->numsamples);
-      printf ("     sample rate factor: %d  (%.10g samples per second)\n",
+      ms_log (0, "%s, %06d, %c\n", srcname, msr->sequence_number, msr->dataquality);
+      ms_log (0, "             start time: %s\n", time);
+      ms_log (0, "      number of samples: %d\n", msr->fsdh->numsamples);
+      ms_log (0, "     sample rate factor: %d  (%.10g samples per second)\n",
 	      msr->fsdh->samprate_fact, nomsamprate);
-      printf (" sample rate multiplier: %d\n", msr->fsdh->samprate_mult);
+      ms_log (0, " sample rate multiplier: %d\n", msr->fsdh->samprate_mult);
       
       if ( details > 1 )
 	{
 	  /* Activity flags */
 	  b = msr->fsdh->act_flags;
-	  printf ("         activity flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
+	  ms_log (0, "         activity flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
 		  bit(b,0x01), bit(b,0x02), bit(b,0x04), bit(b,0x08),
 		  bit(b,0x10), bit(b,0x20), bit(b,0x40), bit(b,0x80));
-	  if ( b & 0x01 ) printf ("                         [Bit 0] Calibration signals present\n");
-	  if ( b & 0x02 ) printf ("                         [Bit 1] Time correction applied\n");
-	  if ( b & 0x04 ) printf ("                         [Bit 2] Beginning of an event, station trigger\n");
-	  if ( b & 0x08 ) printf ("                         [Bit 3] End of an event, station detrigger\n");
-	  if ( b & 0x10 ) printf ("                         [Bit 4] A positive leap second happened in this record\n");
-	  if ( b & 0x20 ) printf ("                         [Bit 5] A negative leap second happened in this record\n");
-	  if ( b & 0x40 ) printf ("                         [Bit 6] Event in progress\n");
-	  if ( b & 0x80 ) printf ("                         [Bit 7] Undefined bit set\n");
+	  if ( b & 0x01 ) ms_log (0, "                         [Bit 0] Calibration signals present\n");
+	  if ( b & 0x02 ) ms_log (0, "                         [Bit 1] Time correction applied\n");
+	  if ( b & 0x04 ) ms_log (0, "                         [Bit 2] Beginning of an event, station trigger\n");
+	  if ( b & 0x08 ) ms_log (0, "                         [Bit 3] End of an event, station detrigger\n");
+	  if ( b & 0x10 ) ms_log (0, "                         [Bit 4] A positive leap second happened in this record\n");
+	  if ( b & 0x20 ) ms_log (0, "                         [Bit 5] A negative leap second happened in this record\n");
+	  if ( b & 0x40 ) ms_log (0, "                         [Bit 6] Event in progress\n");
+	  if ( b & 0x80 ) ms_log (0, "                         [Bit 7] Undefined bit set\n");
 
 	  /* I/O and clock flags */
 	  b = msr->fsdh->io_flags;
-	  printf ("    I/O and clock flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
+	  ms_log (0, "    I/O and clock flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
 		  bit(b,0x01), bit(b,0x02), bit(b,0x04), bit(b,0x08),
 		  bit(b,0x10), bit(b,0x20), bit(b,0x40), bit(b,0x80));
-	  if ( b & 0x01 ) printf ("                         [Bit 0] Station volume parity error possibly present\n");
-	  if ( b & 0x02 ) printf ("                         [Bit 1] Long record read (possibly no problem)\n");
-	  if ( b & 0x04 ) printf ("                         [Bit 2] Short record read (record padded)\n");
-	  if ( b & 0x08 ) printf ("                         [Bit 3] Start of time series\n");
-	  if ( b & 0x10 ) printf ("                         [Bit 4] End of time series\n");
-	  if ( b & 0x20 ) printf ("                         [Bit 5] Clock locked\n");
-	  if ( b & 0x40 ) printf ("                         [Bit 6] Undefined bit set\n");
-	  if ( b & 0x80 ) printf ("                         [Bit 7] Undefined bit set\n");
+	  if ( b & 0x01 ) ms_log (0, "                         [Bit 0] Station volume parity error possibly present\n");
+	  if ( b & 0x02 ) ms_log (0, "                         [Bit 1] Long record read (possibly no problem)\n");
+	  if ( b & 0x04 ) ms_log (0, "                         [Bit 2] Short record read (record padded)\n");
+	  if ( b & 0x08 ) ms_log (0, "                         [Bit 3] Start of time series\n");
+	  if ( b & 0x10 ) ms_log (0, "                         [Bit 4] End of time series\n");
+	  if ( b & 0x20 ) ms_log (0, "                         [Bit 5] Clock locked\n");
+	  if ( b & 0x40 ) ms_log (0, "                         [Bit 6] Undefined bit set\n");
+	  if ( b & 0x80 ) ms_log (0, "                         [Bit 7] Undefined bit set\n");
 
 	  /* Data quality flags */
 	  b = msr->fsdh->dq_flags;
-	  printf ("     data quality flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
+	  ms_log (0, "     data quality flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
 		  bit(b,0x01), bit(b,0x02), bit(b,0x04), bit(b,0x08),
 		  bit(b,0x10), bit(b,0x20), bit(b,0x40), bit(b,0x80));
-	  if ( b & 0x01 ) printf ("                         [Bit 0] Amplifier saturation detected\n");
-	  if ( b & 0x02 ) printf ("                         [Bit 1] Digitizer clipping detected\n");
-	  if ( b & 0x04 ) printf ("                         [Bit 2] Spikes detected\n");
-	  if ( b & 0x08 ) printf ("                         [Bit 3] Glitches detected\n");
-	  if ( b & 0x10 ) printf ("                         [Bit 4] Missing/padded data present\n");
-	  if ( b & 0x20 ) printf ("                         [Bit 5] Telemetry synchronization error\n");
-	  if ( b & 0x40 ) printf ("                         [Bit 6] A digital filter may be charging\n");
-	  if ( b & 0x80 ) printf ("                         [Bit 7] Time tag is questionable\n");
+	  if ( b & 0x01 ) ms_log (0, "                         [Bit 0] Amplifier saturation detected\n");
+	  if ( b & 0x02 ) ms_log (0, "                         [Bit 1] Digitizer clipping detected\n");
+	  if ( b & 0x04 ) ms_log (0, "                         [Bit 2] Spikes detected\n");
+	  if ( b & 0x08 ) ms_log (0, "                         [Bit 3] Glitches detected\n");
+	  if ( b & 0x10 ) ms_log (0, "                         [Bit 4] Missing/padded data present\n");
+	  if ( b & 0x20 ) ms_log (0, "                         [Bit 5] Telemetry synchronization error\n");
+	  if ( b & 0x40 ) ms_log (0, "                         [Bit 6] A digital filter may be charging\n");
+	  if ( b & 0x80 ) ms_log (0, "                         [Bit 7] Time tag is questionable\n");
 	}
 
-      printf ("   number of blockettes: %d\n", msr->fsdh->numblockettes);
-      printf ("        time correction: %ld\n", (long int) msr->fsdh->time_correct);
-      printf ("            data offset: %d\n", msr->fsdh->data_offset);
-      printf (" first blockette offset: %d\n", msr->fsdh->blockette_offset);
+      ms_log (0, "   number of blockettes: %d\n", msr->fsdh->numblockettes);
+      ms_log (0, "        time correction: %ld\n", (long int) msr->fsdh->time_correct);
+      ms_log (0, "            data offset: %d\n", msr->fsdh->data_offset);
+      ms_log (0, " first blockette offset: %d\n", msr->fsdh->blockette_offset);
     }
   else
     {
-      printf ("%s, %06d, %c, %d, %d samples, %-.10g Hz, %s\n",
+      ms_log (0, "%s, %06d, %c, %d, %d samples, %-.10g Hz, %s\n",
 	      srcname, msr->sequence_number, msr->dataquality,
 	      msr->reclen, msr->samplecnt, msr->samprate, time);
     }
@@ -640,19 +640,19 @@ msr_print (MSRecord *msr, flag details)
 	    {
 	      struct blkt_100_s *blkt_100 = (struct blkt_100_s *) cur_blkt->blktdata;
 	      
-	      printf ("          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
+	      ms_log (0, "          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
 		      get_blktdesc(cur_blkt->blkt_type));
-	      printf ("              next blockette: %u\n", cur_blkt->next_blkt);
-	      printf ("          actual sample rate: %.10g\n", blkt_100->samprate);
+	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
+	      ms_log (0, "          actual sample rate: %.10g\n", blkt_100->samprate);
 	      
 	      if ( details > 1 )
 		{
 		  b = blkt_100->flags;
-		  printf ("             undefined flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
+		  ms_log (0, "             undefined flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
 			  bit(b,0x01), bit(b,0x02), bit(b,0x04), bit(b,0x08),
 			  bit(b,0x10), bit(b,0x20), bit(b,0x40), bit(b,0x80));
 		  
-		  printf ("          reserved bytes (3): %u,%u,%u\n",
+		  ms_log (0, "          reserved bytes (3): %u,%u,%u\n",
 			  blkt_100->reserved[0], blkt_100->reserved[1], blkt_100->reserved[2]);
 		}
 	    }
@@ -661,194 +661,194 @@ msr_print (MSRecord *msr, flag details)
 	    {
 	      struct blkt_200_s *blkt_200 = (struct blkt_200_s *) cur_blkt->blktdata;
 	      
-	      printf ("          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
+	      ms_log (0, "          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
 		      get_blktdesc(cur_blkt->blkt_type));
-	      printf ("              next blockette: %u\n", cur_blkt->next_blkt);
-	      printf ("            signal amplitude: %g\n", blkt_200->amplitude);
-	      printf ("               signal period: %g\n", blkt_200->period);
-	      printf ("         background estimate: %g\n", blkt_200->background_estimate);
+	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
+	      ms_log (0, "            signal amplitude: %g\n", blkt_200->amplitude);
+	      ms_log (0, "               signal period: %g\n", blkt_200->period);
+	      ms_log (0, "         background estimate: %g\n", blkt_200->background_estimate);
 	      
 	      if ( details > 1 )
 		{
 		  b = blkt_200->flags;
-		  printf ("       event detection flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
+		  ms_log (0, "       event detection flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
 			  bit(b,0x01), bit(b,0x02), bit(b,0x04), bit(b,0x08),
 			  bit(b,0x10), bit(b,0x20), bit(b,0x40), bit(b,0x80));
-		  if ( b & 0x01 ) printf ("                         [Bit 0] 1: Dilatation wave\n");
-		  else            printf ("                         [Bit 0] 0: Compression wave\n");
-		  if ( b & 0x02 ) printf ("                         [Bit 1] 1: Units after deconvolution\n");
-		  else            printf ("                         [Bit 1] 0: Units are digital counts\n");
-		  if ( b & 0x04 ) printf ("                         [Bit 2] Bit 0 is undetermined\n");
-		  printf ("               reserved byte: %u\n", blkt_200->reserved);
+		  if ( b & 0x01 ) ms_log (0, "                         [Bit 0] 1: Dilatation wave\n");
+		  else            ms_log (0, "                         [Bit 0] 0: Compression wave\n");
+		  if ( b & 0x02 ) ms_log (0, "                         [Bit 1] 1: Units after deconvolution\n");
+		  else            ms_log (0, "                         [Bit 1] 0: Units are digital counts\n");
+		  if ( b & 0x04 ) ms_log (0, "                         [Bit 2] Bit 0 is undetermined\n");
+		  ms_log (0, "               reserved byte: %u\n", blkt_200->reserved);
 		}
 	      
 	      ms_btime2seedtimestr (&blkt_200->time, time);
-	      printf ("           signal onset time: %s\n", time);
-	      printf ("               detector name: %.24s\n", blkt_200->detector);
+	      ms_log (0, "           signal onset time: %s\n", time);
+	      ms_log (0, "               detector name: %.24s\n", blkt_200->detector);
 	    }
 
 	  else if ( cur_blkt->blkt_type == 201 )
 	    {
 	      struct blkt_201_s *blkt_201 = (struct blkt_201_s *) cur_blkt->blktdata;
 	      
-	      printf ("          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
+	      ms_log (0, "          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
 		      get_blktdesc(cur_blkt->blkt_type));
-	      printf ("              next blockette: %u\n", cur_blkt->next_blkt);
-	      printf ("            signal amplitude: %g\n", blkt_201->amplitude);
-	      printf ("               signal period: %g\n", blkt_201->period);
-	      printf ("         background estimate: %g\n", blkt_201->background_estimate);
+	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
+	      ms_log (0, "            signal amplitude: %g\n", blkt_201->amplitude);
+	      ms_log (0, "               signal period: %g\n", blkt_201->period);
+	      ms_log (0, "         background estimate: %g\n", blkt_201->background_estimate);
 	      
 	      b = blkt_201->flags;
-	      printf ("       event detection flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
+	      ms_log (0, "       event detection flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
 		      bit(b,0x01), bit(b,0x02), bit(b,0x04), bit(b,0x08),
 		      bit(b,0x10), bit(b,0x20), bit(b,0x40), bit(b,0x80));
-	      if ( b & 0x01 ) printf ("                         [Bit 0] 1: Dilation wave\n");
-	      else            printf ("                         [Bit 0] 0: Compression wave\n");
+	      if ( b & 0x01 ) ms_log (0, "                         [Bit 0] 1: Dilation wave\n");
+	      else            ms_log (0, "                         [Bit 0] 0: Compression wave\n");
 
 	      if ( details > 1 )
-		printf ("               reserved byte: %u\n", blkt_201->reserved);	      
+		ms_log (0, "               reserved byte: %u\n", blkt_201->reserved);	      
 	      ms_btime2seedtimestr (&blkt_201->time, time);
-	      printf ("           signal onset time: %s\n", time);
-	      printf ("                  SNR values: ");
-	      for (idx=0; idx < 6; idx++) printf ("%u  ", blkt_201->snr_values[idx]);
-	      printf ("\n");
-	      printf ("              loopback value: %u\n", blkt_201->loopback);
-	      printf ("              pick algorithm: %u\n", blkt_201->pick_algorithm);
-	      printf ("               detector name: %.24s\n", blkt_201->detector);
+	      ms_log (0, "           signal onset time: %s\n", time);
+	      ms_log (0, "                  SNR values: ");
+	      for (idx=0; idx < 6; idx++) ms_log (0, "%u  ", blkt_201->snr_values[idx]);
+	      ms_log (0, "\n");
+	      ms_log (0, "              loopback value: %u\n", blkt_201->loopback);
+	      ms_log (0, "              pick algorithm: %u\n", blkt_201->pick_algorithm);
+	      ms_log (0, "               detector name: %.24s\n", blkt_201->detector);
 	    }
 
 	  else if ( cur_blkt->blkt_type == 300 )
 	    {
 	      struct blkt_300_s *blkt_300 = (struct blkt_300_s *) cur_blkt->blktdata;
 	      
-	      printf ("          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
+	      ms_log (0, "          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
 		      get_blktdesc(cur_blkt->blkt_type));
-	      printf ("              next blockette: %u\n", cur_blkt->next_blkt);
+	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
 	      ms_btime2seedtimestr (&blkt_300->time, time);
-	      printf ("      calibration start time: %s\n", time);
-	      printf ("      number of calibrations: %u\n", blkt_300->numcalibrations);
+	      ms_log (0, "      calibration start time: %s\n", time);
+	      ms_log (0, "      number of calibrations: %u\n", blkt_300->numcalibrations);
 	      
 	      b = blkt_300->flags;
-	      printf ("           calibration flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
+	      ms_log (0, "           calibration flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
 		      bit(b,0x01), bit(b,0x02), bit(b,0x04), bit(b,0x08),
 		      bit(b,0x10), bit(b,0x20), bit(b,0x40), bit(b,0x80));
-	      if ( b & 0x01 ) printf ("                         [Bit 0] First pulse is positive\n");
-	      if ( b & 0x02 ) printf ("                         [Bit 1] Calibration's alternate sign\n");
-	      if ( b & 0x04 ) printf ("                         [Bit 2] Calibration was automatic\n");
-	      if ( b & 0x08 ) printf ("                         [Bit 3] Calibration continued from previous record(s)\n");
+	      if ( b & 0x01 ) ms_log (0, "                         [Bit 0] First pulse is positive\n");
+	      if ( b & 0x02 ) ms_log (0, "                         [Bit 1] Calibration's alternate sign\n");
+	      if ( b & 0x04 ) ms_log (0, "                         [Bit 2] Calibration was automatic\n");
+	      if ( b & 0x08 ) ms_log (0, "                         [Bit 3] Calibration continued from previous record(s)\n");
 	      
-	      printf ("               step duration: %u\n", blkt_300->step_duration);
-	      printf ("           interval duration: %u\n", blkt_300->interval_duration);
-	      printf ("            signal amplitude: %g\n", blkt_300->amplitude);
-	      printf ("        input signal channel: %.3s", blkt_300->input_channel);
+	      ms_log (0, "               step duration: %u\n", blkt_300->step_duration);
+	      ms_log (0, "           interval duration: %u\n", blkt_300->interval_duration);
+	      ms_log (0, "            signal amplitude: %g\n", blkt_300->amplitude);
+	      ms_log (0, "        input signal channel: %.3s", blkt_300->input_channel);
 	      if ( details > 1 )
-		printf ("               reserved byte: %u\n", blkt_300->reserved);
-	      printf ("         reference amplitude: %u\n", blkt_300->reference_amplitude);
-	      printf ("                    coupling: %.12s\n", blkt_300->coupling);
-	      printf ("                     rolloff: %.12s\n", blkt_300->rolloff);
+		ms_log (0, "               reserved byte: %u\n", blkt_300->reserved);
+	      ms_log (0, "         reference amplitude: %u\n", blkt_300->reference_amplitude);
+	      ms_log (0, "                    coupling: %.12s\n", blkt_300->coupling);
+	      ms_log (0, "                     rolloff: %.12s\n", blkt_300->rolloff);
 	    }
 	  
 	  else if ( cur_blkt->blkt_type == 310 )
 	    {
 	      struct blkt_310_s *blkt_310 = (struct blkt_310_s *) cur_blkt->blktdata;
 	      
-	      printf ("          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
+	      ms_log (0, "          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
 		      get_blktdesc(cur_blkt->blkt_type));
-	      printf ("              next blockette: %u\n", cur_blkt->next_blkt);
+	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
 	      ms_btime2seedtimestr (&blkt_310->time, time);
-	      printf ("      calibration start time: %s\n", time);
+	      ms_log (0, "      calibration start time: %s\n", time);
 	      if ( details > 1 )
-		printf ("               reserved byte: %u\n", blkt_310->reserved1);
+		ms_log (0, "               reserved byte: %u\n", blkt_310->reserved1);
 	      
 	      b = blkt_310->flags;
-	      printf ("           calibration flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
+	      ms_log (0, "           calibration flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
 		      bit(b,0x01), bit(b,0x02), bit(b,0x04), bit(b,0x08),
 		      bit(b,0x10), bit(b,0x20), bit(b,0x40), bit(b,0x80));
-	      if ( b & 0x04 ) printf ("                         [Bit 2] Calibration was automatic\n");
-	      if ( b & 0x08 ) printf ("                         [Bit 3] Calibration continued from previous record(s)\n");
-	      if ( b & 0x10 ) printf ("                         [Bit 4] Peak-to-peak amplitude\n");
-	      if ( b & 0x20 ) printf ("                         [Bit 5] Zero-to-peak amplitude\n");
-	      if ( b & 0x40 ) printf ("                         [Bit 6] RMS amplitude\n");
+	      if ( b & 0x04 ) ms_log (0, "                         [Bit 2] Calibration was automatic\n");
+	      if ( b & 0x08 ) ms_log (0, "                         [Bit 3] Calibration continued from previous record(s)\n");
+	      if ( b & 0x10 ) ms_log (0, "                         [Bit 4] Peak-to-peak amplitude\n");
+	      if ( b & 0x20 ) ms_log (0, "                         [Bit 5] Zero-to-peak amplitude\n");
+	      if ( b & 0x40 ) ms_log (0, "                         [Bit 6] RMS amplitude\n");
 	      
-	      printf ("        calibration duration: %u\n", blkt_310->duration);
-	      printf ("               signal period: %g\n", blkt_310->period);
-	      printf ("            signal amplitude: %g\n", blkt_310->amplitude);
-	      printf ("        input signal channel: %.3s", blkt_310->input_channel);
+	      ms_log (0, "        calibration duration: %u\n", blkt_310->duration);
+	      ms_log (0, "               signal period: %g\n", blkt_310->period);
+	      ms_log (0, "            signal amplitude: %g\n", blkt_310->amplitude);
+	      ms_log (0, "        input signal channel: %.3s", blkt_310->input_channel);
 	      if ( details > 1 )
-		printf ("               reserved byte: %u\n", blkt_310->reserved2);	      
-	      printf ("         reference amplitude: %u\n", blkt_310->reference_amplitude);
-	      printf ("                    coupling: %.12s\n", blkt_310->coupling);
-	      printf ("                     rolloff: %.12s\n", blkt_310->rolloff);
+		ms_log (0, "               reserved byte: %u\n", blkt_310->reserved2);	      
+	      ms_log (0, "         reference amplitude: %u\n", blkt_310->reference_amplitude);
+	      ms_log (0, "                    coupling: %.12s\n", blkt_310->coupling);
+	      ms_log (0, "                     rolloff: %.12s\n", blkt_310->rolloff);
 	    }
 
 	  else if ( cur_blkt->blkt_type == 320 )
 	    {
 	      struct blkt_320_s *blkt_320 = (struct blkt_320_s *) cur_blkt->blktdata;
 	      
-	      printf ("          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
+	      ms_log (0, "          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
 		      get_blktdesc(cur_blkt->blkt_type));
-	      printf ("              next blockette: %u\n", cur_blkt->next_blkt);
+	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
 	      ms_btime2seedtimestr (&blkt_320->time, time);
-	      printf ("      calibration start time: %s\n", time);
+	      ms_log (0, "      calibration start time: %s\n", time);
 	      if ( details > 1 )
-		printf ("               reserved byte: %u\n", blkt_320->reserved1);
+		ms_log (0, "               reserved byte: %u\n", blkt_320->reserved1);
 	      
 	      b = blkt_320->flags;
-	      printf ("           calibration flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
+	      ms_log (0, "           calibration flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
 		      bit(b,0x01), bit(b,0x02), bit(b,0x04), bit(b,0x08),
 		      bit(b,0x10), bit(b,0x20), bit(b,0x40), bit(b,0x80));
-	      if ( b & 0x04 ) printf ("                         [Bit 2] Calibration was automatic\n");
-	      if ( b & 0x08 ) printf ("                         [Bit 3] Calibration continued from previous record(s)\n");
-	      if ( b & 0x10 ) printf ("                         [Bit 4] Random amplitudes\n");
+	      if ( b & 0x04 ) ms_log (0, "                         [Bit 2] Calibration was automatic\n");
+	      if ( b & 0x08 ) ms_log (0, "                         [Bit 3] Calibration continued from previous record(s)\n");
+	      if ( b & 0x10 ) ms_log (0, "                         [Bit 4] Random amplitudes\n");
 	      
-	      printf ("        calibration duration: %u\n", blkt_320->duration);
-	      printf ("      peak-to-peak amplitude: %g\n", blkt_320->ptp_amplitude);
-	      printf ("        input signal channel: %.3s", blkt_320->input_channel);
+	      ms_log (0, "        calibration duration: %u\n", blkt_320->duration);
+	      ms_log (0, "      peak-to-peak amplitude: %g\n", blkt_320->ptp_amplitude);
+	      ms_log (0, "        input signal channel: %.3s", blkt_320->input_channel);
 	      if ( details > 1 )
-		printf ("               reserved byte: %u\n", blkt_320->reserved2);
-	      printf ("         reference amplitude: %u\n", blkt_320->reference_amplitude);
-	      printf ("                    coupling: %.12s\n", blkt_320->coupling);
-	      printf ("                     rolloff: %.12s\n", blkt_320->rolloff);
-	      printf ("                  noise type: %.8s\n", blkt_320->noise_type);
+		ms_log (0, "               reserved byte: %u\n", blkt_320->reserved2);
+	      ms_log (0, "         reference amplitude: %u\n", blkt_320->reference_amplitude);
+	      ms_log (0, "                    coupling: %.12s\n", blkt_320->coupling);
+	      ms_log (0, "                     rolloff: %.12s\n", blkt_320->rolloff);
+	      ms_log (0, "                  noise type: %.8s\n", blkt_320->noise_type);
 	    }
 	  
 	  else if ( cur_blkt->blkt_type == 390 )
 	    {
 	      struct blkt_390_s *blkt_390 = (struct blkt_390_s *) cur_blkt->blktdata;
 	      
-	      printf ("          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
+	      ms_log (0, "          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
 		      get_blktdesc(cur_blkt->blkt_type));
-	      printf ("              next blockette: %u\n", cur_blkt->next_blkt);
+	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
 	      ms_btime2seedtimestr (&blkt_390->time, time);
-	      printf ("      calibration start time: %s\n", time);
+	      ms_log (0, "      calibration start time: %s\n", time);
 	      if ( details > 1 )
-		printf ("               reserved byte: %u\n", blkt_390->reserved1);
+		ms_log (0, "               reserved byte: %u\n", blkt_390->reserved1);
 	      
 	      b = blkt_390->flags;
-	      printf ("           calibration flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
+	      ms_log (0, "           calibration flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
 		      bit(b,0x01), bit(b,0x02), bit(b,0x04), bit(b,0x08),
 		      bit(b,0x10), bit(b,0x20), bit(b,0x40), bit(b,0x80));
-	      if ( b & 0x04 ) printf ("                         [Bit 2] Calibration was automatic\n");
-	      if ( b & 0x08 ) printf ("                         [Bit 3] Calibration continued from previous record(s)\n");
+	      if ( b & 0x04 ) ms_log (0, "                         [Bit 2] Calibration was automatic\n");
+	      if ( b & 0x08 ) ms_log (0, "                         [Bit 3] Calibration continued from previous record(s)\n");
 	      
-	      printf ("        calibration duration: %u\n", blkt_390->duration);
-	      printf ("            signal amplitude: %g\n", blkt_390->amplitude);
-	      printf ("        input signal channel: %.3s", blkt_390->input_channel);
+	      ms_log (0, "        calibration duration: %u\n", blkt_390->duration);
+	      ms_log (0, "            signal amplitude: %g\n", blkt_390->amplitude);
+	      ms_log (0, "        input signal channel: %.3s", blkt_390->input_channel);
 	      if ( details > 1 )
-		printf ("               reserved byte: %u\n", blkt_390->reserved2);
+		ms_log (0, "               reserved byte: %u\n", blkt_390->reserved2);
 	    }
 
 	  else if ( cur_blkt->blkt_type == 395 )
 	    {
 	      struct blkt_395_s *blkt_395 = (struct blkt_395_s *) cur_blkt->blktdata;
 	      
-	      printf ("          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
+	      ms_log (0, "          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
 		      get_blktdesc(cur_blkt->blkt_type));
-	      printf ("              next blockette: %u\n", cur_blkt->next_blkt);
+	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
 	      ms_btime2seedtimestr (&blkt_395->time, time);
-	      printf ("        calibration end time: %s\n", time);
+	      ms_log (0, "        calibration end time: %s\n", time);
 	      if ( details > 1 )
-		printf ("          reserved bytes (2): %u,%u\n",
+		ms_log (0, "          reserved bytes (2): %u,%u\n",
 			blkt_395->reserved[0], blkt_395->reserved[1]);
 	    }
 
@@ -856,14 +856,14 @@ msr_print (MSRecord *msr, flag details)
 	    {
 	      struct blkt_400_s *blkt_400 = (struct blkt_400_s *) cur_blkt->blktdata;
 	      
-	      printf ("          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
+	      ms_log (0, "          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
 		      get_blktdesc(cur_blkt->blkt_type));
-	      printf ("              next blockette: %u\n", cur_blkt->next_blkt);
-	      printf ("      beam azimuth (degrees): %g\n", blkt_400->azimuth);
-	      printf ("  beam slowness (sec/degree): %g\n", blkt_400->slowness);
-	      printf ("               configuration: %u\n", blkt_400->configuration);
+	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
+	      ms_log (0, "      beam azimuth (degrees): %g\n", blkt_400->azimuth);
+	      ms_log (0, "  beam slowness (sec/degree): %g\n", blkt_400->slowness);
+	      ms_log (0, "               configuration: %u\n", blkt_400->configuration);
 	      if ( details > 1 )
-		printf ("          reserved bytes (2): %u,%u\n",
+		ms_log (0, "          reserved bytes (2): %u,%u\n",
 			blkt_400->reserved[0], blkt_400->reserved[1]);
 	    }
 
@@ -871,28 +871,28 @@ msr_print (MSRecord *msr, flag details)
 	    {
 	      struct blkt_405_s *blkt_405 = (struct blkt_405_s *) cur_blkt->blktdata;
 	      
-	      printf ("          BLOCKETTE %u: (%s, incomplete)\n", cur_blkt->blkt_type,
+	      ms_log (0, "          BLOCKETTE %u: (%s, incomplete)\n", cur_blkt->blkt_type,
 		      get_blktdesc(cur_blkt->blkt_type));
-	      printf ("              next blockette: %u\n", cur_blkt->next_blkt);
-	      printf ("           first delay value: %u\n", blkt_405->delay_values[0]);
+	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
+	      ms_log (0, "           first delay value: %u\n", blkt_405->delay_values[0]);
 	    }
 
 	  else if ( cur_blkt->blkt_type == 500 )
 	    {
 	      struct blkt_500_s *blkt_500 = (struct blkt_500_s *) cur_blkt->blktdata;
 	      
-	      printf ("          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
+	      ms_log (0, "          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
 		      get_blktdesc(cur_blkt->blkt_type));
-	      printf ("              next blockette: %u\n", cur_blkt->next_blkt);
-	      printf ("              VCO correction: %g%%\n", blkt_500->vco_correction);
+	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
+	      ms_log (0, "              VCO correction: %g%%\n", blkt_500->vco_correction);
 	      ms_btime2seedtimestr (&blkt_500->time, time);
-	      printf ("           time of exception: %s\n", time);
-	      printf ("                        usec: %d\n", blkt_500->usec);
-	      printf ("           reception quality: %u%%\n", blkt_500->reception_qual);
-	      printf ("             exception count: %u\n", blkt_500->exception_count);
-	      printf ("              exception type: %.16s\n", blkt_500->exception_type);
-	      printf ("                 clock model: %.32s\n", blkt_500->clock_model);
-	      printf ("                clock status: %.128s\n", blkt_500->clock_status);
+	      ms_log (0, "           time of exception: %s\n", time);
+	      ms_log (0, "                        usec: %d\n", blkt_500->usec);
+	      ms_log (0, "           reception quality: %u%%\n", blkt_500->reception_qual);
+	      ms_log (0, "             exception count: %u\n", blkt_500->exception_count);
+	      ms_log (0, "              exception type: %.16s\n", blkt_500->exception_type);
+	      ms_log (0, "                 clock model: %.32s\n", blkt_500->clock_model);
+	      ms_log (0, "                clock status: %.128s\n", blkt_500->clock_status);
 	    }
 	  
 	  else if ( cur_blkt->blkt_type == 1000 )
@@ -912,34 +912,34 @@ msr_print (MSRecord *msr, flag details)
 	      else
 		strncpy (order, "Unknown value", sizeof(order)-1);
 	      
-	      printf ("         BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
+	      ms_log (0, "         BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
 		      get_blktdesc(cur_blkt->blkt_type));
-	      printf ("              next blockette: %u\n", cur_blkt->next_blkt);
-	      printf ("                    encoding: %s (val:%u)\n",
+	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
+	      ms_log (0, "                    encoding: %s (val:%u)\n",
 		      (char *) get_encoding (blkt_1000->encoding), blkt_1000->encoding);
-	      printf ("                  byte order: %s (val:%u)\n",
+	      ms_log (0, "                  byte order: %s (val:%u)\n",
 		      order, blkt_1000->byteorder);
-	      printf ("               record length: %d (val:%u)\n",
+	      ms_log (0, "               record length: %d (val:%u)\n",
 		      recsize, blkt_1000->reclen);
 	      
 	      if ( details > 1 )
-		printf ("               reserved byte: %u\n", blkt_1000->reserved);
+		ms_log (0, "               reserved byte: %u\n", blkt_1000->reserved);
 	    }
 	  
 	  else if ( cur_blkt->blkt_type == 1001 )
 	    {
 	      struct blkt_1001_s *blkt_1001 = (struct blkt_1001_s *) cur_blkt->blktdata;
 	      
-	      printf ("         BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
+	      ms_log (0, "         BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
 		      get_blktdesc(cur_blkt->blkt_type));
-	      printf ("              next blockette: %u\n", cur_blkt->next_blkt);
-	      printf ("              timing quality: %u%%\n", blkt_1001->timing_qual);
-	      printf ("                micro second: %d\n", blkt_1001->usec);
+	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
+	      ms_log (0, "              timing quality: %u%%\n", blkt_1001->timing_qual);
+	      ms_log (0, "                micro second: %d\n", blkt_1001->usec);
 	      
 	      if ( details > 1 )
-		printf ("               reserved byte: %u\n", blkt_1001->reserved);
+		ms_log (0, "               reserved byte: %u\n", blkt_1001->reserved);
 	      
-	      printf ("                 frame count: %u\n", blkt_1001->framecnt);
+	      ms_log (0, "                 frame count: %u\n", blkt_1001->framecnt);
 	    }
 
 	  else if ( cur_blkt->blkt_type == 2000 )
@@ -955,56 +955,56 @@ msr_print (MSRecord *msr, flag details)
 	      else
 		strncpy (order, "Unknown value", sizeof(order)-1);
 	      
-	      printf ("         BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
+	      ms_log (0, "         BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
 		      get_blktdesc(cur_blkt->blkt_type));
-	      printf ("              next blockette: %u\n", cur_blkt->next_blkt);
-	      printf ("            blockette length: %u\n", blkt_2000->length);
-	      printf ("                 data offset: %u\n", blkt_2000->data_offset);
-	      printf ("               record number: %u\n", blkt_2000->recnum);
-	      printf ("                  byte order: %s (val:%u)\n",
+	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
+	      ms_log (0, "            blockette length: %u\n", blkt_2000->length);
+	      ms_log (0, "                 data offset: %u\n", blkt_2000->data_offset);
+	      ms_log (0, "               record number: %u\n", blkt_2000->recnum);
+	      ms_log (0, "                  byte order: %s (val:%u)\n",
 		      order, blkt_2000->byteorder);
 	      b = blkt_2000->flags;
-	      printf ("                  data flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
+	      ms_log (0, "                  data flags: [%u%u%u%u%u%u%u%u] 8 bits\n",
 		      bit(b,0x01), bit(b,0x02), bit(b,0x04), bit(b,0x08),
 		      bit(b,0x10), bit(b,0x20), bit(b,0x40), bit(b,0x80));
 
 	      if ( details > 1 )
 		{
-		  if ( b & 0x01 ) printf ("                         [Bit 0] 1: Stream oriented\n");
-		  else            printf ("                         [Bit 0] 0: Record oriented\n");
-		  if ( b & 0x02 ) printf ("                         [Bit 1] 1: Blockette 2000s may NOT be packaged\n");
-		  else            printf ("                         [Bit 1] 0: Blockette 2000s may be packaged\n");
+		  if ( b & 0x01 ) ms_log (0, "                         [Bit 0] 1: Stream oriented\n");
+		  else            ms_log (0, "                         [Bit 0] 0: Record oriented\n");
+		  if ( b & 0x02 ) ms_log (0, "                         [Bit 1] 1: Blockette 2000s may NOT be packaged\n");
+		  else            ms_log (0, "                         [Bit 1] 0: Blockette 2000s may be packaged\n");
 		  if ( ! (b & 0x04) && ! (b & 0x08) )
-		                  printf ("                      [Bits 2-3] 00: Complete blockette\n");
+		                  ms_log (0, "                      [Bits 2-3] 00: Complete blockette\n");
 		  else if ( ! (b & 0x04) && (b & 0x08) )
-		                  printf ("                      [Bits 2-3] 01: First blockette in span\n");
+		                  ms_log (0, "                      [Bits 2-3] 01: First blockette in span\n");
 		  else if ( (b & 0x04) && (b & 0x08) )
-		                  printf ("                      [Bits 2-3] 11: Continuation blockette in span\n");
+		                  ms_log (0, "                      [Bits 2-3] 11: Continuation blockette in span\n");
 		  else if ( (b & 0x04) && ! (b & 0x08) )
-		                  printf ("                      [Bits 2-3] 10: Final blockette in span\n");
+		                  ms_log (0, "                      [Bits 2-3] 10: Final blockette in span\n");
 		  if ( ! (b & 0x10) && ! (b & 0x20) )
-		                  printf ("                      [Bits 4-5] 00: Not file oriented\n");
+		                  ms_log (0, "                      [Bits 4-5] 00: Not file oriented\n");
 		  else if ( ! (b & 0x10) && (b & 0x20) )
-		                  printf ("                      [Bits 4-5] 01: First blockette of file\n");
+		                  ms_log (0, "                      [Bits 4-5] 01: First blockette of file\n");
 		  else if ( (b & 0x10) && ! (b & 0x20) )
-		                  printf ("                      [Bits 4-5] 10: Continuation of file\n");
+		                  ms_log (0, "                      [Bits 4-5] 10: Continuation of file\n");
 		  else if ( (b & 0x10) && (b & 0x20) )
-		                  printf ("                      [Bits 4-5] 11: Last blockette of file\n");
+		                  ms_log (0, "                      [Bits 4-5] 11: Last blockette of file\n");
 		}
 	      
-	      printf ("           number of headers: %u\n", blkt_2000->numheaders);
+	      ms_log (0, "           number of headers: %u\n", blkt_2000->numheaders);
 	      
 	      /* Crude display of the opaque data headers */
 	      if ( details > 1 )
-		printf ("                     headers: %.*s\n",
+		ms_log (0, "                     headers: %.*s\n",
 			(blkt_2000->data_offset - 15), blkt_2000->payload);
 	    }
 	  
 	  else
 	    {
-	      printf ("         BLOCKETTE %u: (%s, not parsed)\n", cur_blkt->blkt_type,
+	      ms_log (0, "         BLOCKETTE %u: (%s, not parsed)\n", cur_blkt->blkt_type,
 		      get_blktdesc(cur_blkt->blkt_type));
-	      printf ("              next blockette: %u\n", cur_blkt->next_blkt);
+	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
 	    }
 	  
 	  cur_blkt = cur_blkt->next;

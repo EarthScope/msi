@@ -30,20 +30,25 @@ extern "C" {
 
 #include "lmplatform.h"
 
-#define LIBMSEED_VERSION "2.0pre5"
-#define LIBMSEED_RELEASE "2006.312"
-  
+#define LIBMSEED_VERSION "2.0pre7"
+#define LIBMSEED_RELEASE "2006.331"
+
 #define MINRECLEN   256      /* Minimum Mini-SEED record length, 2^8 bytes */
 #define MAXRECLEN   1048576  /* Maximum Mini-SEED record length, 2^20 bytes */
 
 /* SEED data encoding types */
-#define ASCII      0
-#define INT16      1
-#define INT32      3
-#define FLOAT32    4
-#define FLOAT64    5
-#define STEIM1     10
-#define STEIM2     11
+#define DE_ASCII       0
+#define DE_INT16       1
+#define DE_INT32       3
+#define DE_FLOAT32     4
+#define DE_FLOAT64     5
+#define DE_STEIM1      10
+#define DE_STEIM2      11
+#define DE_GEOSCOPE24  12
+#define DE_GEOSCOPE163 13
+#define DE_GEOSCOPE164 14
+#define DE_SRO         30
+#define DE_DWWSSN      32
 
 /* Library return and error code values, error values should always be negative */
 #define MS_ENDOFFILE        1        /* End of file reached return value */
@@ -464,14 +469,30 @@ extern int           mst_packgroup (MSTraceGroup *mstg, void (*record_handler) (
 
 
 /* Reading Mini-SEED records from files */
+typedef struct MSFileParam_s
+{
+  FILE *fp;
+  char *rawrec;
+  char  filename[512];
+  int   autodet;
+  int   readlen;
+  int   packinfolen;
+  off_t packinfooffset;
+  off_t filepos;
+  int   recordcount;
+} MSFileParam;
+
 extern int      ms_readmsr (MSRecord **ppmsr, char *msfile, int reclen, off_t *fpos, int *last,
 			    flag skipnotdata, flag dataflag, flag verbose);
+extern int      ms_readmsr_r (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile, int reclen,
+			      off_t *fpos, int *last, flag skipnotdata, flag dataflag, flag verbose);
 extern int      ms_readtraces (MSTraceGroup **ppmstg, char *msfile, int reclen, double timetol, double sampratetol,
 			       flag dataquality, flag skipnotdata, flag dataflag, flag verbose);
 extern int      ms_find_reclen (const char *recbuf, int recbuflen, FILE *fileptr);
 
 
 /* General use functions */
+extern char*    ms_recsrcname (char *record, char *srcname, flag quality);
 extern int      ms_strncpclean (char *dest, const char *source, int length);
 extern int      ms_strncpopen (char *dest, const char *source, int length);
 extern int      ms_doy2md (int year, int jday, int *month, int *mday);
@@ -497,6 +518,25 @@ extern char*    get_blktdesc (uint16_t blkttype);
 extern uint16_t get_blktlen (uint16_t blkttype, const char *blktdata, flag swapflag);
 extern char *   get_errorstr (int errorcode);
 
+/* Logging facility */
+#define MAX_LOG_MSG_LENGTH  200      /* Maximum length of log messages */
+
+/* Logging parameters */
+typedef struct MSLogParam_s
+{
+  void (*log_print)();
+  const char *logprefix;
+  void (*diag_print)();
+  const char *errprefix;
+} MSLogParam;
+
+extern int    ms_log (int level, ...);
+extern int    ms_log_l (MSLogParam *logp, int level, ...);
+extern void   ms_loginit (void (*log_print)(const char*), const char *logprefix,
+			  void (*diag_print)(const char*), const char *errprefix);
+extern MSLogParam *ms_loginit_l (MSLogParam *logp,
+			         void (*log_print)(const char*), const char *logprefix,
+			         void (*diag_print)(const char*), const char *errprefix);
 
 /* Generic byte swapping routines */
 extern void     gswap2 ( void *data2 );

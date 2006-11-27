@@ -14,7 +14,7 @@
  *
  * Modified by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2004.313
+ * modified: 2004.326
  ************************************************************************/
 
 /*
@@ -141,8 +141,8 @@ int msr_pack_int_16
   while (points_remaining > 0 && max_bytes >= 2)
     {  /* Pack the next available data into INT_16 format */
       if ( data[i] < -32768 || data[i] > 32767 )
-	fprintf (stderr, "msr_pack_int_16(): input sample out of range: %d\n",
-		 data[i]);
+	ms_log (2, "msr_pack_int_16(%s): input sample out of range: %d\n",
+		PACK_SRCNAME, data[i]);
       
       *packed = data[i];      
       if ( swapflag ) gswap2 (packed);
@@ -336,7 +336,8 @@ int msr_pack_steim1
   
   if (minbits == NULL)
     {
-      fprintf (stderr, "msr_pack_steim1(): cannot malloc minbits\n");
+      ms_log (2, "msr_pack_steim1(%s): cannot malloc minbits\n",
+	      PACK_SRCNAME);
       return -1;
     }
   
@@ -452,7 +453,8 @@ int msr_pack_steim2
   
   if (minbits == NULL)
     {
-      fprintf (stderr, "msr_pack_steim2(): cannot malloc minbits\n");
+      ms_log (2, "msr_pack_steim2(%s): cannot malloc minbits\n",
+	      PACK_SRCNAME);
       return -1;
     }
   
@@ -521,7 +523,8 @@ int msr_pack_steim2
 	}
       else
 	{
-	  fprintf (stderr, "msr_pack_steim2(): Unable to represent difference in <= 30 bits\n");
+	  ms_log (2, "msr_pack_steim2(%s): Unable to represent difference in <= 30 bits\n",
+		  PACK_SRCNAME);
 	  return -1;
 	}
       

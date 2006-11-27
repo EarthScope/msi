@@ -1,69 +1,53 @@
-.TH MST_PRINT 3 2006/10/23 "Libmseed API"
+.TH MS_SRCNAME 3 2006/11/27 "Libmseed API"
 .SH DESCRIPTION
-Printing of MSTrace information.
+Determine source names using the SEED naming nomenclature.
 
 .SH SYNOPSIS
 .nf
 .B #include <libmseed.h>
 
-.BI "void   \fBmst_printtracelist\fP ( MSTraceGroup *" mstg ", flag " timeformat ",
-.BI "                            flag " details ", flag " gaps " );
+.BI "char  *\fBms_recsrcname\fP ( char *" record ", char *" srcname ", flag " quality " );"
 
-.BI "void   \fBmst_printgaplist\fP ( MSTraceGroup *" msgt ", flag " timeformat ",
-.BI "                          double *" mingap ", double *" maxgap " );
+.BI "char  *\fBmsr_srcname\fP ( MSRecord *" msr ", char *" srcname ", flag " quality " );"
 
 .BI "char  *\fBmst_srcname\fP ( MSTrace *" mst ", char *" srcname ", flag " quality " );"
 .fi
 
 .SH DESCRIPTION
-\fBmst_printtracelist\fP prints a formatted list of the MSTrace segments
-in the given MSTraceGroup to stdout.  If the \fIdetails\fP flag is
-greater than 0 the sample rate and sample count are printed for each
-trace.  If the \fIgaps\fP flag is greater than zero the time gap from
-the previous MSTrace (if the source name matches) is printed.
+These routines generate a source name using the SEED naming
+nomenclature in the format: 'NET_STA_LOC_CHAN' and stores it in the
+buffer provided at \fIsrcname\fP.  If the \fIquality\fP flag is true
+the data quality character will be appended to the source name
+resulting in a format of: 'NET_STA_LOC_CHAN_QUAL'.
 
-\fBmst_printgaplist\fP prints a formatted list of the gaps between
-MSTrace segments in the given MSTraceGroup to stdout.  If \fImingap\fP or
-\fImaxgap\fP is not NULL their values will be enforced and only
-gaps/overlaps matching their implied criteria will be printed.
+The memory pointed to by \fIsrcname\fP must have enough room for the
+resulting string.  As of SEED 2.4 this is a maximum of 18 characters
+including the terminating NULL.  The MSRecord and MSTrace structs are
+capable of producing a source name of 42 characters (including the
+terminating NULL) and libmseed commonly allocates 50 characters for
+the \fIsrcname\fP buffer.
 
-The \fItimeformat\fP argument for both \fBmst_printtracelist\fP and
-\fBmst_printgaplist\fP controls the format of the resulting time
-strings.  Possible formats are:
+\fBms_recsrcname\fP generates a source name string for the SEED data
+record at \fIrecord\fP.  If the \fIquality\fP flag is true the quality
+character will be appended.
 
-.nf
-0 : SEED time format (2005,146,00:00:00.000000)
-1 : ISO time format (2005-05-26T00:00:00.000000)
-2 : Epoch time, seconds since the epoch (1117065600.00000000)
-.fi
+\fBmsr_srcname\fP generates a source name string for the specified
+MSRecord struct.  If the \fIquality\fP flag is true the quality
+character will be appended.
 
-Both \fBmst_printtracelist\fP and \fBmst_printgaplist\fP represent
-time overlaps as negative gaps.
+\fBmst_srcname\fP generates a source name string in for the specified
+MSTrace struct.  If the \fIquality\fP flag is true *and*
+mst->dataquality is not zero the quality character will be appended.
 
-\fBmst_srcname\fP generates a source name string in the
-format: 'NET_STA_LOC_CHAN[_QUAL]' and stores it in \fIsrcname\fP.  The
-single character quality code is only appended if the \fIquality\fP
-flag is 1 and mst->dataquality is not zero.  The memory pointed to by
-\fIsrcname\fP must have enough room for the resulting string.
-
-.SH GAP/OVERLAP RULES
-The existence of gaps and overlaps is implicit in the structure of the
-MSTraceGroup, no special processing is done to detect gaps and overlaps
-in these routines.
-
-The value of a gap is calculated as the difference between the time of
-the last sample before the gap and the time of the first sample after
-the gap.  No sample 'coverage' time is included.
-
-The value of an overlap is calculated as the time between two samples
-which represent the maximum amount of timeseries overlap.
+.SH LOCATION IDS AND SPACES
+The source name produced by these routines never include spaces.  The
+fixed format nature of SEED data records leads to blank or unused
+location IDs represented by spaces.  Such blank location IDs will be
+collapsed to nothing in the resulting sources names.
 
 .SH RETURN VALUES
-\fBmst_srcname\fP returns a pointer to the resulting string or NULL on
+The routines return a pointer to the resulting string or NULL on
 error.
-
-.SH SEE ALSO
-\fBms_intro(3)\fP
 
 .SH AUTHOR
 .nf

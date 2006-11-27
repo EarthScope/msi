@@ -1,3 +1,30 @@
+2006.331: 2.0pre7
+	- Add source name to all unpacking error and diagnostic messages.
+        - Add source name to all packing error and diagnostic messages.
+	- Reorganize sanity check code in msr_unpack() to use the
+	MS_ISVALIDHEADER macro.
+	- Add ms_recsrcname() function to calculate the source name for 
+	an unpacked record.
+
+2006.326: 2.0pre6
+	- Add ms_readmsr_r() as a reenentrant, thread safe version of what
+	ms_readmsr() to to be and make ms_readmsr() a wrapper for the new
+	reentrant version that uses global file reading parameters.
+	- Use ms_readmsr_r() in ms_readtraces() so that it's now thread
+	safe too.
+	- Add logging.c routines and declarations in libmseed.h.  This
+	constitutes a new logging facility that is used throughout the
+	library and can be used by libmseed based programs.  The facility
+	allows the caller to redirect all the log, diagnostic and error
+	output from the library to specific functions.  The facility 
+	also allows user specifed prefixes for all output messages.
+
+2006.321:
+	- Prefix all data encoding type defines with DE_ to avoid collision.
+	- Add GEOSCOPE (three subtypes), SRO and DWWSSN data decoders, there
+	are no encoders for these types.
+	- Need of the pow() function now requires linking with -lm (math lib).
+
 2006.312: 2.0pre5
 	- Add MS_ISVALIDBLANK macro to libmseed.h to test memory for valid
 	blank/noise records: valid sequence number followed by ASCII spaces.

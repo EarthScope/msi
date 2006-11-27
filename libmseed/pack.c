@@ -7,7 +7,7 @@
  * Written by Chad Trabant,
  *   IRIS Data Management Center
  *
- * modified: 2006.251
+ * modified: 2006.331
  ***************************************************************************/
 
 #include <stdio.h>
@@ -32,6 +32,9 @@ static int msr_pack_data (void *dest, void *src,
 /* -2 = not checked, -1 = checked but not set, or 0 = LE and 1 = BE */
 static flag headerbyteorder = -2;
 static flag databyteorder = -2;
+
+/* A pointer to the srcname of the record being packed */
+char *PACK_SRCNAME = NULL;
 
 
 /***************************************************************************
@@ -71,6 +74,7 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
   uint16_t *HPdataoffset;
   char *rawrec;
   char *envvariable;
+  char srcname[50];
   
   flag headerswapflag = 0;
   flag dataswapflag = 0;
@@ -90,9 +94,19 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
   
   if ( ! record_handler )
     {
-      fprintf (stderr, "msr_pack(): record_handler() function pointer not set!\n");
+      ms_log (2, "msr_pack(): record_handler() function pointer not set!\n");
       return -1;
     }
+
+  /* Generate source name for MSRecord */
+  if ( msr_srcname (msr, srcname, 1) == NULL )
+    {
+      ms_log (2, "msr_unpack_data(): Cannot generate srcname\n");
+      return MS_GENERROR;
+    }
+  
+  /* Set shared srcname pointer to source name */
+  PACK_SRCNAME = &srcname[0];
   
   /* Read possible environmental variables that force byteorder */
   if ( headerbyteorder == -2 )
@@ -101,20 +115,20 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
 	{
 	  if ( *envvariable != '0' && *envvariable != '1' )
 	    {
-	      fprintf (stderr, "Environment variable PACK_HEADER_BYTEORDER must be set to '0' or '1'\n");
+	      ms_log (2, "Environment variable PACK_HEADER_BYTEORDER must be set to '0' or '1'\n");
 	      return -1;
 	    }
 	  else if ( *envvariable == '0' )
 	    {
 	      headerbyteorder = 0;
 	      if ( verbose > 2 )
-		fprintf (stderr, "PACK_HEADER_BYTEORDER=0, packing little-endian header\n");
+		ms_log (1, "PACK_HEADER_BYTEORDER=0, packing little-endian header\n");
 	    }
 	  else
 	    {
 	      headerbyteorder = 1;
 	      if ( verbose > 2 )
-		fprintf (stderr, "PACK_HEADER_BYTEORDER=1, packing big-endian header\n");
+		ms_log (1, "PACK_HEADER_BYTEORDER=1, packing big-endian header\n");
 	    }
 	}
       else
@@ -128,20 +142,20 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
 	{
 	  if ( *envvariable != '0' && *envvariable != '1' )
 	    {
-	      fprintf (stderr, "Environment variable PACK_DATA_BYTEORDER must be set to '0' or '1'\n");
+	      ms_log (2, "Environment variable PACK_DATA_BYTEORDER must be set to '0' or '1'\n");
 	      return -1;
 	    }
 	  else if ( *envvariable == '0' )
 	    {
 	      databyteorder = 0;
 	      if ( verbose > 2 )
-		fprintf (stderr, "PACK_DATA_BYTEORDER=0, packing little-endian data samples\n");
+		ms_log (1, "PACK_DATA_BYTEORDER=0, packing little-endian data samples\n");
 	    }
 	  else
 	    {
 	      databyteorder = 1;
 	      if ( verbose > 2 )
-		fprintf (stderr, "PACK_DATA_BYTEORDER=1, packing big-endian data samples\n");
+		ms_log (1, "PACK_DATA_BYTEORDER=1, packing big-endian data samples\n");
 	    }
 	}
       else
@@ -154,7 +168,7 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
   if ( msr->dataquality == 0 ) msr->dataquality = 'D';
   if ( msr->reclen == -1 ) msr->reclen = 4096;
   if ( msr->byteorder == -1 )  msr->byteorder = 1;
-  if ( msr->encoding == -1 ) msr->encoding = STEIM2;
+  if ( msr->encoding == -1 ) msr->encoding = DE_STEIM2;
   
   /* Cleanup/reset sequence number */
   if ( msr->sequence_number <= 0 || msr->sequence_number > 999999)
@@ -162,14 +176,14 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
   
   if ( msr->reclen < MINRECLEN || msr->reclen > MAXRECLEN )
     {
-      fprintf (stderr, "msr_pack(): Record length is out of range: %d\n",
-	       msr->reclen);
+      ms_log (2, "msr_pack(%s): Record length is out of range: %d\n",
+	      PACK_SRCNAME, msr->reclen);
       return -1;
     }
   
   if ( msr->numsamples <= 0 )
     {
-      fprintf (stderr, "msr_pack(): No samples to pack\n");
+      ms_log (2, "msr_pack(%s): No samples to pack\n", PACK_SRCNAME);
       return -1;
     }
   
@@ -177,17 +191,17 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
   
   if ( ! samplesize )
     {
-      fprintf (stderr, "msr_pack(): Unknown sample type '%c'\n",
-	       msr->sampletype);
+      ms_log (2, "msr_pack(%s): Unknown sample type '%c'\n",
+	      PACK_SRCNAME, msr->sampletype);
       return -1;
     }
   
   /* Sanity check for msr/quality indicator */
   if ( ! MS_ISDATAINDICATOR(msr->dataquality) )
     {
-      fprintf (stderr, "Record header & quality indicator unrecognized: '%c'\n",
-	       msr->dataquality);
-      fprintf (stderr, "Packing failed.\n");
+      ms_log (2, "msr_pack(%s): Record header & quality indicator unrecognized: '%c'\n",
+	      PACK_SRCNAME, msr->dataquality);
+      ms_log (2, "msr_pack(%s): Packing failed.\n", PACK_SRCNAME);
       return -1;
     }
   
@@ -196,7 +210,7 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
   
   if ( rawrec == NULL )
     {
-      fprintf (stderr, "msr_pack(): Error allocating memory\n");
+      ms_log (2, "msr_pack(%s): Error allocating memory\n", PACK_SRCNAME);
       return -1;
     }
   
@@ -222,15 +236,15 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
   if ( verbose > 2 )
     {
       if ( headerswapflag && dataswapflag )
-	fprintf (stderr, "Byte swapping needed for packing of header and data samples\n");
+	ms_log (1, "%s: Byte swapping needed for packing of header and data samples\n", PACK_SRCNAME);
       else if ( headerswapflag )
-	fprintf (stderr, "Byte swapping needed for packing of header\n");
+	ms_log (1, "%s: Byte swapping needed for packing of header\n", PACK_SRCNAME);
       else if ( dataswapflag )
-	fprintf (stderr, "Byte swapping needed for packing of data samples\n");
+	ms_log (1, "%s: Byte swapping needed for packing of data samples\n", PACK_SRCNAME);
       else
-	fprintf (stderr, "Byte swapping NOT needed for packing\n");
+	ms_log (1, "%s: Byte swapping NOT needed for packing\n", PACK_SRCNAME);
     }
-
+  
   /* Add a blank 1000 Blockette if one is not present, the blockette values
      will be populated in msr_pack_header_raw()/msr_normalize_header() */
   if ( ! msr->Blkt1000 )
@@ -239,11 +253,11 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
       memset (&blkt1000, 0, sizeof (struct blkt_1000_s));
       
       if ( verbose > 2 )
-	fprintf (stderr, "Adding 1000 Blockette\n");
+	ms_log (1, "%s: Adding 1000 Blockette\n", PACK_SRCNAME);
       
       if ( ! msr_addblockette (msr, (char *) &blkt1000, sizeof(struct blkt_1000_s), 1000, 0) )
 	{
-	  fprintf (stderr, "msr_pack(): Error adding 1000 Blockette\n");
+	  ms_log (2, "msr_pack(%s): Error adding 1000 Blockette\n", PACK_SRCNAME);
 	  return -1;
 	}
     }
@@ -252,12 +266,12 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
   
   if ( headerlen == -1 )
     {
-      fprintf (stderr, "msr_pack(): Error packing header\n");
+      ms_log (2, "msr_pack(%s): Error packing header\n", PACK_SRCNAME);
       return -1;
     }
 
   /* Determine offset to encoded data */
-  if ( msr->encoding == STEIM1 || msr->encoding == STEIM2 )
+  if ( msr->encoding == DE_STEIM1 || msr->encoding == DE_STEIM2 )
     {
       dataoffset = 64;
       while ( dataoffset < headerlen )
@@ -277,11 +291,11 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
   /* Determine the max data bytes and sample count */
   maxdatabytes = msr->reclen - dataoffset;
   
-  if ( msr->encoding == STEIM1 )
+  if ( msr->encoding == DE_STEIM1 )
     {
       maxsamples = (int) (maxdatabytes/64) * STEIM1_FRAME_MAX_SAMPLES;
     }
-  else if ( msr->encoding == STEIM2 )
+  else if ( msr->encoding == DE_STEIM2 )
     {
       maxsamples = (int) (maxdatabytes/64) * STEIM2_FRAME_MAX_SAMPLES;
     }
@@ -306,7 +320,7 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
       
       if ( packret )
 	{
-	  fprintf (stderr, "msr_pack(): Error packing record\n");
+	  ms_log (2, "msr_pack(%s): Error packing record\n", PACK_SRCNAME);
 	  return -1;
 	}
       
@@ -317,8 +331,7 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
       if ( headerswapflag ) gswap2 (HPnumsamples);
       
       if ( verbose > 0 )
-	fprintf (stderr, "Packed %d samples for %s_%s_%s_%s\n", packsamples,
-		 msr->network, msr->station, msr->location, msr->channel);
+	ms_log (1, "%s: Packed %d samples\n", packsamples, PACK_SRCNAME);
       
       /* Send record to handler */
       record_handler (rawrec, msr->reclen);
@@ -330,7 +343,7 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
       msr->sequence_number = ( msr->sequence_number >= 999999) ? 1 : msr->sequence_number + 1;
       msr->starttime += (double) packsamples / msr->samprate * HPTMODULUS;
       msr_update_header (msr, rawrec, headerswapflag, verbose);
-
+      
       recordcnt++;
       
       if ( totalpackedsamples >= msr->numsamples )
@@ -338,8 +351,7 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
     }
 
   if ( verbose > 2 )
-    fprintf (stderr, "Packed %d total samples for %s_%s_%s_%s\n", totalpackedsamples,
-	     msr->network, msr->station, msr->location, msr->channel);
+    ms_log (1, "%s: Packed %d total samples\n", totalpackedsamples, PACK_SRCNAME);
 
   free (rawrec);
   
@@ -361,6 +373,7 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
 int
 msr_pack_header ( MSRecord *msr, flag normalize, flag verbose )
 {
+  char srcname[50];
   char *envvariable;
   flag headerswapflag = 0;
   int headerlen;
@@ -369,6 +382,16 @@ msr_pack_header ( MSRecord *msr, flag normalize, flag verbose )
   if ( ! msr )
     return -1;
   
+  /* Generate source name for MSRecord */
+  if ( msr_srcname (msr, srcname, 1) == NULL )
+    {
+      ms_log (2, "msr_unpack_data(): Cannot generate srcname\n");
+      return MS_GENERROR;
+    }
+  
+  /* Set shared srcname pointer to source name */
+  PACK_SRCNAME = &srcname[0];
+
   /* Read possible environmental variables that force byteorder */
   if ( headerbyteorder == -2 )
     {
@@ -376,20 +399,20 @@ msr_pack_header ( MSRecord *msr, flag normalize, flag verbose )
 	{
 	  if ( *envvariable != '0' && *envvariable != '1' )
 	    {
-	      fprintf (stderr, "Environment variable PACK_HEADER_BYTEORDER must be set to '0' or '1'\n");
+	      ms_log (2, "Environment variable PACK_HEADER_BYTEORDER must be set to '0' or '1'\n");
 	      return -1;
 	    }
 	  else if ( *envvariable == '0' )
 	    {
 	      headerbyteorder = 0;
 	      if ( verbose > 2 )
-		fprintf (stderr, "PACK_HEADER_BYTEORDER=0, packing little-endian header\n");
+		ms_log (1, "PACK_HEADER_BYTEORDER=0, packing little-endian header\n");
 	    }
 	  else
 	    {
 	      headerbyteorder = 1;
 	      if ( verbose > 2 )
-		fprintf (stderr, "PACK_HEADER_BYTEORDER=1, packing big-endian header\n");
+		ms_log (1, "PACK_HEADER_BYTEORDER=1, packing big-endian header\n");
 	    }
 	}
       else
@@ -400,15 +423,15 @@ msr_pack_header ( MSRecord *msr, flag normalize, flag verbose )
 
   if ( msr->reclen < MINRECLEN || msr->reclen > MAXRECLEN )
     {
-      fprintf (stderr, "msr_pack_header(): record length is out of range: %d\n",
-	       msr->reclen);
+      ms_log (2, "msr_pack_header(%s): record length is out of range: %d\n",
+	      PACK_SRCNAME, msr->reclen);
       return -1;
     }
   
   if ( msr->byteorder != 0 && msr->byteorder != 1 )
     {
-      fprintf (stderr, "msr_pack_header(): byte order is not defined correctly: %d\n",
-	       msr->byteorder);
+      ms_log (2, "msr_pack_header(%s): byte order is not defined correctly: %d\n",
+	      PACK_SRCNAME, msr->byteorder);
       return -1;
     }
     
@@ -436,16 +459,16 @@ msr_pack_header ( MSRecord *msr, flag normalize, flag verbose )
   if ( verbose > 2 )
     {
       if ( headerswapflag )
-	fprintf (stderr, "Byte swapping needed for packing of header\n");
+	ms_log (1, "%s: Byte swapping needed for packing of header\n", PACK_SRCNAME);
       else
-	fprintf (stderr, "Byte swapping NOT needed for packing of header\n");
+	ms_log (1, "%s: Byte swapping NOT needed for packing of header\n", PACK_SRCNAME);
     }
   
   headerlen = msr_pack_header_raw (msr, msr->record, maxheaderlen,
 				   headerswapflag, normalize, verbose);
   
   return headerlen;
-}
+}  /* End of msr_pack_header() */
 
 
 /***************************************************************************
@@ -475,7 +498,8 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
       msr->fsdh = (struct fsdh_s *) malloc (sizeof (struct fsdh_s));
       if ( msr->fsdh == NULL )
 	{
-	  fprintf (stderr, "msr_pack_header_raw(): Error allocating memory\n");
+	  ms_log (2, "msr_pack_header_raw(%s): Error allocating memory\n",
+		  PACK_SRCNAME);
 	  return -1;
 	}
     }
@@ -484,24 +508,25 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
   if ( normalize )
     if ( msr_normalize_header (msr, verbose) < 0 )
       {
-	fprintf (stderr, "msr_pack_header_raw(): error normalizing header values\n");
+	ms_log (2, "msr_pack_header_raw(%s): error normalizing header values\n",
+		PACK_SRCNAME);
 	return -1;
       }
-
+  
   if ( verbose > 2 )
-    fprintf (stderr, "Packing fixed section of data header\n");
+    ms_log (1, "%s: Packing fixed section of data header\n", PACK_SRCNAME);
   
   if ( maxheaderlen > msr->reclen )
     {
-      fprintf (stderr, "msr_pack_header_raw(): maxheaderlen of %d is beyond record length of %d\n",
-	       maxheaderlen, msr->reclen);
+      ms_log (2, "msr_pack_header_raw(%s): maxheaderlen of %d is beyond record length of %d\n",
+	      PACK_SRCNAME, maxheaderlen, msr->reclen);
       return -1;
     }
   
-  if ( maxheaderlen < 48 )
+  if ( maxheaderlen < sizeof(struct fsdh_s) )
     {
-      fprintf (stderr, "msr_pack_header_raw(): maxheaderlen of %d is too small\n",
-	       maxheaderlen);
+      ms_log (2, "msr_pack_header_raw(%s): maxheaderlen of %d is too small, must be >= %d\n",
+	      PACK_SRCNAME, maxheaderlen, sizeof(struct fsdh_s));
       return -1;
     }
   
@@ -535,8 +560,8 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
       /* Check that the blockette fits */
       if ( (offset + 4 + cur_blkt->blktdatalen) > maxheaderlen )
 	{
-	  fprintf (stderr, "msr_pack_header_raw(): header exceeds maxheaderlen of %d\n",
-		   maxheaderlen);
+	  ms_log (2, "msr_pack_header_raw(%s): header exceeds maxheaderlen of %d\n",
+		  PACK_SRCNAME, maxheaderlen);
 	  break;
 	}
       
@@ -688,7 +713,8 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
 
 	  if ( verbose > 0 )
 	    {
-	      fprintf (stderr, "msr_pack(): Blockette 405 cannot be fully supported\n");
+	      ms_log (1, "msr_pack_header_raw(%s): WARNING Blockette 405 cannot be fully supported\n",
+		      PACK_SRCNAME);
 	    }
 	}
 
@@ -765,10 +791,10 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
   fsdh->numblockettes = blktcnt;
   
   if ( verbose > 2 )
-    fprintf (stderr, "Packed %d blockettes\n", blktcnt);
+    ms_log (1, "%s: Packed %d blockettes\n", PACK_SRCNAME, blktcnt);
   
   return offset;
-}
+}  /* End of msr_pack_header_raw() */
 
 
 /***************************************************************************
@@ -790,7 +816,7 @@ msr_update_header ( MSRecord *msr, char *rawrec, flag swapflag,
     return -1;
   
   if ( verbose > 2 )
-    fprintf (stderr, "Updating fixed section of data header\n");
+    ms_log (1, "%s: Updating fixed section of data header\n", PACK_SRCNAME);
   
   fsdh = (struct fsdh_s *) rawrec;
   
@@ -807,7 +833,7 @@ msr_update_header ( MSRecord *msr, char *rawrec, flag swapflag,
     }
   
   return 0;
-}
+}  /* End of msr_update_header() */
 
 
 /************************************************************************
@@ -835,91 +861,91 @@ msr_pack_data (void *dest, void *src,
   switch (encoding)
     {
       
-    case ASCII:
+    case DE_ASCII:
       if ( sampletype != 'a' )
 	{
-	  fprintf (stderr, "Sample type must be ascii (a) for ASCII encoding not '%c'\n",
-		   sampletype);
+	  ms_log (2, "%s: Sample type must be ascii (a) for ASCII encoding not '%c'\n",
+		  PACK_SRCNAME, sampletype);
 	  return -1;
 	}
       
       if ( verbose > 1 )
-	fprintf (stderr, "Packing ASCII data\n");
+	ms_log (1, "%s: Packing ASCII data\n", PACK_SRCNAME);
       
       retval = msr_pack_text (dest, src, maxsamples, maxdatabytes, 1,
 			      &npacked, packsamples);
       
       break;
       
-    case INT16:
+    case DE_INT16:
       if ( sampletype != 'i' )
 	{
-	  fprintf (stderr, "Sample type must be integer (i) for integer-16 encoding not '%c'\n",
-		   sampletype);
+	  ms_log (2, "%s: Sample type must be integer (i) for integer-16 encoding not '%c'\n",
+		  PACK_SRCNAME, sampletype);
 	  return -1;
 	}
       
       if ( verbose > 1 )
-	fprintf (stderr, "Packing INT-16 data samples\n");
+	ms_log (1, "%s: Packing INT-16 data samples\n", PACK_SRCNAME);
       
       retval = msr_pack_int_16 (dest, src, maxsamples, maxdatabytes, 1,
 				&npacked, packsamples, swapflag);
       
       break;
       
-    case INT32:
+    case DE_INT32:
       if ( sampletype != 'i' )
 	{
-	  fprintf (stderr, "Sample type must be integer (i) for integer-32 encoding not '%c'\n",
-		   sampletype);
+	  ms_log (2, "%s: Sample type must be integer (i) for integer-32 encoding not '%c'\n",
+		  PACK_SRCNAME, sampletype);
 	  return -1;
 	}
 
       if ( verbose > 1 )
-	fprintf (stderr, "Packing INT-32 data samples\n");
+	ms_log (1, "%s: Packing INT-32 data samples\n", PACK_SRCNAME);
       
       retval = msr_pack_int_32 (dest, src, maxsamples, maxdatabytes, 1,
 				&npacked, packsamples, swapflag);
       
       break;
       
-    case FLOAT32:
+    case DE_FLOAT32:
       if ( sampletype != 'f' )
 	{
-	  fprintf (stderr, "Sample type must be float (f) for float-32 encoding not '%c'\n",
-		   sampletype);
+	  ms_log (2, "%s: Sample type must be float (f) for float-32 encoding not '%c'\n",
+		  PACK_SRCNAME, sampletype);
 	  return -1;
 	}
 
       if ( verbose > 1 )
-	fprintf (stderr, "Packing FLOAT-32 data samples\n");
+	ms_log (1, "%s: Packing FLOAT-32 data samples\n", PACK_SRCNAME);
       
       retval = msr_pack_float_32 (dest, src, maxsamples, maxdatabytes, 1,
 				  &npacked, packsamples, swapflag);
 
       break;
       
-    case FLOAT64:
+    case DE_FLOAT64:
       if ( sampletype != 'd' )
 	{
-	  fprintf (stderr, "Sample type must be double (d) for float-64 encoding not '%c'\n",
-		   sampletype);
+	  ms_log (2, "%s: Sample type must be double (d) for float-64 encoding not '%c'\n",
+		  PACK_SRCNAME, sampletype);
 	  return -1;
 	}
 
       if ( verbose > 1 )
-	fprintf (stderr, "Packing FLOAT-64 data samples\n");
+	ms_log (1, "%s: Packing FLOAT-64 data samples\n", PACK_SRCNAME);
             
       retval = msr_pack_float_64 (dest, src, maxsamples, maxdatabytes, 1,
 				  &npacked, packsamples, swapflag);
 
       break;
       
-    case STEIM1:
+    case DE_STEIM1:
       if ( sampletype != 'i' )
 	{
-	  fprintf (stderr, "Sample type must be integer (i) for Steim-1 compression not '%c'\n",
-		   sampletype);
+	  ms_log (2, "%s: Sample type must be integer (i) for Steim-1 compression not '%c'\n",
+		  PACK_SRCNAME, sampletype);
 	  return -1;
 	}
       
@@ -929,7 +955,7 @@ msr_pack_data (void *dest, void *src,
       diffbuff = (int32_t *) malloc (maxsamples * sizeof(int32_t));
       if ( diffbuff == NULL )
 	{
-	  fprintf (stderr, "msr_pack_data(): Unable to malloc diff buffer\n");
+	  ms_log (2, "msr_pack_data(%s): Unable to malloc diff buffer\n", PACK_SRCNAME);
 	  return -1;
 	}
       
@@ -938,7 +964,7 @@ msr_pack_data (void *dest, void *src,
 	diffbuff[npacked] = intbuff[npacked] - intbuff[npacked-1];
       
       if ( verbose > 1 )
-	fprintf (stderr, "Packing Steim-1 data frames\n");
+	ms_log (1, "%s: Packing Steim-1 data frames\n", PACK_SRCNAME);
       
       nframes = maxdatabytes / 64;
       
@@ -948,11 +974,11 @@ msr_pack_data (void *dest, void *src,
       free (diffbuff);
       break;
       
-    case STEIM2:
+    case DE_STEIM2:
       if ( sampletype != 'i' )
 	{
-	  fprintf (stderr, "Sample type must be integer (i) for Steim-2 compression not '%c'\n",
-		   sampletype);
+	  ms_log (2, "%s: Sample type must be integer (i) for Steim-2 compression not '%c'\n",
+		  PACK_SRCNAME, sampletype);
 	  return -1;
 	}
       
@@ -962,7 +988,7 @@ msr_pack_data (void *dest, void *src,
       diffbuff = (int32_t *) malloc (maxsamples * sizeof(int32_t));
       if ( diffbuff == NULL )
 	{
-	  fprintf (stderr, "msr_pack_data(): Unable to malloc diff buffer\n");
+	  ms_log (2, "msr_pack_data(%s): Unable to malloc diff buffer\n", PACK_SRCNAME);
 	  return -1;
 	}
       
@@ -971,7 +997,7 @@ msr_pack_data (void *dest, void *src,
 	diffbuff[npacked] = intbuff[npacked] - intbuff[npacked-1];
       
       if ( verbose > 1 )
-	fprintf (stderr, "Packing Steim-2 data frames\n");
+	ms_log (1, "%s: Packing Steim-2 data frames\n", PACK_SRCNAME);
       
       nframes = maxdatabytes / 64;
       
@@ -982,7 +1008,7 @@ msr_pack_data (void *dest, void *src,
       break;
       
     default:
-      fprintf (stderr, "Unable to pack format %d\n", encoding);
+      ms_log (2, "%s: Unable to pack format %d\n", PACK_SRCNAME, encoding);
       
       return -1;
     }
