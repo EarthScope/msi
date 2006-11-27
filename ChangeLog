@@ -1,3 +1,8 @@
+2006.331: 2.0pre3
+	- Update to libmseed 2.0pre7.
+	- Add -L option to include latency based on system clock when
+	record header details are printed.
+
 2006.312: 2.0pre2
 	- Update to libmseed 2.0pre5.
 

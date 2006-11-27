@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2006.289
+ * modified 2006.331
  ***************************************************************************/
 
 #include <stdio.h>
@@ -28,13 +28,14 @@ static int lisnumber (char *number);
 static void addfile (char *filename);
 static void usage (void);
 
-#define VERSION "2.0pre2"
+#define VERSION "2.0pre3"
 #define PACKAGE "msi"
 
 static flag    verbose      = 0;
 static flag    ppackets     = 0;    /* Controls printing of header/blockettes */
 static flag    printdata    = 0;    /* Controls printing of sample values: 1=first 6, 2=all*/
 static flag    printoffset  = 0;    /* Controls printing offset into input file */
+static flag    printlatency = 0;    /* Controls printing latency based on system time */
 static flag    basicsum     = 0;    /* Controls printing of basic summary */
 static flag    tracegapsum  = 0;    /* Controls printing of trace or gap list */
 static flag    tracegaponly = 0;    /* Controls printing of trace or gap list only */
@@ -220,6 +221,9 @@ main (int argc, char **argv)
 	      if ( printoffset )
 		printf ("%-10lld", (long long) filepos);
 	      
+	      if ( printlatency )
+		printf ("%-10.6g secs ", msr_host_latency(msr));
+	      
 	      msr_print (msr, ppackets);
 	    }
 	  
@@ -393,6 +397,10 @@ processparam (int argcount, char **argvec)
       else if (strcmp (argvec[optind], "-O") == 0)
 	{
 	  printoffset = 1;
+	}
+      else if (strcmp (argvec[optind], "-L") == 0)
+	{
+	  printlatency = 1;
 	}
       else if (strcmp (argvec[optind], "-s") == 0)
 	{
@@ -751,6 +759,7 @@ usage (void)
 	   " ## Output options ##\n"
 	   " -p           Print details of header, multiple flags can be used\n"
 	   " -O           Include offset into file when printing header details\n"
+	   " -L           Include latency when printing header details\n"
 	   " -s           Print a basic summary after processing file(s)\n"
 	   " -d           Unpack/decompress data and print the first 6 samples/record\n"
 	   " -D           Unpack/decompress data and print all samples\n"
