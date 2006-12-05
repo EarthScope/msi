@@ -1,4 +1,4 @@
-.TH MSI 1 2006/10/16
+.TH MSI 1 2006/12/5
 .SH NAME
 Mini-SEED Inspector
 
@@ -78,6 +78,11 @@ will result in all header details being printed.
 .IP "-O         "
 Include the offset into the file in bytes when printing header
 details.
+
+.IP "-L         "
+Include data latency when printing header details.  The latency is
+calcualed as the difference between the time of the last sample and
+the current time from the host computer.
 
 .IP "-s         "
 Print a basic summary including the number of records and the number

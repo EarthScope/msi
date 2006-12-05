@@ -1,5 +1,6 @@
 2006.339: 2.0pre4
 	- Update to libmseed 2.0pre8.
+	- Add -L option to man page.
 
 2006.331: 2.0pre3
 	- Update to libmseed 2.0pre7.
