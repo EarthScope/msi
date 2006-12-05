@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2006.326
+ * modified: 2006.339
  ***************************************************************************/
 
 #include <stdio.h>
@@ -42,7 +42,7 @@ mst_init ( MSTrace *mst )
   
   if ( mst == NULL )
     {
-      ms_log (2, "mst_init(): error allocating memory\n");
+      ms_log (2, "mst_init(): Cannot allocate memory\n");
       return NULL;
     }
   
@@ -111,7 +111,7 @@ mst_initgroup ( MSTraceGroup *mstg )
   
   if ( mstg == NULL )
     {
-      ms_log (2, "mst_initgroup(): Error allocating memory\n");
+      ms_log (2, "mst_initgroup(): Cannot allocate memory\n");
       return NULL;
     }
   
@@ -345,7 +345,7 @@ mst_addmsr ( MSTrace *mst, MSRecord *msr, flag whence )
       
       if ( mst->datasamples == NULL )
 	{
-	  ms_log (2, "mst_addmsr(): Error allocating memory\n");
+	  ms_log (2, "mst_addmsr(): Cannot allocate memory\n");
 	  return -1;
 	}
     }
@@ -450,7 +450,7 @@ mst_addspan ( MSTrace *mst, hptime_t starttime, hptime_t endtime,
       
       if ( mst->datasamples == NULL )
 	{
-	  ms_log (2, "mst_addspan(): Error allocating memory\n");
+	  ms_log (2, "mst_addspan(): Cannot allocate memory\n");
 	  return -1;
 	}
     }
@@ -942,6 +942,7 @@ mst_printtracelist ( MSTraceGroup *mstg, flag timeformat,
   char stime[30];
   char etime[30];
   char gapstr[20];
+  flag nogap;
   double gap;
   double delta;
   double prevsamprate;
@@ -1000,10 +1001,13 @@ mst_printtracelist ( MSTraceGroup *mstg, flag timeformat,
       if ( gaps > 0 )
 	{
 	  gap = 0.0;
+	  nogap = 0;
 	  
 	  if ( ! strcmp (prevsrcname, srcname) && prevsamprate != -1.0 &&
 	       MS_ISRATETOLERABLE (prevsamprate, mst->samprate) )
 	    gap = (double) (mst->starttime - prevendtime) / HPTMODULUS;
+	  else
+	    nogap = 1;
 	  
 	  /* Check that any overlap is not larger than the trace coverage */
 	  if ( gap < 0.0 )
@@ -1015,10 +1019,14 @@ mst_printtracelist ( MSTraceGroup *mstg, flag timeformat,
 	    }
 	  
 	  /* Fix up gap display */
-	  if ( gap >= 86400.0 || gap <= -86400.0 )
+	  if ( nogap )
+	    gapstr[0] = '\0';
+	  else if ( gap >= 86400.0 || gap <= -86400.0 )
 	    snprintf (gapstr, sizeof(gapstr), "%-3.1fd", (gap / 86400));
 	  else if ( gap >= 3600.0 || gap <= -3600.0 )
 	    snprintf (gapstr, sizeof(gapstr), "%-3.1fh", (gap / 3600));
+	  else if ( gap == 0.0 )
+	    snprintf (gapstr, sizeof(gapstr), "-0");
 	  else
 	    snprintf (gapstr, sizeof(gapstr), "%-4.4g", gap);
 	  
@@ -1110,7 +1118,7 @@ mst_printgaplist (MSTraceGroup *mstg, flag timeformat,
 	      mst = mst->next;
 	      continue;
 	    }
-
+	  
 	  /* Check that sample rates match using default tolerance */
 	  if ( ! MS_ISRATETOLERABLE (mst->samprate, mst->next->samprate) )
 	    {
@@ -1123,19 +1131,19 @@ mst_printgaplist (MSTraceGroup *mstg, flag timeformat,
 	  /* Check that any overlap is not larger than the trace coverage */
 	  if ( gap < 0.0 )
 	    {
-	      delta = ( mst->next->samprate ) ? (1.0 / mst->next->samprate) : 0,0;
+	      delta = ( mst->next->samprate ) ? (1.0 / mst->next->samprate) : 0.0;
 	      
 	      if ( (gap * -1.0) > (((double)(mst->next->endtime - mst->next->starttime)/HPTMODULUS) + delta) )
 		gap = -(((double)(mst->next->endtime - mst->next->starttime)/HPTMODULUS) + delta);
 	    }
-
+	  
 	  printflag = 1;
-
+	  
 	  /* Check gap/overlap criteria */
 	  if ( mingap )
 	    if ( gap < *mingap )
 	      printflag = 0;
-
+	  
 	  if ( maxgap )
 	    if ( gap > *maxgap )
 	      printflag = 0;
@@ -1154,6 +1162,8 @@ mst_printgaplist (MSTraceGroup *mstg, flag timeformat,
 		snprintf (gapstr, sizeof(gapstr), "%-3.1fd", (gap / 86400));
 	      else if ( gap >= 3600.0 || gap <= -3600.0 )
 		snprintf (gapstr, sizeof(gapstr), "%-3.1fh", (gap / 3600));
+	      else if ( gap == 0.0 )
+		snprintf (gapstr, sizeof(gapstr), "-0");
 	      else
 		snprintf (gapstr, sizeof(gapstr), "%-4.4g", gap);
 	      
@@ -1312,7 +1322,7 @@ mst_pack ( MSTrace *mst, void (*record_handler) (char *, int),
 	  
 	  if ( mst->datasamples == NULL )
 	    {
-	      ms_log (2, "mst_pack(): Error re-allocing datasamples buffer\n");
+	      ms_log (2, "mst_pack(): Cannot (re)allocate datasamples buffer\n");
 	      return -1;
 	    }
 	}

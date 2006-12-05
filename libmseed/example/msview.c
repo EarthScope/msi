@@ -172,19 +172,19 @@ parameter_proc (int argcount, char **argvec)
 static void
 usage (void)
 {
-  ms_log (1, "%s version: %s\n\n", PACKAGE, VERSION);
-  ms_log (1, "Usage: %s [options] file\n\n", PACKAGE);
-  ms_log (1,
-	  " ## Options ##\n"
-	  " -V             Report program version\n"
-	  " -h             Show this usage message\n"
-	  " -v             Be more verbose, multiple flags can be used\n"
-	  " -p             Print details of header, multiple flags can be used\n"
-	  " -s             Print a basic summary after processing a file\n"
-	  " -r bytes       Specify record length in bytes, required if no Blockette 1000\n"
-	  "\n"
-	  " file           File of Mini-SEED records\n"
-	  "\n");
+  fprintf (stderr, "%s version: %s\n\n", PACKAGE, VERSION);
+  fprintf (stderr, "Usage: %s [options] file\n\n", PACKAGE);
+  fprintf (stderr,
+	   " ## Options ##\n"
+	   " -V             Report program version\n"
+	   " -h             Show this usage message\n"
+	   " -v             Be more verbose, multiple flags can be used\n"
+	   " -p             Print details of header, multiple flags can be used\n"
+	   " -s             Print a basic summary after processing a file\n"
+	   " -r bytes       Specify record length in bytes, required if no Blockette 1000\n"
+	   "\n"
+	   " file           File of Mini-SEED records\n"
+	   "\n");
 }  /* End of usage() */
 
 

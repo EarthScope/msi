@@ -1,4 +1,4 @@
-.TH MST_PRINT 3 2006/11/27 "Libmseed API"
+.TH MST_PRINT 3 2006/12/4 "Libmseed API"
 .SH DESCRIPTION
 Printing of MSTrace information.
 
@@ -37,7 +37,9 @@ strings.  Possible formats are:
 .fi
 
 Both \fBmst_printtracelist\fP and \fBmst_printgaplist\fP represent
-time overlaps as negative gaps.
+time overlaps as negative gaps.  For a single sample overlap the value
+of the gap is calculated as zero, this will be printed as "-0" or
+negative zero to indicate an overlap.
 
 .SH GAP/OVERLAP RULES
 The existence of gaps and overlaps is implicit in the structure of the

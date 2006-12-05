@@ -1,3 +1,15 @@
+2006.339: 2.0pre8
+	- Add buffer length sanity check in ms_find_reclen() suggested by
+	Doreen Pahlke.
+	- Change mst_printracelist() and mst_printgaplist() to print
+	"-0" when the gap is 0 (one sample overlap) and nothing when there
+	is no gap.
+
+2006.332:
+	- Add memory allocation checks, every allocation is now tested.
+	- Fix usage message for example programs, use fprintf for the long
+	section of the output.
+
 2006.331: 2.0pre7
 	- Add source name to all unpacking error and diagnostic messages.
         - Add source name to all packing error and diagnostic messages.

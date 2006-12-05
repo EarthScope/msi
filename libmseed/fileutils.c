@@ -4,7 +4,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2006.326
+ * modified: 2006.339
  ***************************************************************************/
 
 #include <stdio.h>
@@ -119,14 +119,12 @@ ms_readmsr_r (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
       
       if ( msfp == NULL )
 	{
-	  ms_log (2, "ms_readmsr_l(): Cannot allocation memory\n");
+	  ms_log (2, "ms_readmsr_r(): Cannot allocate memory\n");
 	  return MS_GENERROR;
 	}
-      else
-	{
-	  /* Redirect the supplied pointer to the allocted params */
-	  *ppmsfp = msfp;
-	}
+      
+      /* Redirect the supplied pointer to the allocted params */
+      *ppmsfp = msfp;
       
       msfp->fp = NULL;
       msfp->rawrec = NULL;
@@ -205,6 +203,12 @@ ms_readmsr_r (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
       msfp->autodet = 0;
       
       msfp->rawrec = (char *) malloc (msfp->readlen);
+      
+      if ( msfp->rawrec == NULL )
+	{
+	  ms_log (2, "ms_readmsr_r(): Cannot allocate memory\n");
+	  return MS_GENERROR;
+	}
     }
 
   /* If reclen is negative reset readlen for autodetection */
@@ -224,6 +228,12 @@ ms_readmsr_r (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
       while ( detsize <= 0 && msfp->readlen <= 8192 )
 	{
 	  msfp->rawrec = (char *) realloc (msfp->rawrec, msfp->readlen);
+	  
+	  if ( msfp->rawrec == NULL )
+	    {
+	      ms_log (2, "ms_readmsr_r(): Cannot reallocate memory\n");
+	      return MS_GENERROR;
+	    }
 	  
 	  /* Read packed file info */
 	  if ( msfp->packinfolen && msfp->filepos == msfp->packinfooffset )
@@ -402,6 +412,12 @@ ms_readmsr_r (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
 	}
       
       msfp->rawrec = (char *) realloc (msfp->rawrec, detsize);
+
+      if ( msfp->rawrec == NULL )
+	{
+	  ms_log (2, "ms_readmsr_r(): Cannot allocate memory\n");
+	  return MS_GENERROR;
+	}
       
       /* Read the rest of the first record */
       if ( (detsize - msfp->readlen) > 0 )
@@ -695,8 +711,8 @@ ms_find_reclen ( const char *recbuf, int recbuflen, FILE *fileptr )
   if ( swapflag ) gswap2 (&blkt_offset);
   
   /* Loop through blockettes as long as number is non-zero and viable */
-  while ((blkt_offset != 0) &&
-         (blkt_offset <= recbuflen))
+  while ( blkt_offset != 0 &&
+	  blkt_offset <= recbuflen )
     {
       memcpy (&blkt_type, recbuf + blkt_offset, 2);
       memcpy (&next_blkt, recbuf + blkt_offset + 2, 2);
@@ -707,8 +723,10 @@ ms_find_reclen ( const char *recbuf, int recbuflen, FILE *fileptr )
 	  gswap2 (&next_blkt);
 	}
       
-      if (blkt_type == 1000)  /* Found the 1000 blockette */
-        {
+      /* Found a 1000 blockette, not truncated */
+      if ( blkt_type == 1000  &&
+	   (blkt_offset + 4 + sizeof(struct blkt_1000_s)) <= recbuflen )
+	{
           blkt_1000 = (struct blkt_1000_s *) (recbuf + blkt_offset + 4);
 	  
           foundlen = 1;

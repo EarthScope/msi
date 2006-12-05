@@ -14,7 +14,7 @@
  *
  * Modified by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2004.326
+ * modified: 2006.331
  ************************************************************************/
 
 /*
@@ -336,7 +336,7 @@ int msr_pack_steim1
   
   if (minbits == NULL)
     {
-      ms_log (2, "msr_pack_steim1(%s): cannot malloc minbits\n",
+      ms_log (2, "msr_pack_steim1(%s): Cannot allocate memory\n",
 	      PACK_SRCNAME);
       return -1;
     }
@@ -453,7 +453,7 @@ int msr_pack_steim2
   
   if (minbits == NULL)
     {
-      ms_log (2, "msr_pack_steim2(%s): cannot malloc minbits\n",
+      ms_log (2, "msr_pack_steim2(%s): Cannot allocate memory\n",
 	      PACK_SRCNAME);
       return -1;
     }

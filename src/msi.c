@@ -28,7 +28,7 @@ static int lisnumber (char *number);
 static void addfile (char *filename);
 static void usage (void);
 
-#define VERSION "2.0pre3"
+#define VERSION "2.0pre4"
 #define PACKAGE "msi"
 
 static flag    verbose      = 0;

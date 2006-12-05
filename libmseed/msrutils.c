@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2006.326
+ * modified: 2006.331
  ***************************************************************************/
 
 #include <stdio.h>
@@ -50,7 +50,7 @@ msr_init ( MSRecord *msr )
   
   if ( msr == NULL )
     {
-      ms_log (2, "msr_init(): error allocating memory\n");
+      ms_log (2, "msr_init(): Cannot allocate memory\n");
       return NULL;
     }
   
@@ -186,7 +186,7 @@ msr_addblockette (MSRecord *msr, char *blktdata, int length, int blkttype,
       
       if ( blkt == NULL )
 	{
-	  ms_log (2, "msr_addblockette(): Error allocating memory\n");
+	  ms_log (2, "msr_addblockette(): Cannot allocate memory\n");
 	  return NULL;
 	}
     }
@@ -196,7 +196,7 @@ msr_addblockette (MSRecord *msr, char *blktdata, int length, int blkttype,
       
       if ( msr->blkts == NULL )
 	{
-	  ms_log (2, "msr_addblockette(): Error allocating memory\n");
+	  ms_log (2, "msr_addblockette(): Cannot allocate memory\n");
 	  return NULL;
 	}
       
@@ -211,7 +211,7 @@ msr_addblockette (MSRecord *msr, char *blktdata, int length, int blkttype,
   
   if ( blkt->blktdata == NULL )
     {
-      ms_log (2, "msr_addblockette(): Error allocating memory\n");
+      ms_log (2, "msr_addblockette(): Cannot allocate memory\n");
       return NULL;
     }
   

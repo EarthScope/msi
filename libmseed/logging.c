@@ -6,7 +6,7 @@
  * Chad Trabant
  * IRIS Data Management Center
  *
- * modified: 2006.326
+ * modified: 2006.331
  ***************************************************************************/
 
 #include <stdio.h>
@@ -50,7 +50,8 @@ ms_loginit (void (*log_print)(const char*), const char *logprefix,
  *
  * See ms_loginit_main() description for usage.
  *
- * Returns a pointer to the created/re-initialized MSLogParam struct.
+ * Returns a pointer to the created/re-initialized MSLogParam struct
+ * on success and NULL on error.
  ***************************************************************************/
 MSLogParam *
 ms_loginit_l (MSLogParam *logp,
@@ -58,11 +59,17 @@ ms_loginit_l (MSLogParam *logp,
 	      void (*diag_print)(const char*), const char *errprefix)
 {
   MSLogParam *llog;
-
+  
   if ( logp == NULL )
     {
       llog = (MSLogParam *) malloc (sizeof(MSLogParam));
-
+      
+      if ( llog == NULL )
+        {
+          ms_log (2, "ms_loginit_l(): Cannot allocate memory\n");
+          return NULL;
+        }
+      
       llog->log_print = NULL;
       llog->logprefix = NULL;
       llog->diag_print = NULL;
@@ -72,7 +79,7 @@ ms_loginit_l (MSLogParam *logp,
     {
       llog = logp;
     }
-
+  
   ms_loginit_main (llog, log_print, logprefix, diag_print, errprefix);
 
   return llog;
@@ -111,7 +118,7 @@ ms_loginit_main (MSLogParam *logp,
 
   if ( log_print )
     logp->log_print = log_print;
-
+  
   if ( logprefix )
     {
       if ( strlen(logprefix) >= MAX_LOG_MSG_LENGTH )
@@ -248,7 +255,7 @@ ms_log_main (MSLogParam *logp, int level, va_list *varlist)
         }
       else
         {
-          strncpy (message, "error: ", MAX_LOG_MSG_LENGTH);
+          strncpy (message, "Error: ", MAX_LOG_MSG_LENGTH);
         }
       
       presize = strlen(message);

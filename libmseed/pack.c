@@ -210,7 +210,7 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
   
   if ( rawrec == NULL )
     {
-      ms_log (2, "msr_pack(%s): Error allocating memory\n", PACK_SRCNAME);
+      ms_log (2, "msr_pack(%s): Cannot allocate memory\n", PACK_SRCNAME);
       return -1;
     }
   
@@ -496,9 +496,10 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
   if ( ! msr->fsdh )
     {
       msr->fsdh = (struct fsdh_s *) malloc (sizeof (struct fsdh_s));
+
       if ( msr->fsdh == NULL )
 	{
-	  ms_log (2, "msr_pack_header_raw(%s): Error allocating memory\n",
+	  ms_log (2, "msr_pack_header_raw(%s): Cannot allocate memory\n",
 		  PACK_SRCNAME);
 	  return -1;
 	}
@@ -953,9 +954,10 @@ msr_pack_data (void *dest, void *src,
       
       /* Allocate and populate the difference buffer */
       diffbuff = (int32_t *) malloc (maxsamples * sizeof(int32_t));
+
       if ( diffbuff == NULL )
 	{
-	  ms_log (2, "msr_pack_data(%s): Unable to malloc diff buffer\n", PACK_SRCNAME);
+	  ms_log (2, "msr_pack_data(%s): Cannot allocate diff buffer\n", PACK_SRCNAME);
 	  return -1;
 	}
       
@@ -986,9 +988,10 @@ msr_pack_data (void *dest, void *src,
 
       /* Allocate and populate the difference buffer */
       diffbuff = (int32_t *) malloc (maxsamples * sizeof(int32_t));
+
       if ( diffbuff == NULL )
 	{
-	  ms_log (2, "msr_pack_data(%s): Unable to malloc diff buffer\n", PACK_SRCNAME);
+	  ms_log (2, "msr_pack_data(%s): Cannot allocate diff buffer\n", PACK_SRCNAME);
 	  return -1;
 	}
       

@@ -351,38 +351,38 @@ record_handler (char *record, int reclen)
 static void
 usage (void)
 {
-  ms_log (1, "%s version: %s\n\n", PACKAGE, VERSION);
-  ms_log (1, "Usage: %s [options] -o outfile infile\n\n", PACKAGE);
-  ms_log (1,
-	  " ## Options ##\n"
-	  " -V             Report program version\n"
-	  " -h             Show this usage message\n"
-	  " -v             Be more verbose, multiple flags can be used\n"
-	  " -p             Print details of input headers, multiple flags can be used\n"
-	  " -a             Autodetect every input record length, needed with mixed lengths\n"
-	  " -r bytes       Specify record length in bytes, required if no Blockette 1000\n"
-	  " -e encoding    Specify encoding format for data samples\n"
-	  " -i             Pack data individually for each input record\n"
-	  " -t             Pack data from traces after reading all data\n"
-	  " -R bytes       Specify record length in bytes for packing\n"
-	  " -E encoding    Specify encoding format for packing\n"
-	  " -b byteorder   Specify byte order for packing, MSBF: 1, LSBF: 0\n"
-	  "\n"
-	  " -o outfile     Specify the output file, required\n"
-	  "\n"
-	  " infile          Input Mini-SEED file\n"
-	  "\n"
-	  "The default packing method is to use parameters from the input records\n"
-	  "(reclen, encoding, byteorder, etc.) and pack records as soon as enough\n"
-	  "samples are available.  This method is a good balance between preservation\n"
-	  "of blockettes, header values from input records and pack efficiency\n"
-	  "compared to the other methods of packing, namely options -i and -t.\n"
-	  "In most Mini-SEED repacking schemes some level of header information loss\n"
-	  "or time shifting should be expected, especially in the case where the record\n"
-	  "length is changed.\n"
-	  "\n"
-	  "Unless each input record is being packed individually, option -i, it is\n"
-	  "not recommended to pack files containing records for different data streams.\n");
+  fprintf (stderr, "%s version: %s\n\n", PACKAGE, VERSION);
+  fprintf (stderr, "Usage: %s [options] -o outfile infile\n\n", PACKAGE);
+  fprintf (stderr,
+	   " ## Options ##\n"
+	   " -V             Report program version\n"
+	   " -h             Show this usage message\n"
+	   " -v             Be more verbose, multiple flags can be used\n"
+	   " -p             Print details of input headers, multiple flags can be used\n"
+	   " -a             Autodetect every input record length, needed with mixed lengths\n"
+	   " -r bytes       Specify record length in bytes, required if no Blockette 1000\n"
+	   " -e encoding    Specify encoding format for data samples\n"
+	   " -i             Pack data individually for each input record\n"
+	   " -t             Pack data from traces after reading all data\n"
+	   " -R bytes       Specify record length in bytes for packing\n"
+	   " -E encoding    Specify encoding format for packing\n"
+	   " -b byteorder   Specify byte order for packing, MSBF: 1, LSBF: 0\n"
+	   "\n"
+	   " -o outfile     Specify the output file, required\n"
+	   "\n"
+	   " infile          Input Mini-SEED file\n"
+	   "\n"
+	   "The default packing method is to use parameters from the input records\n"
+	   "(reclen, encoding, byteorder, etc.) and pack records as soon as enough\n"
+	   "samples are available.  This method is a good balance between preservation\n"
+	   "of blockettes, header values from input records and pack efficiency\n"
+	   "compared to the other methods of packing, namely options -i and -t.\n"
+	   "In most Mini-SEED repacking schemes some level of header information loss\n"
+	   "or time shifting should be expected, especially in the case where the record\n"
+	   "length is changed.\n"
+	   "\n"
+	   "Unless each input record is being packed individually, option -i, it is\n"
+	   "not recommended to pack files containing records for different data streams.\n");
 }  /* End of usage() */
 
 

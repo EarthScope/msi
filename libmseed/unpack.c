@@ -134,6 +134,13 @@ msr_unpack ( char *record, int reclen, MSRecord **ppmsr,
   
   /* Allocate and copy fixed section of data header */
   msr->fsdh = realloc (msr->fsdh, sizeof (struct fsdh_s));
+  
+  if ( msr->fsdh == NULL )
+    {
+      ms_log (2, "msr_unpack(): Cannot allocate memory\n");
+      return MS_GENERROR;
+    }
+  
   memcpy (msr->fsdh, record, sizeof (struct fsdh_s));
   
   /* Check to see if byte swapping is needed by testing the year */
@@ -740,7 +747,7 @@ msr_unpack_data ( MSRecord *msr, int swapflag, int verbose )
       
       if ( msr->datasamples == NULL )
 	{
-	  ms_log (2, "msr_unpack_data(%s): Error (re)allocating memory\n",
+	  ms_log (2, "msr_unpack_data(%s): Cannot (re)allocate memory\n",
 		  UNPACK_SRCNAME);
 	  return MS_GENERROR;
 	}
@@ -817,7 +824,7 @@ msr_unpack_data ( MSRecord *msr, int swapflag, int verbose )
       diffbuff = (int32_t *) malloc(unpacksize);
       if ( diffbuff == NULL )
 	{
-	  ms_log (2, "msr_unpack_data(%s): Unable to malloc diff buffer\n",
+	  ms_log (2, "msr_unpack_data(%s): Cannot allocate diff buffer\n",
 		  UNPACK_SRCNAME);
 	  return MS_GENERROR;
 	}
@@ -836,7 +843,7 @@ msr_unpack_data ( MSRecord *msr, int swapflag, int verbose )
       diffbuff = (int32_t *) malloc(unpacksize);
       if ( diffbuff == NULL )
 	{
-	  ms_log (2, "msr_unpack_data(%s): Unable to malloc diff buffer\n",
+	  ms_log (2, "msr_unpack_data(%s): Cannot allocate diff buffer\n",
 		  UNPACK_SRCNAME);
 	  return MS_GENERROR;
 	}
