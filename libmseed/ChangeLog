@@ -2,7 +2,7 @@
 	- Add buffer length sanity check in ms_find_reclen() suggested by
 	Doreen Pahlke.
 	- Change mst_printracelist() and mst_printgaplist() to print
-	"-0" when the gap is 0 (one sample overlap) and nothing when there
+	"-0" when the gap is 0 (one sample overlap) and "==" when there
 	is no gap.
 
 2006.332:

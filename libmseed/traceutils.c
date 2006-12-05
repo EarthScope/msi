@@ -1020,13 +1020,13 @@ mst_printtracelist ( MSTraceGroup *mstg, flag timeformat,
 	  
 	  /* Fix up gap display */
 	  if ( nogap )
-	    gapstr[0] = '\0';
+	    snprintf (gapstr, sizeof(gapstr), " == ");
 	  else if ( gap >= 86400.0 || gap <= -86400.0 )
 	    snprintf (gapstr, sizeof(gapstr), "%-3.1fd", (gap / 86400));
 	  else if ( gap >= 3600.0 || gap <= -3600.0 )
 	    snprintf (gapstr, sizeof(gapstr), "%-3.1fh", (gap / 3600));
 	  else if ( gap == 0.0 )
-	    snprintf (gapstr, sizeof(gapstr), "-0");
+	    snprintf (gapstr, sizeof(gapstr), "-0  ");
 	  else
 	    snprintf (gapstr, sizeof(gapstr), "%-4.4g", gap);
 	  
@@ -1163,7 +1163,7 @@ mst_printgaplist (MSTraceGroup *mstg, flag timeformat,
 	      else if ( gap >= 3600.0 || gap <= -3600.0 )
 		snprintf (gapstr, sizeof(gapstr), "%-3.1fh", (gap / 3600));
 	      else if ( gap == 0.0 )
-		snprintf (gapstr, sizeof(gapstr), "-0");
+		snprintf (gapstr, sizeof(gapstr), "-0  ");
 	      else
 		snprintf (gapstr, sizeof(gapstr), "%-4.4g", gap);
 	      
