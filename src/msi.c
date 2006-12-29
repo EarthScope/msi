@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2006.331
+ * modified 2006.363
  ***************************************************************************/
 
 #include <stdio.h>
@@ -28,7 +28,7 @@ static int lisnumber (char *number);
 static void addfile (char *filename);
 static void usage (void);
 
-#define VERSION "2.0pre4"
+#define VERSION "2.0pre5"
 #define PACKAGE "msi"
 
 static flag    verbose      = 0;

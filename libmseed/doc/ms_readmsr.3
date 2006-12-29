@@ -1,4 +1,4 @@
-.TH MS_READMSR 3 2006/11/22 "Libmseed API"
+.TH MS_READMSR 3 2006/12/12 "Libmseed API"
 .SH DESCRIPTION
 Read Mini-SEED data from files
 
@@ -6,17 +6,17 @@ Read Mini-SEED data from files
 .nf
 .B #include <libmseed.h>
 
-.BI "int \fBms_readmsr\fP ( MSRecord **ppmsr, char *" msfile ", int " reclen ",
-.BI "                 off_t *" fpos ", int *" last ", flag " skipnotdata ",
-.BI "                 flag " dataflag ",flag " verbose " );
+.BI "int \fBms_readmsr\fP ( MSRecord **ppmsr, char *" msfile ", int " reclen ","
+.BI "                 off_t *" fpos ", int *" last ", flag " skipnotdata ","
+.BI "                 flag " dataflag ",flag " verbose " );"
 
-.BI "int \fBms_readmsr_r\fP ( MSFileParam **ppmsfp, MSRecord **ppmsr, char *" msfile ",
-.BI "                    int " reclen ", off_t *" fpos ", int *" last ",
-.BI "                    flag " skipnotdata ", flag " dataflag ",flag " verbose " );
+.BI "int \fBms_readmsr_r\fP ( MSFileParam **ppmsfp, MSRecord **ppmsr, char *" msfile ","
+.BI "                    int " reclen ", off_t *" fpos ", int *" last ","
+.BI "                    flag " skipnotdata ", flag " dataflag ",flag " verbose " );"
 
-.BI "int \fBms_readtraces\fP ( MSTraceGroup **ppmstg, char *" msfile ", int " reclen ", 
-.BI "                    double " timetol ", double " sampratetol ",
-.BI "                    flag " dataquality ", flag " skipnotdata ",
+.BI "int \fBms_readtraces\fP ( MSTraceGroup **ppmstg, char *" msfile ", int " reclen ", "
+.BI "                    double " timetol ", double " sampratetol ","
+.BI "                    flag " dataquality ", flag " skipnotdata ","
 .BI "                    flag " dataflag ", flag " verbose " );"
 .fi
 
@@ -82,6 +82,7 @@ using \fBms_readmsr_r\fP and adds each one to a MSTraceGroup using
 will be initialize it automatically.  The MSTraceGroup struct at
 \fI*ppmstg\fP may already contain entries before \fBms_readtraces\fP
 is called, in this case the MSTraceGroup is extended.
+\fBms_readtraces\fP is thread safe.
 
 .SH RETURN VALUES
 On the sucessful read and parsing of a record \fBms_readmsr\fP and
@@ -101,11 +102,6 @@ files, but only when the record length is being autodetected.  Packed
 Mini-SEED is the indexed archive format used internally at the IRIS
 Data Management Center and probably not used anywhere else.
 
-.SH CAVEATS
-Neither \fBms_readfile\fP or \fBms_readtraces\fP is thread safe nor
-can they be used to read more than one file at a time as static memory
-is used to keep track of the file reading parameters.
-
 .SH EXAMPLE
 Skeleton code for reading a file with \fBms_readmsr(3)\fP:
 
@@ -121,7 +117,7 @@ main() {
     }
 
   if ( retcode != MS_ENDOFFILE )
-    fprintf (stderr, "Error reading input file %s\\n", filename);
+    ms_log (2, "Error reading input file %s: %s\\n", filename, ms_errorstr(retcode));
 
   /* Cleanup memory and close file */
   ms_readmsr (&msr, NULL, 0, NULL, NULL, 0, 0);
@@ -142,7 +138,7 @@ main() {
     }
 
   if ( retcode != MS_ENDOFFILE )
-    fprintf (stderr, "Error reading input file %s\\n", filename);
+    ms_log (2, "Error reading input file %s: %s\\n", filename, ms_errorstr(retcode));
 
   /* Cleanup memory and close file */
   ms_readmsr_r (&msfp, &msr, NULL, 0, NULL, NULL, 0, 0);
@@ -159,16 +155,16 @@ main() {
   retcode = msr_readtraces (&mstg, filename, 0, -1.0, -1.0, 0, 1, 0, verbose);
 
   if ( retcode != MS_NOERROR )
-    fprintf (stderr, "Error reading input file %s\\n", filename);
+    ms_log (2, "Error reading input file %s: %s\\n", filename, ms_errorstr(retcode));
 
   retcode = msr_readtraces (&mstg, filename2, 0, -1.0, -1.0, 0, 1, 0, verbose);
 
   if ( retcode != MS_NOERROR )
-    fprintf (stderr, "Error reading input file %s\\n", filename2);
+    ms_log (2, "Error reading input file %s: %s\\n", filename2, ms_errorstr(retcode));
 
   if ( ! mstg )
     {
-      fprintf (stderr, "Error reading file\\n");
+      ms_log (2, "Error reading file\\n");
       return -1;
     }
 
@@ -180,7 +176,8 @@ main() {
 .fi
 
 .SH SEE ALSO
-\fBms_intro(3)\fP, \fBmsr_unpack(3)\fP and \fBmst_addmsrtogroup(3)\fP.
+\fBms_intro(3)\fP, \fBmsr_unpack(3)\fP, \fBmst_addmsrtogroup(3)\fP,
+\fBms_log(3)\fP and \fBms_errorstr(3)\fP.
 
 .SH AUTHOR
 .nf

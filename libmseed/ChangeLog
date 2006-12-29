@@ -1,3 +1,24 @@
+2006.363:
+	- Change mst_groupsort() to sort on: srcname, then starttime,
+	then descending endtime and finally sample rate.  This moves
+	sample rate to the end of the criteria, the previous order was:
+	srcname, sample rate, starttime and endtime.
+
+2006.354: 2.0rc1
+	- Stamp 2.0rc1.
+        - Fix diagnostic printing bug in pack.c.
+	- Fix ms_gswap.3 man page.
+
+2006.346:
+	- Change "get_" prefix for lookup routines to "ms_".
+	- Change ms_encoding() to ms_encodingstr().
+	- Document ms_errorstr() in the lookup and other man pages.
+	- Document and use ms_log(3) in User Guide/ms_intro(3).
+
+2006.344:
+	- Add "ms_" prefix to gswap routines.
+	- Change SWAPBTIME macro to MS_SWAPBTIME.
+
 2006.339: 2.0pre8
 	- Add buffer length sanity check in ms_find_reclen() suggested by
 	Doreen Pahlke.

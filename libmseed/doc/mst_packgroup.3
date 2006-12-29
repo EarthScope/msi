@@ -1,4 +1,4 @@
-.TH MST_PACK 3 2006/10/10 "Libmseed API"
+.TH MST_PACK 3 2006/12/12 "Libmseed API"
 .SH DESCRIPTION
 Packing of Mini-SEED records from MSTrace segments.
 
@@ -42,8 +42,9 @@ which must be expressible as 2 raised to the power of X where X is
 between (and including) 8 to 20.
 
 \fIencoding\fP should be set to one of the following supported
-Mini-SEED data encoding formats: ASCII (0), INT16 (1), INT32 (3),
-FLOAT32 (4), FLOAT64 (5), STEIM1 (10) and STEIM2 (11).
+Mini-SEED data encoding formats: DE_ASCII (0), DE_INT16 (1), DE_INT32
+(3), DE_FLOAT32 (4), DE_FLOAT64 (5), DE_STEIM1 (10) and DE_STEIM2
+(11).  The encoding aliases are defined in libmseed.h.
 MSTrace.sampletype should indicated the sample type as either 'a'
 (ASCII), 'i' (32-bit integers), 'f' (32-bit floats) or 'd' (64-bit
 doubles).
@@ -100,7 +101,7 @@ mst_pack(3):
 static void record_handler (char *record, int reclen) {
   if ( fwrite(record, reclen, 1, outfile) != 1 )
     {
-      fprintf (stderr, "Error writing to output file\n");
+      ms_log (2, "Error writing to output file\n");
     }
 }
 
@@ -126,9 +127,9 @@ main() {
   mst->sampletype = 'i';      /* declare type to be 32-bit integers */
 
   /* Pack 4096 byte, big-endian records, using Steim-2 compression */
-  precords = mst_pack (mst, &record_handler, 4096, STEIM2, 1, &psamples, 1, verbose, NULL);
+  precords = mst_pack (mst, &record_handler, 4096, DE_STEIM2, 1, &psamples, 1, verbose, NULL);
 
-  printf ("Packed %d samples into %d records\n", psamples, precords);
+  ms_log (0, "Packed %d samples into %d records\n", psamples, precords);
 
   mst_free (&mst);
 }

@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2006.331
+ * modified: 2006.346
  ***************************************************************************/
 
 #include <stdio.h>
@@ -641,7 +641,7 @@ msr_print (MSRecord *msr, flag details)
 	      struct blkt_100_s *blkt_100 = (struct blkt_100_s *) cur_blkt->blktdata;
 	      
 	      ms_log (0, "          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
-		      get_blktdesc(cur_blkt->blkt_type));
+		      ms_blktdesc(cur_blkt->blkt_type));
 	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
 	      ms_log (0, "          actual sample rate: %.10g\n", blkt_100->samprate);
 	      
@@ -662,7 +662,7 @@ msr_print (MSRecord *msr, flag details)
 	      struct blkt_200_s *blkt_200 = (struct blkt_200_s *) cur_blkt->blktdata;
 	      
 	      ms_log (0, "          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
-		      get_blktdesc(cur_blkt->blkt_type));
+		      ms_blktdesc(cur_blkt->blkt_type));
 	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
 	      ms_log (0, "            signal amplitude: %g\n", blkt_200->amplitude);
 	      ms_log (0, "               signal period: %g\n", blkt_200->period);
@@ -692,7 +692,7 @@ msr_print (MSRecord *msr, flag details)
 	      struct blkt_201_s *blkt_201 = (struct blkt_201_s *) cur_blkt->blktdata;
 	      
 	      ms_log (0, "          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
-		      get_blktdesc(cur_blkt->blkt_type));
+		      ms_blktdesc(cur_blkt->blkt_type));
 	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
 	      ms_log (0, "            signal amplitude: %g\n", blkt_201->amplitude);
 	      ms_log (0, "               signal period: %g\n", blkt_201->period);
@@ -722,7 +722,7 @@ msr_print (MSRecord *msr, flag details)
 	      struct blkt_300_s *blkt_300 = (struct blkt_300_s *) cur_blkt->blktdata;
 	      
 	      ms_log (0, "          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
-		      get_blktdesc(cur_blkt->blkt_type));
+		      ms_blktdesc(cur_blkt->blkt_type));
 	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
 	      ms_btime2seedtimestr (&blkt_300->time, time);
 	      ms_log (0, "      calibration start time: %s\n", time);
@@ -753,7 +753,7 @@ msr_print (MSRecord *msr, flag details)
 	      struct blkt_310_s *blkt_310 = (struct blkt_310_s *) cur_blkt->blktdata;
 	      
 	      ms_log (0, "          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
-		      get_blktdesc(cur_blkt->blkt_type));
+		      ms_blktdesc(cur_blkt->blkt_type));
 	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
 	      ms_btime2seedtimestr (&blkt_310->time, time);
 	      ms_log (0, "      calibration start time: %s\n", time);
@@ -786,7 +786,7 @@ msr_print (MSRecord *msr, flag details)
 	      struct blkt_320_s *blkt_320 = (struct blkt_320_s *) cur_blkt->blktdata;
 	      
 	      ms_log (0, "          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
-		      get_blktdesc(cur_blkt->blkt_type));
+		      ms_blktdesc(cur_blkt->blkt_type));
 	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
 	      ms_btime2seedtimestr (&blkt_320->time, time);
 	      ms_log (0, "      calibration start time: %s\n", time);
@@ -817,7 +817,7 @@ msr_print (MSRecord *msr, flag details)
 	      struct blkt_390_s *blkt_390 = (struct blkt_390_s *) cur_blkt->blktdata;
 	      
 	      ms_log (0, "          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
-		      get_blktdesc(cur_blkt->blkt_type));
+		      ms_blktdesc(cur_blkt->blkt_type));
 	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
 	      ms_btime2seedtimestr (&blkt_390->time, time);
 	      ms_log (0, "      calibration start time: %s\n", time);
@@ -843,7 +843,7 @@ msr_print (MSRecord *msr, flag details)
 	      struct blkt_395_s *blkt_395 = (struct blkt_395_s *) cur_blkt->blktdata;
 	      
 	      ms_log (0, "          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
-		      get_blktdesc(cur_blkt->blkt_type));
+		      ms_blktdesc(cur_blkt->blkt_type));
 	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
 	      ms_btime2seedtimestr (&blkt_395->time, time);
 	      ms_log (0, "        calibration end time: %s\n", time);
@@ -857,7 +857,7 @@ msr_print (MSRecord *msr, flag details)
 	      struct blkt_400_s *blkt_400 = (struct blkt_400_s *) cur_blkt->blktdata;
 	      
 	      ms_log (0, "          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
-		      get_blktdesc(cur_blkt->blkt_type));
+		      ms_blktdesc(cur_blkt->blkt_type));
 	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
 	      ms_log (0, "      beam azimuth (degrees): %g\n", blkt_400->azimuth);
 	      ms_log (0, "  beam slowness (sec/degree): %g\n", blkt_400->slowness);
@@ -872,7 +872,7 @@ msr_print (MSRecord *msr, flag details)
 	      struct blkt_405_s *blkt_405 = (struct blkt_405_s *) cur_blkt->blktdata;
 	      
 	      ms_log (0, "          BLOCKETTE %u: (%s, incomplete)\n", cur_blkt->blkt_type,
-		      get_blktdesc(cur_blkt->blkt_type));
+		      ms_blktdesc(cur_blkt->blkt_type));
 	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
 	      ms_log (0, "           first delay value: %u\n", blkt_405->delay_values[0]);
 	    }
@@ -882,7 +882,7 @@ msr_print (MSRecord *msr, flag details)
 	      struct blkt_500_s *blkt_500 = (struct blkt_500_s *) cur_blkt->blktdata;
 	      
 	      ms_log (0, "          BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
-		      get_blktdesc(cur_blkt->blkt_type));
+		      ms_blktdesc(cur_blkt->blkt_type));
 	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
 	      ms_log (0, "              VCO correction: %g%%\n", blkt_500->vco_correction);
 	      ms_btime2seedtimestr (&blkt_500->time, time);
@@ -913,10 +913,10 @@ msr_print (MSRecord *msr, flag details)
 		strncpy (order, "Unknown value", sizeof(order)-1);
 	      
 	      ms_log (0, "         BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
-		      get_blktdesc(cur_blkt->blkt_type));
+		      ms_blktdesc(cur_blkt->blkt_type));
 	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
 	      ms_log (0, "                    encoding: %s (val:%u)\n",
-		      (char *) get_encoding (blkt_1000->encoding), blkt_1000->encoding);
+		      (char *) ms_encodingstr (blkt_1000->encoding), blkt_1000->encoding);
 	      ms_log (0, "                  byte order: %s (val:%u)\n",
 		      order, blkt_1000->byteorder);
 	      ms_log (0, "               record length: %d (val:%u)\n",
@@ -931,7 +931,7 @@ msr_print (MSRecord *msr, flag details)
 	      struct blkt_1001_s *blkt_1001 = (struct blkt_1001_s *) cur_blkt->blktdata;
 	      
 	      ms_log (0, "         BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
-		      get_blktdesc(cur_blkt->blkt_type));
+		      ms_blktdesc(cur_blkt->blkt_type));
 	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
 	      ms_log (0, "              timing quality: %u%%\n", blkt_1001->timing_qual);
 	      ms_log (0, "                micro second: %d\n", blkt_1001->usec);
@@ -956,7 +956,7 @@ msr_print (MSRecord *msr, flag details)
 		strncpy (order, "Unknown value", sizeof(order)-1);
 	      
 	      ms_log (0, "         BLOCKETTE %u: (%s)\n", cur_blkt->blkt_type,
-		      get_blktdesc(cur_blkt->blkt_type));
+		      ms_blktdesc(cur_blkt->blkt_type));
 	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
 	      ms_log (0, "            blockette length: %u\n", blkt_2000->length);
 	      ms_log (0, "                 data offset: %u\n", blkt_2000->data_offset);
@@ -1003,7 +1003,7 @@ msr_print (MSRecord *msr, flag details)
 	  else
 	    {
 	      ms_log (0, "         BLOCKETTE %u: (%s, not parsed)\n", cur_blkt->blkt_type,
-		      get_blktdesc(cur_blkt->blkt_type));
+		      ms_blktdesc(cur_blkt->blkt_type));
 	      ms_log (0, "              next blockette: %u\n", cur_blkt->next_blkt);
 	    }
 	  

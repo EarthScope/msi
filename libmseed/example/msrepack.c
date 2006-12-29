@@ -201,7 +201,7 @@ main (int argc, char **argv)
     }
   
   if ( retcode != MS_ENDOFFILE )
-    ms_log (2, "Error reading %s: %s\n", inputfile, get_errorstr(retcode));
+    ms_log (2, "Error reading %s: %s\n", inputfile, ms_errorstr(retcode));
   
   /* Make sure everything is cleaned up */
   ms_readmsr (&msr, NULL, 0, NULL, NULL, 0, 0, 0);

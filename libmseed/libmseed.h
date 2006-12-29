@@ -30,8 +30,8 @@ extern "C" {
 
 #include "lmplatform.h"
 
-#define LIBMSEED_VERSION "2.0pre8"
-#define LIBMSEED_RELEASE "2006.339"
+#define LIBMSEED_VERSION "2.0rc1"
+#define LIBMSEED_RELEASE "2006.354"
 
 #define MINRECLEN   256      /* Minimum Mini-SEED record length, 2^8 bytes */
 #define MAXRECLEN   1048576  /* Maximum Mini-SEED record length, 2^20 bytes */
@@ -512,11 +512,11 @@ extern int      ms_bigendianhost ();
 extern double   ms_dabs (double val);
 
 /* Lookup functions */
-extern uint8_t  get_samplesize (const char sampletype);
-extern char*    get_encoding (const char encoding);
-extern char*    get_blktdesc (uint16_t blkttype);
-extern uint16_t get_blktlen (uint16_t blkttype, const char *blktdata, flag swapflag);
-extern char *   get_errorstr (int errorcode);
+extern uint8_t  ms_samplesize (const char sampletype);
+extern char*    ms_encodingstr (const char encoding);
+extern char*    ms_blktdesc (uint16_t blkttype);
+extern uint16_t ms_blktlen (uint16_t blkttype, const char *blktdata, flag swapflag);
+extern char *   ms_errorstr (int errorcode);
 
 /* Logging facility */
 #define MAX_LOG_MSG_LENGTH  200      /* Maximum length of log messages */
@@ -539,21 +539,21 @@ extern MSLogParam *ms_loginit_l (MSLogParam *logp,
 			         void (*diag_print)(const char*), const char *errprefix);
 
 /* Generic byte swapping routines */
-extern void     gswap2 ( void *data2 );
-extern void     gswap3 ( void *data3 );
-extern void     gswap4 ( void *data4 );
-extern void     gswap8 ( void *data8 );
+extern void     ms_gswap2 ( void *data2 );
+extern void     ms_gswap3 ( void *data3 );
+extern void     ms_gswap4 ( void *data4 );
+extern void     ms_gswap8 ( void *data8 );
 
 /* Generic byte swapping routines for memory aligned quantities */
-extern void     gswap2a ( void *data2 );
-extern void     gswap4a ( void *data4 );
-extern void     gswap8a ( void *data8 );
+extern void     ms_gswap2a ( void *data2 );
+extern void     ms_gswap4a ( void *data4 );
+extern void     ms_gswap8a ( void *data8 );
 
 /* Byte swap macro for the BTime struct */
-#define SWAPBTIME(x) \
-  gswap2 (x.year);   \
-  gswap2 (x.day);    \
-  gswap2 (x.fract);
+#define MS_SWAPBTIME(x) \
+  ms_gswap2 (x.year);   \
+  ms_gswap2 (x.day);    \
+  ms_gswap2 (x.fract);
 
 
 #ifdef __cplusplus

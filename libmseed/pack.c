@@ -7,7 +7,7 @@
  * Written by Chad Trabant,
  *   IRIS Data Management Center
  *
- * modified: 2006.331
+ * modified: 2006.354
  ***************************************************************************/
 
 #include <stdio.h>
@@ -187,7 +187,7 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
       return -1;
     }
   
-  samplesize = get_samplesize (msr->sampletype);
+  samplesize = ms_samplesize (msr->sampletype);
   
   if ( ! samplesize )
     {
@@ -286,7 +286,7 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
     }
   
   *HPdataoffset = (uint16_t) dataoffset;
-  if ( headerswapflag ) gswap2 (HPdataoffset);
+  if ( headerswapflag ) ms_gswap2 (HPdataoffset);
   
   /* Determine the max data bytes and sample count */
   maxdatabytes = msr->reclen - dataoffset;
@@ -328,10 +328,10 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
       
       /* Update number of samples */
       *HPnumsamples = (uint16_t) packsamples;
-      if ( headerswapflag ) gswap2 (HPnumsamples);
+      if ( headerswapflag ) ms_gswap2 (HPnumsamples);
       
       if ( verbose > 0 )
-	ms_log (1, "%s: Packed %d samples\n", packsamples, PACK_SRCNAME);
+	ms_log (1, "%s: Packed %d samples\n", PACK_SRCNAME, packsamples);
       
       /* Send record to handler */
       record_handler (rawrec, msr->reclen);
@@ -349,10 +349,10 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
       if ( totalpackedsamples >= msr->numsamples )
 	break;
     }
-
+  
   if ( verbose > 2 )
-    ms_log (1, "%s: Packed %d total samples\n", totalpackedsamples, PACK_SRCNAME);
-
+    ms_log (1, "%s: Packed %d total samples\n", PACK_SRCNAME, totalpackedsamples);
+  
   free (rawrec);
   
   return recordcnt;
@@ -544,13 +544,13 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
   /* Swap byte order? */
   if ( swapflag )
     {
-      SWAPBTIME (&fsdh->start_time);
-      gswap2 (&fsdh->numsamples);
-      gswap2 (&fsdh->samprate_fact);
-      gswap2 (&fsdh->samprate_mult);
-      gswap4 (&fsdh->time_correct);
-      gswap2 (&fsdh->data_offset);
-      gswap2 (&fsdh->blockette_offset);
+      MS_SWAPBTIME (&fsdh->start_time);
+      ms_gswap2 (&fsdh->numsamples);
+      ms_gswap2 (&fsdh->samprate_fact);
+      ms_gswap2 (&fsdh->samprate_mult);
+      ms_gswap4 (&fsdh->time_correct);
+      ms_gswap2 (&fsdh->data_offset);
+      ms_gswap2 (&fsdh->blockette_offset);
     }
   
   /* Traverse blockette chain and pack blockettes at 'offset' */
@@ -568,7 +568,7 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
       
       /* Pack blockette type and leave space for next offset */
       memcpy (rawrec + offset, &cur_blkt->blkt_type, 2);
-      if ( swapflag ) gswap2 (rawrec + offset);
+      if ( swapflag ) ms_gswap2 (rawrec + offset);
       nextoffset = offset + 2;
       offset += 4;
       
@@ -580,7 +580,7 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
 	  
 	  if ( swapflag )
 	    {
-	      gswap4 (&blkt_100->samprate);
+	      ms_gswap4 (&blkt_100->samprate);
 	    }
 	}
       
@@ -592,10 +592,10 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
 	  
 	  if ( swapflag )
 	    {
-	      gswap4 (&blkt_200->amplitude);
-	      gswap4 (&blkt_200->period);
-	      gswap4 (&blkt_200->background_estimate);
-	      SWAPBTIME (&blkt_200->time);
+	      ms_gswap4 (&blkt_200->amplitude);
+	      ms_gswap4 (&blkt_200->period);
+	      ms_gswap4 (&blkt_200->background_estimate);
+	      MS_SWAPBTIME (&blkt_200->time);
 	    }
 	}
       
@@ -607,10 +607,10 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
 	  
 	  if ( swapflag )
 	    {
-	      gswap4 (&blkt_201->amplitude);
-	      gswap4 (&blkt_201->period);
-	      gswap4 (&blkt_201->background_estimate);
-	      SWAPBTIME (&blkt_201->time);
+	      ms_gswap4 (&blkt_201->amplitude);
+	      ms_gswap4 (&blkt_201->period);
+	      ms_gswap4 (&blkt_201->background_estimate);
+	      MS_SWAPBTIME (&blkt_201->time);
 	    }
 	}
 
@@ -622,11 +622,11 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
 	  
 	  if ( swapflag )
 	    {
-	      SWAPBTIME (&blkt_300->time);
-	      gswap4 (&blkt_300->step_duration);
-	      gswap4 (&blkt_300->interval_duration);
-	      gswap4 (&blkt_300->amplitude);
-	      gswap4 (&blkt_300->reference_amplitude);
+	      MS_SWAPBTIME (&blkt_300->time);
+	      ms_gswap4 (&blkt_300->step_duration);
+	      ms_gswap4 (&blkt_300->interval_duration);
+	      ms_gswap4 (&blkt_300->amplitude);
+	      ms_gswap4 (&blkt_300->reference_amplitude);
 	    }
 	}
 
@@ -638,11 +638,11 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
 	  
 	  if ( swapflag )
 	    {
-	      SWAPBTIME (&blkt_310->time);
-	      gswap4 (&blkt_310->duration);
-	      gswap4 (&blkt_310->period);
-	      gswap4 (&blkt_310->amplitude);
-	      gswap4 (&blkt_310->reference_amplitude);
+	      MS_SWAPBTIME (&blkt_310->time);
+	      ms_gswap4 (&blkt_310->duration);
+	      ms_gswap4 (&blkt_310->period);
+	      ms_gswap4 (&blkt_310->amplitude);
+	      ms_gswap4 (&blkt_310->reference_amplitude);
 	    }
 	}
       
@@ -654,10 +654,10 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
 	  
 	  if ( swapflag )
 	    {
-	      SWAPBTIME (&blkt_320->time);
-	      gswap4 (&blkt_320->duration);
-	      gswap4 (&blkt_320->ptp_amplitude);
-	      gswap4 (&blkt_320->reference_amplitude);
+	      MS_SWAPBTIME (&blkt_320->time);
+	      ms_gswap4 (&blkt_320->duration);
+	      ms_gswap4 (&blkt_320->ptp_amplitude);
+	      ms_gswap4 (&blkt_320->reference_amplitude);
 	    }
 	}
 
@@ -669,9 +669,9 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
 	  
 	  if ( swapflag )
 	    {
-	      SWAPBTIME (&blkt_390->time);
-	      gswap4 (&blkt_390->duration);
-	      gswap4 (&blkt_390->amplitude);
+	      MS_SWAPBTIME (&blkt_390->time);
+	      ms_gswap4 (&blkt_390->duration);
+	      ms_gswap4 (&blkt_390->amplitude);
 	    }
 	}
       
@@ -683,7 +683,7 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
 	  
 	  if ( swapflag )
 	    {
-	      SWAPBTIME (&blkt_395->time);
+	      MS_SWAPBTIME (&blkt_395->time);
 	    }
 	}
 
@@ -695,9 +695,9 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
 	  
 	  if ( swapflag )
 	    {
-	      gswap4 (&blkt_400->azimuth);
-	      gswap4 (&blkt_400->slowness);
-	      gswap2 (&blkt_400->configuration);
+	      ms_gswap4 (&blkt_400->azimuth);
+	      ms_gswap4 (&blkt_400->slowness);
+	      ms_gswap2 (&blkt_400->configuration);
 	    }
 	}
 
@@ -709,7 +709,7 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
 	  
 	  if ( swapflag )
 	    {
-	      gswap2 (&blkt_405->delay_values);
+	      ms_gswap2 (&blkt_405->delay_values);
 	    }
 
 	  if ( verbose > 0 )
@@ -727,9 +727,9 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
 	  
 	  if ( swapflag )
 	    {
-	      gswap4 (&blkt_500->vco_correction);
-	      SWAPBTIME (&blkt_500->time);
-	      gswap4 (&blkt_500->exception_count);
+	      ms_gswap4 (&blkt_500->vco_correction);
+	      MS_SWAPBTIME (&blkt_500->time);
+	      ms_gswap4 (&blkt_500->exception_count);
 	    }
 	}
       
@@ -759,9 +759,9 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
 	  
 	  if ( swapflag )
 	    {
-	      gswap2 (&blkt_2000->length);
-	      gswap2 (&blkt_2000->data_offset);
-	      gswap4 (&blkt_2000->recnum);
+	      ms_gswap2 (&blkt_2000->length);
+	      ms_gswap2 (&blkt_2000->data_offset);
+	      ms_gswap4 (&blkt_2000->recnum);
 	    }
 	  
 	  /* Nothing done to pack the opaque headers and data, they should already
@@ -778,7 +778,7 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
       if ( cur_blkt->next )
 	{
 	  memcpy (rawrec + nextoffset, &offset, 2);
-	  if ( swapflag ) gswap2 (rawrec + nextoffset);
+	  if ( swapflag ) ms_gswap2 (rawrec + nextoffset);
 	}
       else
 	{
@@ -830,7 +830,7 @@ msr_update_header ( MSRecord *msr, char *rawrec, flag swapflag,
   /* Swap byte order? */
   if ( swapflag )
     {
-      SWAPBTIME (&fsdh->start_time);
+      MS_SWAPBTIME (&fsdh->start_time);
     }
   
   return 0;

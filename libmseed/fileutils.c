@@ -4,7 +4,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2006.339
+ * modified: 2006.344
  ***************************************************************************/
 
 #include <stdio.h>
@@ -708,7 +708,7 @@ ms_find_reclen ( const char *recbuf, int recbuflen, FILE *fileptr )
   blkt_offset = fsdh->blockette_offset;
   
   /* Swap order of blkt_offset if needed */
-  if ( swapflag ) gswap2 (&blkt_offset);
+  if ( swapflag ) ms_gswap2 (&blkt_offset);
   
   /* Loop through blockettes as long as number is non-zero and viable */
   while ( blkt_offset != 0 &&
@@ -719,8 +719,8 @@ ms_find_reclen ( const char *recbuf, int recbuflen, FILE *fileptr )
       
       if ( swapflag )
 	{
-	  gswap2 (&blkt_type);
-	  gswap2 (&next_blkt);
+	  ms_gswap2 (&blkt_type);
+	  ms_gswap2 (&next_blkt);
 	}
       
       /* Found a 1000 blockette, not truncated */

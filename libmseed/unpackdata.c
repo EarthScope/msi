@@ -14,7 +14,7 @@
  *  (previously) ORFEUS/EC-Project MEREDIAN
  *  (currently) IRIS Data Management Center
  *
- *  modified: 2006.327
+ *  modified: 2006.344
  ************************************************************************/
 
 /*
@@ -85,7 +85,7 @@ int msr_unpack_int_16
   
   for (nd=0; nd<req_samples && nd<num_samples; nd++) {
     stmp = ibuf[nd];
-    if ( swapflag ) gswap2a (&stmp);
+    if ( swapflag ) ms_gswap2a (&stmp);
     databuff[nd] = stmp;
   }
   
@@ -115,7 +115,7 @@ int msr_unpack_int_32
   
   for (nd=0; nd<req_samples && nd<num_samples; nd++) {
     itmp = ibuf[nd];
-    if ( swapflag) gswap4a (&itmp);
+    if ( swapflag) ms_gswap4a (&itmp);
     databuff[nd] = itmp;
   }
   
@@ -145,7 +145,7 @@ int msr_unpack_float_32
   
   for (nd=0; nd<req_samples && nd<num_samples; nd++) {
     ftmp = fbuf[nd];
-    if ( swapflag ) gswap4a (&ftmp);
+    if ( swapflag ) ms_gswap4a (&ftmp);
     databuff[nd] = ftmp;
   }
   
@@ -175,7 +175,7 @@ int msr_unpack_float_64
   
   for (nd=0; nd<req_samples && nd<num_samples; nd++) {
     dtmp = fbuf[nd];
-    if ( swapflag ) gswap8a (&dtmp);
+    if ( swapflag ) ms_gswap8a (&dtmp);
     databuff[nd] = dtmp;
   }
   
@@ -227,8 +227,8 @@ int msr_unpack_steim1
   
   if ( swapflag )
     {
-      gswap4a (px0);
-      gswap4a (pxn);
+      ms_gswap4a (px0);
+      ms_gswap4a (pxn);
     }
   
   if ( verbose > 2 )
@@ -240,7 +240,7 @@ int msr_unpack_steim1
     {
       
       ctrl = pf->ctrl;
-      if ( swapflag ) gswap4a (&ctrl);
+      if ( swapflag ) ms_gswap4a (&ctrl);
 
       for (wn = 0; wn < VALS_PER_FRAME; wn++)
 	{
@@ -268,7 +268,7 @@ int msr_unpack_steim1
 		  if ( swapflag )
 		    {
 		      stmp = pf->w[wn].hw[i];
-		      gswap2a (&stmp);
+		      ms_gswap2a (&stmp);
 		      *diff++ = stmp;
 		    }
 		  else *diff++ = pf->w[wn].hw[i];
@@ -280,7 +280,7 @@ int msr_unpack_steim1
 	      if ( swapflag )
 		{
 		  itmp = pf->w[wn].fw;
-		  gswap4a (&itmp);
+		  ms_gswap4a (&itmp);
 		  *diff++ = itmp;
 		}
 	      else *diff++ = pf->w[wn].fw;
@@ -395,8 +395,8 @@ int msr_unpack_steim2
   
   if ( swapflag )
     {
-      gswap4a (px0);
-      gswap4a (pxn);
+      ms_gswap4a (px0);
+      ms_gswap4a (pxn);
     }
   
   if ( verbose > 2 )
@@ -408,7 +408,7 @@ int msr_unpack_steim2
     {
       
       ctrl = pf->ctrl;
-      if ( swapflag ) gswap4a (&ctrl);
+      if ( swapflag ) ms_gswap4a (&ctrl);
       
       for (wn = 0; wn < VALS_PER_FRAME; wn++)
 	{
@@ -430,7 +430,7 @@ int msr_unpack_steim2
 	      
 	    case STEIM2_123_MASK:
 	      val = pf->w[wn].fw;
-	      if ( swapflag ) gswap4a (&val);
+	      if ( swapflag ) ms_gswap4a (&val);
 	      dnib =  val >> 30 & 0x3;
 	      switch (dnib)
 		{
@@ -456,7 +456,7 @@ int msr_unpack_steim2
 	      
 	    case STEIM2_567_MASK:
 	      val = pf->w[wn].fw;
-	      if ( swapflag ) gswap4a (&val);
+	      if ( swapflag ) ms_gswap4a (&val);
 	      dnib =  val >> 30 & 0x3;
 	      switch (dnib)
 		{
@@ -619,7 +619,7 @@ int msr_unpack_geoscope
 	  break;
 	case DE_GEOSCOPE163:
 	  memcpy (&sint, edata, sizeof(int16_t));
-	  if ( swapflag ) gswap2a(&sint);
+	  if ( swapflag ) ms_gswap2a(&sint);
 	  
 	  /* Recover mantissa and gain range factor */
 	  mantissa = (sint & GEOSCOPE_MANTISSA_MASK);
@@ -634,7 +634,7 @@ int msr_unpack_geoscope
 	  break;
 	case DE_GEOSCOPE164:
 	  memcpy (&sint, edata, sizeof(int16_t));
-	  if ( swapflag ) gswap2a(&sint);
+	  if ( swapflag ) ms_gswap2a(&sint);
 	  
 	  /* Recover mantissa and gain range factor */
 	  mantissa = (sint & GEOSCOPE_MANTISSA_MASK);
@@ -732,7 +732,7 @@ int msr_unpack_sro
   for (nd=0; nd<req_samples && nd<num_samples; nd++)
     {
       memcpy (&sint, &edata[nd], sizeof(int16_t));
-      if ( swapflag ) gswap2a(&sint);
+      if ( swapflag ) ms_gswap2a(&sint);
       
       /* Recover mantissa and gain range factor */
       mantissa = (sint & SRO_MANTISSA_MASK);
@@ -787,7 +787,7 @@ int msr_unpack_dwwssn
   for (nd=0; nd<req_samples && nd<num_samples; nd++)
     {
       memcpy (&sint, &edata[nd], sizeof(uint16_t));
-      if ( swapflag ) gswap2a(&sint);
+      if ( swapflag ) ms_gswap2a(&sint);
       sample = (int32_t) sint;
       
       /* Take 2's complement for sample */

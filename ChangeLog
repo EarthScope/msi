@@ -1,3 +1,7 @@
+2006.363: 2.0pre5
+	- Update to libmseed 2.0rc1 + 2006.363.
+	- Convert all output to ms_log() usage.
+
 2006.339: 2.0pre4
 	- Update to libmseed 2.0pre8.
 	- Add -L option to man page.
