@@ -9,7 +9,7 @@ GCCFLAGS = -O2 -Wall -I../libmseed
 BIN = msi
 
 LDFLAGS = -L../libmseed
-LDLIBS = -lmseed
+LDLIBS = -lm -lmseed
 
 OBJS = $(BIN).o
 

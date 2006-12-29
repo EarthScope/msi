@@ -1,5 +1,6 @@
 2006.363: 2.0pre5
 	- Update to libmseed 2.0rc1 + 2006.363.
+	- Add -lm to LDLIBS in src/Makefile.
 	- Convert all output to ms_log() usage.
 
 2006.339: 2.0pre4

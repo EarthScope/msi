@@ -98,7 +98,7 @@ main (int argc, char **argv)
       
       if ( putenv (envvariable) )
 	{
-	  fprintf (stderr, "Error setting environment variable UNPACK_DATA_FORMAT\n");
+	  ms_log (2, "Cannot set environment variable UNPACK_DATA_FORMAT\n");
 	  return -1;
 	}
     }
@@ -112,8 +112,8 @@ main (int argc, char **argv)
 	}
       else if ( (bfp = fopen (binfile, "wb")) == NULL )
 	{
-	  fprintf (stderr, "Cannot open binary data output file: %s (%s)\n",
-		   binfile, strerror(errno));
+	  ms_log (2, "Cannot open binary data output file: %s (%s)\n",
+		  binfile, strerror(errno));
 	  return -1;
 	}
     }
@@ -127,8 +127,8 @@ main (int argc, char **argv)
 	}
       else if ( (ofp = fopen (outfile, "wb")) == NULL )
 	{
-	  fprintf (stderr, "Cannot open output file: %s (%s)\n",
-		   outfile, strerror(errno));
+	  ms_log (2, "Cannot open output file: %s (%s)\n",
+		  outfile, strerror(errno));
 	  return -1;
 	}
     }
@@ -144,7 +144,7 @@ main (int argc, char **argv)
   while ( flp != 0 )
     {
       if ( verbose >= 2 )
-	fprintf (stderr, "Processing: %s\n", flp->filename);
+	ms_log (1, "Processing: %s\n", flp->filename);
       
       /* Loop over the input file */
       while ( reccntdown != 0 )
@@ -160,7 +160,7 @@ main (int argc, char **argv)
 		{
 		  msr_srcname (msr, srcname, 1);
 		  ms_hptime2seedtimestr (msr->starttime, stime);
-		  fprintf (stderr, "Skipping (starttime) %s, %s\n", srcname, stime);
+		  ms_log (1, "Skipping (starttime) %s, %s\n", srcname, stime);
 		}
 	      continue;
 	    }
@@ -171,7 +171,7 @@ main (int argc, char **argv)
 		{
 		  msr_srcname (msr, srcname, 1);
 		  ms_hptime2seedtimestr (msr->starttime, stime);
-		  fprintf (stderr, "Skipping (starttime) %s, %s\n", srcname, stime);
+		  ms_log (1, "Skipping (starttime) %s, %s\n", srcname, stime);
 		}
 	      continue;
 	    }
@@ -189,7 +189,7 @@ main (int argc, char **argv)
 		      if ( verbose >= 3 )
 			{
 			  ms_hptime2seedtimestr (msr->starttime, stime);
-			  fprintf (stderr, "Skipping (match) %s, %s\n", srcname, stime);
+			  ms_log (1, "Skipping (match) %s, %s\n", srcname, stime);
 			}
 		      continue;
 		    }
@@ -203,7 +203,7 @@ main (int argc, char **argv)
 		      if ( verbose >= 3 )
 			{
 			  ms_hptime2seedtimestr (msr->starttime, stime);
-			  fprintf (stderr, "Skipping (reject) %s, %s\n", srcname, stime);
+			  ms_log (1, "Skipping (reject) %s, %s\n", srcname, stime);
 			}
 		      continue;
 		    }
@@ -219,10 +219,10 @@ main (int argc, char **argv)
 	  if ( ! tracegaponly )
 	    {
 	      if ( printoffset )
-		printf ("%-10lld", (long long) filepos);
+		ms_log (1, "%-10lld", (long long) filepos);
 	      
 	      if ( printlatency )
-		printf ("%-10.6g secs ", msr_host_latency(msr));
+		ms_log (1, "%-10.6g secs ", msr_host_latency(msr));
 	      
 	      msr_print (msr, ppackets);
 	    }
@@ -238,13 +238,13 @@ main (int argc, char **argv)
 		  int lines = (msr->numsamples / 6) + 1;
 		  void *sptr;
 		  
-		  if ( (samplesize = get_samplesize(msr->sampletype)) == 0 )
+		  if ( (samplesize = ms_samplesize(msr->sampletype)) == 0 )
 		    {
-		      fprintf (stderr, "Unrecognized sample type: %c\n", msr->sampletype);
+		      ms_log (2, "Unrecognized sample type: %c\n", msr->sampletype);
 		    }
 		  
 		  if ( msr->sampletype == 'a' )
-		    printf ("ASCII Data:\n%.*s\n", msr->numsamples, (char *)msr->datasamples);
+		    ms_log (0, "ASCII Data:\n%.*s\n", msr->numsamples, (char *)msr->datasamples);
 		  else
 		    for ( cnt = 0, line = 0; line < lines; line++ )
 		      {
@@ -255,18 +255,18 @@ main (int argc, char **argv)
 				sptr = (char*)msr->datasamples + (cnt * samplesize);
 				
 				if ( msr->sampletype == 'i' )
-				  printf ("%10d  ", *(int32_t *)sptr);
+				  ms_log (0, "%10d  ", *(int32_t *)sptr);
 				
 				else if ( msr->sampletype == 'f' )
-				  printf ("%10.8g  ", *(float *)sptr);
+				  ms_log (0, "%10.8g  ", *(float *)sptr);
 				
 				else if ( msr->sampletype == 'd' )
-				  printf ("%10.10g  ", *(double *)sptr);
+				  ms_log (0, "%10.10g  ", *(double *)sptr);
 				
 				cnt++;
 			      }
 			  }
-			printf ("\n");
+			ms_log (0, "\n");
 			
 			/* If only printing the first 6 samples break out here */
 			if ( printdata == 1 )
@@ -287,8 +287,8 @@ main (int argc, char **argv)
       
       /* Print error if not EOF and not counting down records */
       if ( retcode != MS_ENDOFFILE && reccntdown != 0 )
-	fprintf (stderr, "Error reading %s: %s\n",
-		 flp->filename, get_errorstr(retcode));
+	ms_log (2, "Cannot read %s: %s\n",
+		flp->filename, ms_errorstr(retcode));
       
       /* Make sure everything is cleaned up */
       ms_readmsr (&msr, NULL, 0, NULL, NULL, 0, 0, 0);
@@ -304,8 +304,8 @@ main (int argc, char **argv)
     fclose (ofp);
   
   if ( basicsum )
-    printf ("Files: %lld, Records: %lld, Samples: %lld\n", totalfiles, totalrecs, totalsamps);
-    
+    ms_log (0, "Files: %lld, Records: %lld, Samples: %lld\n", totalfiles, totalrecs, totalsamps);
+  
   if ( tracegapsum || tracegaponly )
     {
       mst_groupsort (mstg, dataquality);
@@ -346,7 +346,7 @@ processparam (int argcount, char **argvec)
     {
       if (strcmp (argvec[optind], "-V") == 0)
 	{
-	  fprintf (stderr, "%s version: %s\n", PACKAGE, VERSION);
+	  ms_log (1, "%s version: %s\n", PACKAGE, VERSION);
 	  exit (0);
 	}
       else if (strcmp (argvec[optind], "-h") == 0)
@@ -475,7 +475,7 @@ processparam (int argcount, char **argvec)
       else if (strncmp (argvec[optind], "-", 1) == 0 &&
 	       strlen (argvec[optind]) > 1 )
 	{
-	  fprintf(stderr, "Unknown option: %s\n", argvec[optind]);
+	  ms_log (2, "Unknown option: %s\n", argvec[optind]);
 	  exit (1);
 	}
       else
@@ -487,9 +487,9 @@ processparam (int argcount, char **argvec)
   /* Make sure input file were specified */
   if ( filelist == 0 )
     {
-      fprintf (stderr, "No input files were specified\n\n");
-      fprintf (stderr, "%s version %s\n\n", PACKAGE, VERSION);
-      fprintf (stderr, "Try %s -h for usage\n", PACKAGE);
+      ms_log (2, "No input files were specified\n\n");
+      ms_log (1, "%s version %s\n\n", PACKAGE, VERSION);
+      ms_log (1, "Try %s -h for usage\n", PACKAGE);
       exit (1);
     }
   
@@ -503,7 +503,7 @@ processparam (int argcount, char **argvec)
 	  
 	  if ( readregexfile (tptr, &matchpattern) <= 0 )
 	    {
-	      fprintf (stderr, "ERROR reading match pattern regex file\n");
+	      ms_log (2, "Cannot read match pattern regex file\n");
 	      exit (1);
 	    }
 	}
@@ -519,7 +519,7 @@ processparam (int argcount, char **argvec)
 	  
 	  if ( readregexfile (tptr, &rejectpattern) <= 0 )
 	    {
-	      fprintf (stderr, "ERROR reading reject pattern regex file\n");
+	      ms_log (2, "Cannot read reject pattern regex file\n");
 	      exit (1);
 	    }
 	}
@@ -532,7 +532,7 @@ processparam (int argcount, char **argvec)
       
       if ( regcomp (match, matchpattern, REG_EXTENDED) != 0)
 	{
-	  fprintf (stderr, "ERROR compiling match regex: '%s'\n", matchpattern);
+	  ms_log (2, "Cannot compile match regex: '%s'\n", matchpattern);
 	}
     }
   
@@ -542,14 +542,14 @@ processparam (int argcount, char **argvec)
       
       if ( regcomp (reject, rejectpattern, REG_EXTENDED) != 0)
 	{
-	  fprintf (stderr, "ERROR compiling reject regex: '%s'\n", rejectpattern);
+	  ms_log (2, "Cannot compile reject regex: '%s'\n", rejectpattern);
 	}
     }
   
   /* Report the program version */
   if ( verbose )
-    fprintf (stderr, "%s version: %s\n", PACKAGE, VERSION);
-
+    ms_log (1, "%s version: %s\n", PACKAGE, VERSION);
+  
   return 0;
 }  /* End of parameter_proc() */
 
@@ -570,7 +570,7 @@ static char *
 getoptval (int argcount, char **argvec, int argopt)
 {
   if ( argvec == NULL || argvec[argopt] == NULL ) {
-    fprintf (stderr, "getoptval(): NULL option requested\n");
+    ms_log (2, "getoptval(): NULL option requested\n");
     exit (1);
     return 0;
   }
@@ -589,7 +589,7 @@ getoptval (int argcount, char **argvec, int argopt)
   if ( (argopt+1) < argcount && *argvec[argopt+1] != '-' )
     return argvec[argopt+1];
   
-  fprintf (stderr, "Option %s requires a value\n", argvec[argopt]);
+  ms_log (2, "Option %s requires a value, try -h for usage\n", argvec[argopt]);
   exit (1);
   return 0;
 }  /* End of getoptval() */
@@ -618,13 +618,13 @@ readregexfile (char *regexfile, char **pppattern)
   /* Open the regex list file */
   if ( (fp = fopen (regexfile, "rb")) == NULL )
     {
-      fprintf (stderr, "ERROR opening regex list file %s: %s\n",
-	       regexfile, strerror (errno));
+      ms_log (2, "Cannot open regex list file %s: %s\n",
+	      regexfile, strerror (errno));
       return -1;
     }
   
   if ( verbose )
-    fprintf (stderr, "Reading regex list from %s\n", regexfile);
+    ms_log (1, "Reading regex list from %s\n", regexfile);
   
   *pppattern = NULL;
   
@@ -705,7 +705,7 @@ addfile (char *filename)
   
   if ( filename == NULL )
     {
-      fprintf (stderr, "addfile(): No file name specified\n");
+      ms_log (2, "addfile(): No file name specified\n");
       return;
     }
   
