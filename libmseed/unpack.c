@@ -13,7 +13,7 @@
  *   ORFEUS/EC-Project MEREDIAN
  *   IRIS Data Management Center
  *
- * modified: 2006.346
+ * modified: 2007.020
  ***************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
@@ -849,7 +849,7 @@ msr_unpack_data ( MSRecord *msr, int swapflag, int verbose )
 	}
       
       if ( verbose > 1 )
-	ms_log (2, "%s: Unpacking Steim-2 data frames\n", UNPACK_SRCNAME);
+	ms_log (1, "%s: Unpacking Steim-2 data frames\n", UNPACK_SRCNAME);
       
       nsamples = msr_unpack_steim2 ((FRAME *)dbuf, datasize, msr->samplecnt,
 				    msr->samplecnt, msr->datasamples, diffbuff,

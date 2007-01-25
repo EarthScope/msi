@@ -4,7 +4,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2006.344
+ * modified: 2007.005
  ***************************************************************************/
 
 #include <stdio.h>
@@ -128,6 +128,7 @@ ms_readmsr_r (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
       
       msfp->fp = NULL;
       msfp->rawrec = NULL;
+      msfp->filename[0] = '\0';
       msfp->autodet = 1;
       msfp->readlen = MINRECLEN;
       msfp->packinfolen = 0;
@@ -147,8 +148,21 @@ ms_readmsr_r (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
       if ( msfp->rawrec != NULL )
 	free (msfp->rawrec);
       
-      /* If the file parameters are not the globabl parameters free them */
-      if ( *ppmsfp != &gMSFileParam )
+      /* If the file parameters are the global parameters reset them */
+      if ( *ppmsfp == &gMSFileParam )
+	{
+	  gMSFileParam.fp = NULL;
+	  gMSFileParam.rawrec = NULL;
+	  gMSFileParam.filename[0] = '\0';
+	  gMSFileParam.autodet = 1;
+	  gMSFileParam.readlen = MINRECLEN;
+	  gMSFileParam.packinfolen = 0;
+	  gMSFileParam.packinfooffset = 0;
+	  gMSFileParam.filepos = 0;
+	  gMSFileParam.recordcount = 0;
+	}
+      /* Otherwise free the MSFileParam */
+      else
 	{
 	  free (*ppmsfp);
 	  *ppmsfp = NULL;

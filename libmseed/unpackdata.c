@@ -14,7 +14,7 @@
  *  (previously) ORFEUS/EC-Project MEREDIAN
  *  (currently) IRIS Data Management Center
  *
- *  modified: 2006.344
+ *  modified: 2007.023
  ************************************************************************/
 
 /*
@@ -48,7 +48,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
-#include <math.h>
 
 #include "libmseed.h"
 #include "unpackdata.h"
@@ -568,9 +567,9 @@ int msr_unpack_geoscope
   int nd = 0;		/* # of data points in packet.		*/
   int mantissa;		/* mantissa from SEED data */
   int gainrange;	/* gain range factor */
-  int base;		/* base for exponentiation */
   int exponent;		/* total exponent */
   int k;
+  uint64_t exp2val;
   int16_t sint;
   double dsample = 0.0;
   
@@ -591,8 +590,6 @@ int msr_unpack_geoscope
 	      UNPACK_SRCNAME, encoding);
       return -1;
     }
-  
-  base = 2;
   
   for (nd=0; nd<req_samples && nd<num_samples; nd++)
     {
@@ -628,8 +625,9 @@ int msr_unpack_geoscope
 	  /* Exponent is just gainrange for GEOSCOPE */
 	  exponent = gainrange;
 	  
-	  /* Calculate sample from mantissa and exponent */
-	  dsample = ((double) (mantissa-2048)) / pow((double) base, (double) exponent);
+	  /* Calculate sample as mantissa / 2^exponent */
+	  exp2val = (uint64_t) 1 << exponent;
+	  dsample = ((double) (mantissa-2048)) / exp2val;
 	  
 	  break;
 	case DE_GEOSCOPE164:
@@ -643,8 +641,9 @@ int msr_unpack_geoscope
 	  /* Exponent is just gainrange for GEOSCOPE */
 	  exponent = gainrange;
 	  
-	  /* Calculate sample from mantissa and exponent */
-	  dsample = ((double) (mantissa-2048)) / pow ((double) base, (double) exponent);
+	  /* Calculate sample as mantissa / 2^exponent */
+	  exp2val = (uint64_t) 1 << exponent;
+	  dsample = ((double) (mantissa-2048)) / exp2val;
 	  
 	  break;
 	}
@@ -753,7 +752,7 @@ int msr_unpack_sro
 	}
       
       /* Calculate sample as mantissa * 2^exponent */
-      sample = mantissa * ( (uint32_t) 1 << exponent );
+      sample = mantissa * ( (uint64_t) 1 << exponent );
       
       /* Save sample in output array */
       databuff[nd] = sample;

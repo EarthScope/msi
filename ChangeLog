@@ -1,3 +1,7 @@
+2007.025: 2.0 FINAL
+	- Update to libmseed 2.0.
+	- Remove -lm linker option in Makefile, it's not needed any more.
+
 2006.363: 2.0pre5
 	- Update to libmseed 2.0rc1 + 2006.363.
 	- Add -lm to LDLIBS in src/Makefile.

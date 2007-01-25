@@ -1,3 +1,11 @@
+2007.023: 2.0 FINAL
+	- Determine needs for GEOSCOPE decoding and remove the need
+	for using the pow() function and linking with the math library.
+
+2007.005:
+	- Fix resetting of global MSFileParam in ms_readmsr_f() when
+	cleanup is requested.
+
 2006.363:
 	- Change mst_groupsort() to sort on: srcname, then starttime,
 	then descending endtime and finally sample rate.  This moves

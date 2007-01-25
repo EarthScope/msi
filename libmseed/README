@@ -13,8 +13,6 @@ full data description.
 The library has been tested in Linux, Mac OSX (Darwin), Solaris and
 Win32 environments.
 
-On most architectures the library must be linked with the math library.
-
 For installation instructions see the INSTALL file.  For further
 information regarding the library interface see the documentation in
 the 'doc' directory.  For example uses of libmseed see the source code
