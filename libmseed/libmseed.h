@@ -31,7 +31,7 @@ extern "C" {
 #include "lmplatform.h"
 
 #define LIBMSEED_VERSION "2.0"
-#define LIBMSEED_RELEASE "2007.023"
+#define LIBMSEED_RELEASE "2007.028"
 
 #define MINRECLEN   256      /* Minimum Mini-SEED record length, 2^8 bytes */
 #define MAXRECLEN   1048576  /* Maximum Mini-SEED record length, 2^20 bytes */
@@ -73,7 +73,7 @@ extern "C" {
 #define MS_HPTIME2EPOCH(X) X / HPTMODULUS
 
 /* Macro to test a character for data record indicators */
-#define MS_ISDATAINDICATOR(X) (X=='D' || X=='R' || X=='Q')
+#define MS_ISDATAINDICATOR(X) (X=='D' || X=='R' || X=='Q' || X=='M')
 
 /* Macro to test default sample rate tolerance: abs(1-sr1/sr2) < 0.0001 */
 #define MS_ISRATETOLERABLE(A,B) (ms_dabs (1.0 - (A / B)) < 0.0001)
@@ -476,8 +476,8 @@ typedef struct MSFileParam_s
   char  filename[512];
   int   autodet;
   int   readlen;
-  int   packinfolen;
-  off_t packinfooffset;
+  int   packtype;
+  off_t packhdroffset;
   off_t filepos;
   int   recordcount;
 } MSFileParam;

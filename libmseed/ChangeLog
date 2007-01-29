@@ -1,4 +1,8 @@
-2007.023: 2.0 FINAL
+2007.028: 2.0
+	- Add new pack file type 8.
+	- Allow 'M' as a valid data record indidator/quality flag.
+
+2007.023:
 	- Determine needs for GEOSCOPE decoding and remove the need
 	for using the pow() function and linking with the math library.
 

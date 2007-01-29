@@ -4,7 +4,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2007.005
+ * modified: 2007.027
  ***************************************************************************/
 
 #include <stdio.h>
@@ -18,9 +18,23 @@
 /* Byte stream length for read-ahead header fingerprinting */
 #define NEXTHDRLEN 48
 
-static int ms_readpackinfo (int chksumlen, int hdrlen, int sizelen, FILE *stream);
+static int ms_readpackinfo (int packtype, FILE *stream);
 static int ms_fread (char *buf, int size, int num, FILE *stream);
 static int ms_ateof (FILE *stream);
+
+/* Pack type parameters for the 8 defined types:
+ * [type] : [hdrlen] [sizelen] [chksumlen]
+ */
+int8_t packtypes[9][3] = {
+  { 0, 0, 0 },
+  { 8, 8, 8 },
+  { 11, 8, 8 },
+  { 11, 8, 8 },
+  { 11, 8, 8 },
+  { 11, 8, 8 },
+  { 13, 8, 8 },
+  { 15, 8, 8 },
+  { 22, 15, 10 }};
 
 /* Initialize the global file reading parameters */
 MSFileParam gMSFileParam = {NULL, NULL, "", 1, MINRECLEN, 0, 0, 0, 0};
@@ -79,7 +93,7 @@ ms_readmsr (MSRecord **ppmsr, char *msfile, int reclen, off_t *fpos,
  * the file is being returned, otherwise it will be 0.
  *
  * If the skipnotdata flag is true any data chunks read that do not
- * have vald data record indicators (D, R, Q, etc.) will be skipped.
+ * have vald data record indicators (D, R, Q, M, etc.) will be skipped.
  *
  * dataflag will be passed directly to msr_unpack().
  *
@@ -131,8 +145,8 @@ ms_readmsr_r (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
       msfp->filename[0] = '\0';
       msfp->autodet = 1;
       msfp->readlen = MINRECLEN;
-      msfp->packinfolen = 0;
-      msfp->packinfooffset = 0;
+      msfp->packtype = 0;
+      msfp->packhdroffset = 0;
       msfp->filepos = 0;
       msfp->recordcount = 0;
     }
@@ -156,8 +170,8 @@ ms_readmsr_r (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
 	  gMSFileParam.filename[0] = '\0';
 	  gMSFileParam.autodet = 1;
 	  gMSFileParam.readlen = MINRECLEN;
-	  gMSFileParam.packinfolen = 0;
-	  gMSFileParam.packinfooffset = 0;
+	  gMSFileParam.packtype = 0;
+	  gMSFileParam.packhdroffset = 0;
 	  gMSFileParam.filepos = 0;
 	  gMSFileParam.recordcount = 0;
 	}
@@ -183,8 +197,8 @@ ms_readmsr_r (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
       msfp->fp = NULL;
       msfp->autodet = 1;
       msfp->readlen = MINRECLEN;
-      msfp->packinfolen = 0;
-      msfp->packinfooffset = 0;
+      msfp->packtype = 0;
+      msfp->packhdroffset = 0;
       msfp->filepos = 0;
       msfp->recordcount = 0;
     }
@@ -250,9 +264,9 @@ ms_readmsr_r (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
 	    }
 	  
 	  /* Read packed file info */
-	  if ( msfp->packinfolen && msfp->filepos == msfp->packinfooffset )
+	  if ( msfp->packtype && msfp->filepos == msfp->packhdroffset )
 	    {
-	      if ( (packdatasize = ms_readpackinfo (8, msfp->packinfolen, 8, msfp->fp)) <= 0 )
+	      if ( (packdatasize = ms_readpackinfo (msfp->packtype, msfp->fp)) <= 0 )
 		{
 		  if ( msfp->fp )
 		    { fclose (msfp->fp); msfp->fp = NULL; }
@@ -269,11 +283,12 @@ ms_readmsr_r (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
 	      msfp->filepos = lmp_ftello (msfp->fp);
 	      
 	      /* File position + data size */
-	      msfp->packinfooffset = msfp->filepos + packdatasize;
+	      msfp->packhdroffset = msfp->filepos + packdatasize;
 	      
 	      if ( verbose > 1 )
-		ms_log (1, "Read packed file info at offset %lld (%d bytes follow)\n",
-			(long long int) (msfp->filepos - msfp->packinfolen - 8), packdatasize);
+		ms_log (1, "Read packed file header at offset %lld (%d bytes follow)\n",
+			(long long int) (msfp->filepos - packtypes[msfp->packtype][0] - packtypes[msfp->packtype][2]),
+			packdatasize);
 	    }
 	  
 	  /* Read data into record buffer */
@@ -310,7 +325,7 @@ ms_readmsr_r (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
 	  /* Determine record length:
 	   * If packed file and we are at the next info, length is implied.
 	   * Otherwise use ms_find_reclen() */
-	  if ( msfp->packinfolen && msfp->packinfooffset == msfp->filepos )
+	  if ( msfp->packtype && msfp->packhdroffset == msfp->filepos )
 	    {
 	      detsize = msfp->readlen;
 	      break;
@@ -323,44 +338,45 @@ ms_readmsr_r (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
 	  /* Test for packed file signature at the beginning of the file */
 	  if ( *(msfp->rawrec) == 'P' && msfp->filepos == MINRECLEN && detsize == -1 )
 	    {
-	      int packtype;
-	      
-	      msfp->packinfolen = 0;
-	      packtype = 0;
+	      msfp->packtype = 0;
 	      
 	      /* Set pack spacer length according to type */
 	      if ( ! memcmp ("PED", msfp->rawrec, 3) )
-		{ msfp->packinfolen = 8; packtype = 1; }
+		msfp->packtype = 1;
 	      else if ( ! memcmp ("PSD", msfp->rawrec, 3) )
-		{ msfp->packinfolen = 11; packtype = 2; }
+		msfp->packtype = 2;
 	      else if ( ! memcmp ("PLC", msfp->rawrec, 3) )
-		{ msfp->packinfolen = 13; packtype = 6; }
+		msfp->packtype = 6;
 	      else if ( ! memcmp ("PQI", msfp->rawrec, 3) )
-		{ msfp->packinfolen = 15; packtype = 7; }
+		msfp->packtype = 7;
+	      else if ( ! memcmp ("PLS", msfp->rawrec, 3) )
+		msfp->packtype = 8;
 	      
-	      /* Read first pack info section, compensate for "pack identifier" (10 bytes) */
-	      if ( msfp->packinfolen )
+	      /* Read first pack header section, compensate for "pack identifier" (10 bytes) */
+	      if ( msfp->packtype )
 		{
-		  char infostr[30];
+		  char hdrstr[30];
 		  
 		  if ( verbose > 0 )
-		    ms_log (1, "Detected packed file (%3.3s: type %d)\n", msfp->rawrec, packtype);
+		    ms_log (1, "Detected packed file (%3.3s: type %d)\n", msfp->rawrec, msfp->packtype);
 		  
-		  /* Assuming data size length is 8 bytes at the end of the pack info */
-		  sprintf (infostr, "%8.8s", msfp->rawrec + (msfp->packinfolen + 10 - 8));
-		  sscanf (infostr, " %d", &packdatasize);
+		  /* Read pack length from end of pack header accounting for initial 10 characters */
+		  memset (hdrstr, 0, sizeof(hdrstr));
+		  memcpy (hdrstr, msfp->rawrec + (packtypes[msfp->packtype][0] + 10 - packtypes[msfp->packtype][1]),
+			  packtypes[msfp->packtype][1]);
+		  sscanf (hdrstr, " %d", &packdatasize);
 		  
-		  /* Pack ID + pack info + data size */
-		  msfp->packinfooffset = 10 + msfp->packinfolen + packdatasize;
+		  /* Next pack header offset: Pack ID + pack hdr + data size */
+		  msfp->packhdroffset = 10 + packtypes[msfp->packtype][0] + packdatasize;
 		  
 		  if ( verbose > 1 )
-		    ms_log (1, "Read packed file info at beginning of file (%d bytes follow)\n",
+		    ms_log (1, "Read packed file header at beginning of file (%d bytes follow)\n",
 			    packdatasize);
 		}
 	    }
 	  
 	  /* Skip if data record or packed file not detected */
-	  if ( detsize == -1 && skipnotdata && ! msfp->packinfolen )
+	  if ( detsize == -1 && skipnotdata && ! msfp->packtype )
 	    {
 	      if ( verbose > 1 )
 		{
@@ -375,13 +391,14 @@ ms_readmsr_r (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
 	  /* Otherwise read more */
 	  else
 	    {
-	      /* Compensate for first packed file info section */
-	      if ( msfp->filepos == MINRECLEN && msfp->packinfolen )
+	      /* Compensate for first packed file "identifier" section (10 bytes) */
+	      if ( msfp->filepos == MINRECLEN && msfp->packtype )
 		{
 		  /* Shift first data record to beginning of buffer */
-		  memmove (msfp->rawrec, msfp->rawrec + (msfp->packinfolen + 10), msfp->readlen - (msfp->packinfolen + 10));
+		  memmove (msfp->rawrec, msfp->rawrec + (packtypes[msfp->packtype][0] + 10),
+			   msfp->readlen - (packtypes[msfp->packtype][0] + 10));
 		  
-		  prevreadlen = msfp->readlen - (msfp->packinfolen + 10);
+		  prevreadlen = msfp->readlen - (packtypes[msfp->packtype][0] + 10);
 		}
 	      /* Increase read length to the next record size up */
 	      else
@@ -502,9 +519,9 @@ ms_readmsr_r (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
   for (;;)
     {
       /* Read packed file info */
-      if ( msfp->packinfolen && msfp->filepos == msfp->packinfooffset )
+      if ( msfp->packtype && msfp->filepos == msfp->packhdroffset )
 	{
-	  if ( (packdatasize = ms_readpackinfo (8, msfp->packinfolen, 8, msfp->fp)) == 0 )
+	  if ( (packdatasize = ms_readpackinfo (msfp->packtype, msfp->fp)) == 0 )
 	    {
 	      if ( msfp->fp )
 		{ fclose (msfp->fp); msfp->fp = NULL; }
@@ -521,11 +538,12 @@ ms_readmsr_r (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
 	  msfp->filepos = lmp_ftello (msfp->fp);
 	  
 	  /* File position + data size */
-	  msfp->packinfooffset = msfp->filepos + packdatasize;
+	  msfp->packhdroffset = msfp->filepos + packdatasize;
 	  
 	  if ( verbose > 1 )
-	    ms_log (1, "Read packed file info at offset %lld (%d bytes follow)\n",
-		    (long long int) (msfp->filepos - msfp->packinfolen - 8), packdatasize);
+	    ms_log (1, "Read packed file header at offset %lld (%d bytes follow)\n",
+		    (long long int) (msfp->filepos - packtypes[msfp->packtype][0] - packtypes[msfp->packtype][2]),
+		    packdatasize);
 	}
       
       /* Read data into record buffer */
@@ -806,56 +824,55 @@ ms_find_reclen ( const char *recbuf, int recbuflen, FILE *fileptr )
  * in bytes for the following data records.
  *
  * In general a pack file includes a packed file identifier at the
- * very beginning, followed by pack info for a data block, followed by
- * the data block, followed by a chksum for the data block.  The
- * packinfo, data block and chksum are then repeated for each data
+ * very beginning, followed by pack header for a data block, followed
+ * by the data block, followed by a chksum for the data block.  The
+ * pack header, data block and chksum are then repeated for each data
  * block in the file:
  *
- *   ID    INFO     DATA    CHKSUM    INFO     DATA    CHKSUM
- * |----|--------|--....--|--------|--------|--....--|--------| ...
+ *   ID    HDR     DATA    CHKSUM    HDR     DATA    CHKSUM
+ * |----|-------|--....--|--------|-------|--....--|--------| ...
  *
- *      |_________ repeats ________|
+ *      |________ repeats ________|
  *
- * The INFO section contains fixed width ASCII fields identifying the
+ * The HDR section contains fixed width ASCII fields identifying the
  * data in the next section and it's length in bytes.  With this
- * information the offset of the next CHKSUM and INFO are completely
+ * information the offset of the next CHKSUM and HDR are completely
  * predictable.
  *
- * This routine's purpose is to read the CHKSUM and INFO bytes in
+ * This routine's purpose is to read the CHKSUM and HDR bytes in
  * between the DATA sections and parse the size of the data section
- * from the info section.
+ * from the header section.
  *
- * chksumlen = length in bytes of chksum following data blocks, skipped
- * infolen   = length of the info section
- * sizelen   = length of the size field at the end of the info section
+ * packtypes[type][0]: length of pack header length
+ * packtypes[type][1]: length of size field in pack header
+ * packtypes[type][2]: chksum length following data blocks, skipped
  *
  * Returns the data size of the block that follows, 0 on EOF or -1
  * error.
  *********************************************************************/
 static int
-ms_readpackinfo (int chksumlen, int infolen, int sizelen, FILE *stream)
+ms_readpackinfo (int packtype, FILE *stream)
 {
-  char infostr[30];
+  char hdrstr[30];
   int datasize;
-
-  /* Skip CHKSUM section if expected */
-  if ( chksumlen )
-    if ( lmp_fseeko (stream, chksumlen, SEEK_CUR) )
-      {
-	return -1;
-      }
   
-  if ( ms_ateof (stream) )
-    return 0;
-  
-  /* Read INFO section */
-  if ( (ms_fread (infostr, 1, infolen, stream)) < infolen )
+  /* Skip CHKSUM section */
+  if ( lmp_fseeko (stream, packtypes[packtype][2], SEEK_CUR) )
     {
       return -1;
     }
   
-  sprintf (infostr, "%8.8s", &infostr[infolen - sizelen]);
-  sscanf (infostr, " %d", &datasize);
+  if ( ms_ateof (stream) )
+    return 0;
+  
+  /* Read HDR section */
+  if ( (ms_fread (hdrstr, 1, packtypes[packtype][0], stream)) < packtypes[packtype][0] )
+    {
+      return -1;
+    }
+  
+  /* Extract next section data size */
+  sscanf (&hdrstr[packtypes[packtype][0] - packtypes[packtype][1]], " %d", &datasize);
   
   return datasize;
 }  /* End of ms_readpackinfo() */
