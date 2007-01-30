@@ -1,4 +1,8 @@
-2007.028: 2.0
+2007.030: 2.0
+	- Set no default CFLAGS and CC variables for building and add a
+	note to the Makefile about using them for build configuration.
+
+2007.028:
 	- Add new pack file type 8.
 	- Allow 'M' as a valid data record indidator/quality flag.
 

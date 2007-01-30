@@ -1,10 +1,15 @@
 
-# Standard compiler parameters
-CFLAGS = -O -I..
+# Build environment can be configured the following
+# environment variables:
+#   CC : Specify the C compiler to use
+#   CFLAGS : Specify compiler options to use
 
 # Options specific for GCC
 GCC = gcc
-GCCFLAGS = -O2 -Wall -I..
+GCCFLAGS = -O2 -Wall -fPIC
+
+# Required compiler parameters
+REQCFLAGS = -I..
 
 LDFLAGS = -L..
 LDLIBS = -lmseed
@@ -49,6 +54,10 @@ gcc32gprof:
 
 gcc64gprof:
 	$(MAKE) "CC=$(GCC)" "CFLAGS=-pg -m64 $(GCCFLAGS)"
+
+# Implicit rule for building object files
+%.o: %.c
+	$(CC) $(CFLAGS) $(REQCFLAGS) -c $<
 
 install:
 	@echo

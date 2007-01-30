@@ -1,13 +1,12 @@
 
-# Standard compiler parameters
-CFLAGS = -O 
+# Build environment can be configured the following
+# environment variables:
+#   CC : Specify the C compiler to use
+#   CFLAGS : Specify compiler options to use
 
 # Options specific for GCC
 GCC = gcc
 GCCFLAGS = -O2 -Wall -fPIC
-
-LDFLAGS =
-LDLIBS =
 
 LIB_OBJS = fileutils.o genutils.o gswap.o lmplatform.o lookup.o \
            msrutils.o pack.o packdata.o traceutils.o unpack.o \

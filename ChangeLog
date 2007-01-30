@@ -1,4 +1,4 @@
-2007.025: 2.0 FINAL
+2007.030: 2.0
 	- Update to libmseed 2.0.
 	- Remove -lm linker option in Makefile, it's not needed any more.
 
