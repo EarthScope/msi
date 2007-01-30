@@ -6,6 +6,9 @@ A general purpose tool for parsing Mini-SEED records.
 
 In most environments a simple 'make' will build the program.
 
+The CC and CFLAGS environment variables can be used to configure
+the build parameters.
+
 In the Win32 environment the Makefile.wat can be used with Open
 Watcom's wmake program.
 
