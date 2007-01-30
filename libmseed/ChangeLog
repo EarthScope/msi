@@ -1,6 +1,7 @@
 2007.030: 2.0
 	- Set no default CFLAGS and CC variables for building and add a
 	note to the Makefile about using them for build configuration.
+	- Eliminate compiler warning for genutils.c routines.
 
 2007.028:
 	- Add new pack file type 8.

@@ -7,7 +7,7 @@
  * ORFEUS/EC-Project MEREDIAN
  * IRIS Data Management Center
  *
- * modified: 2006.331
+ * modified: 2007.030
  ***************************************************************************/
 
 #include <stdio.h>
@@ -333,7 +333,9 @@ ms_btime2hptime (BTime *btime)
 char *
 ms_btime2isotimestr (BTime *btime, char *isotimestr)
 {  
-  int month, mday, ret;
+  int month = 0;
+  int mday = 0;
+  int ret;
 
   if ( ! isotimestr )
     return NULL;
