@@ -13,7 +13,7 @@
  *   ORFEUS/EC-Project MEREDIAN
  *   IRIS Data Management Center
  *
- * modified: 2007.020
+ * modified: 2007.178
  ***************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,13 +30,13 @@ static int check_environment (int verbose);
 
 /* Header and data byte order flags controlled by environment variables */
 /* -2 = not checked, -1 = checked but not set, or 0 = LE and 1 = BE */
-static flag headerbyteorder = -2;
-static flag databyteorder   = -2;
+flag unpackheaderbyteorder = -2;
+flag unpackdatabyteorder   = -2;
 
 /* Data encoding format/fallback controlled by environment variable */
 /* -2 = not checked, -1 = checked but not set, or = encoding */
-static int encodingformat   = -2;
-static int encodingfallback = -2;
+int unpackencodingformat   = -2;
+int unpackencodingfallback = -2;
 
 /* A pointer to the srcname of the record being unpacked */
 char *UNPACK_SRCNAME = NULL;
@@ -125,10 +125,10 @@ msr_unpack ( char *record, int reclen, MSRecord **ppmsr,
   msr->reclen = reclen;
   
   /* Check environment variables if necessary */
-  if ( headerbyteorder == -2 ||
-       databyteorder == -2 ||
-       encodingformat == -2 ||
-       encodingfallback == -2 )
+  if ( unpackheaderbyteorder == -2 ||
+       unpackdatabyteorder == -2 ||
+       unpackencodingformat == -2 ||
+       unpackencodingfallback == -2 )
     if ( check_environment(verbose) )
       return MS_GENERROR;
   
@@ -149,14 +149,14 @@ msr_unpack ( char *record, int reclen, MSRecord **ppmsr,
     headerswapflag = dataswapflag = 1;
   
   /* Check if byte order is forced */
-  if ( headerbyteorder >= 0 )
+  if ( unpackheaderbyteorder >= 0 )
     {
-      headerswapflag = ( ms_bigendianhost() != headerbyteorder ) ? 1 : 0;
+      headerswapflag = ( ms_bigendianhost() != unpackheaderbyteorder ) ? 1 : 0;
     }
   
-  if ( databyteorder >= 0 )
+  if ( unpackdatabyteorder >= 0 )
     {
-      dataswapflag = ( ms_bigendianhost() != databyteorder ) ? 1 : 0;
+      dataswapflag = ( ms_bigendianhost() != unpackdatabyteorder ) ? 1 : 0;
     }
   
   /* Swap byte order? */
@@ -610,22 +610,22 @@ msr_unpack ( char *record, int reclen, MSRecord **ppmsr,
   msr->samprate = msr_samprate (msr);
   
   /* Set MSRecord->byteorder if data byte order is forced */
-  if ( databyteorder >= 0 )
+  if ( unpackdatabyteorder >= 0 )
     {
-      msr->byteorder = databyteorder;
+      msr->byteorder = unpackdatabyteorder;
     }
   
   /* Check if encoding format is forced */
-  if ( encodingformat >= 0 )
+  if ( unpackencodingformat >= 0 )
     {
-      msr->encoding = encodingformat;
+      msr->encoding = unpackencodingformat;
     }
   
   /* Use encoding format fallback if defined and no encoding is set,
    * also make sure the byteorder is set by default to big endian */
-  if ( encodingfallback >= 0 && msr->encoding == -1 )
+  if ( unpackencodingfallback >= 0 && msr->encoding == -1 )
     {
-      msr->encoding = encodingfallback;
+      msr->encoding = unpackencodingfallback;
       
       if ( msr->byteorder == -1 )
 	{
@@ -642,7 +642,7 @@ msr_unpack ( char *record, int reclen, MSRecord **ppmsr,
       /* Determine byte order of the data and set the dswapflag as
 	 needed; if no Blkt1000 or UNPACK_DATA_BYTEORDER environment
 	 variable setting assume the order is the same as the header */
-      if ( msr->Blkt1000 != 0 && databyteorder < 0 )
+      if ( msr->Blkt1000 != 0 && unpackdatabyteorder < 0 )
 	{
 	  dswapflag = 0;
 	  
@@ -651,7 +651,7 @@ msr_unpack ( char *record, int reclen, MSRecord **ppmsr,
 	  else if ( !bigendianhost && msr->byteorder == 1 )
 	    dswapflag = 1;
 	}
-      else if ( databyteorder >= 0 )
+      else if ( unpackdatabyteorder >= 0 )
 	{
 	  dswapflag = dataswapflag;
 	}
@@ -899,7 +899,7 @@ msr_unpack_data ( MSRecord *msr, int swapflag, int verbose )
       
     default:
       ms_log (2, "%s: Unsupported encoding format %d (%s)\n",
-	      msr->encoding, (char *) ms_encodingstr(msr->encoding), UNPACK_SRCNAME);
+	      UNPACK_SRCNAME, msr->encoding, (char *) ms_encodingstr(msr->encoding));
       
       return MS_UNKNOWNFORMAT;
     }
@@ -921,7 +921,7 @@ check_environment (int verbose)
   char *envvariable;
 
   /* Read possible environmental variables that force byteorder */
-  if ( headerbyteorder == -2 )
+  if ( unpackheaderbyteorder == -2 )
     {
       if ( (envvariable = getenv("UNPACK_HEADER_BYTEORDER")) )
 	{
@@ -932,24 +932,24 @@ check_environment (int verbose)
 	    }
 	  else if ( *envvariable == '0' )
 	    {
-	      headerbyteorder = 0;
+	      unpackheaderbyteorder = 0;
 	      if ( verbose > 2 )
 		ms_log (1, "UNPACK_HEADER_BYTEORDER=0, unpacking little-endian header\n");
 	    }
 	  else
 	    {
-	      headerbyteorder = 1;
+	      unpackheaderbyteorder = 1;
 	      if ( verbose > 2 )
 		ms_log (1, "UNPACK_HEADER_BYTEORDER=1, unpacking big-endian header\n");
 	    }
 	}
       else
 	{
-	  headerbyteorder = -1;
+	  unpackheaderbyteorder = -1;
 	}
     }
 
-  if ( databyteorder == -2 )
+  if ( unpackdatabyteorder == -2 )
     {
       if ( (envvariable = getenv("UNPACK_DATA_BYTEORDER")) )
 	{
@@ -960,64 +960,64 @@ check_environment (int verbose)
 	    }
 	  else if ( *envvariable == '0' )
 	    {
-	      databyteorder = 0;
+	      unpackdatabyteorder = 0;
 	      if ( verbose > 2 )
 		ms_log (1, "UNPACK_DATA_BYTEORDER=0, unpacking little-endian data samples\n");
 	    }
 	  else
 	    {
-	      databyteorder = 1;
+	      unpackdatabyteorder = 1;
 	      if ( verbose > 2 )
 		ms_log (1, "UNPACK_DATA_BYTEORDER=1, unpacking big-endian data samples\n");
 	    }
 	}
       else
 	{
-	  databyteorder = -1;
+	  unpackdatabyteorder = -1;
 	}
     }
   
   /* Read possible environmental variable that forces encoding format */
-  if ( encodingformat == -2 )
+  if ( unpackencodingformat == -2 )
     {
       if ( (envvariable = getenv("UNPACK_DATA_FORMAT")) )
 	{
-	  encodingformat = (int) strtol (envvariable, NULL, 10);
+	  unpackencodingformat = (int) strtol (envvariable, NULL, 10);
 	  
-	  if ( encodingformat < 0 || encodingformat > 33 )
+	  if ( unpackencodingformat < 0 || unpackencodingformat > 33 )
 	    {
-	      ms_log (2, "Environment variable UNPACK_DATA_FORMAT set to invalid value: '%d'\n", encodingformat);
+	      ms_log (2, "Environment variable UNPACK_DATA_FORMAT set to invalid value: '%d'\n", unpackencodingformat);
 	      return -1;
 	    }
 	  else if ( verbose > 2 )
-	    ms_log (1, "UNPACK_DATA_FORMAT, unpacking data in encoding format %d\n", encodingformat);
+	    ms_log (1, "UNPACK_DATA_FORMAT, unpacking data in encoding format %d\n", unpackencodingformat);
 	}
       else
 	{
-	  encodingformat = -1;
+	  unpackencodingformat = -1;
 	}
     }
   
   /* Read possible environmental variable to be used as a fallback encoding format */
-  if ( encodingfallback == -2 )
+  if ( unpackencodingfallback == -2 )
     {
       if ( (envvariable = getenv("UNPACK_DATA_FORMAT_FALLBACK")) )
 	{
-	  encodingfallback = (int) strtol (envvariable, NULL, 10);
+	  unpackencodingfallback = (int) strtol (envvariable, NULL, 10);
 	  
-	  if ( encodingfallback < 0 || encodingfallback > 33 )
+	  if ( unpackencodingfallback < 0 || unpackencodingfallback > 33 )
 	    {
 	      ms_log (2, "Environment variable UNPACK_DATA_FORMAT_FALLBACK set to invalid value: '%d'\n",
-		      encodingfallback);
+		      unpackencodingfallback);
 	      return -1;
 	    }
 	  else if ( verbose > 2 )
-	    ms_log (1, "UNPACK_DATA_FORMAT_FALLBACK, unpacking data in encoding format %d\n",
-		    encodingfallback);
+	    ms_log (1, "UNPACK_DATA_FORMAT_FALLBACK, fallback data unpacking encoding format %d\n",
+		    unpackencodingfallback);
 	}
       else
 	{
-	  encodingfallback = 10;  /* Default fallback is Steim-1 encoding */
+	  unpackencodingfallback = 10;  /* Default fallback is Steim-1 encoding */
 	}
     }
   

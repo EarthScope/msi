@@ -18,7 +18,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2006.283
+ * modified: 2007.179
  ***************************************************************************/
 
 #ifndef LMPLATFORM_H
@@ -30,9 +30,9 @@ extern "C" {
   
   /* Make some guesses about the system libraries based
    * on the architecture.  Currently the assumptions are:
-   * Linux => glibc2 (LMP_GLIBC2)
-   * Sun => Solaris (LMP_SOLARIS)
-   * Apple => Mac OS X (LMP_DARWIN)
+   * Linux => glibc2 libraries (LMP_GLIBC2)
+   * Sun => Solaris libraties (LMP_SOLARIS)
+   * BSD => BSD libraries, including Apple Mac OS X (LMP_BSD)
    * WIN32 => WIN32 and Windows Sockets 2 (LMP_WIN32)
    */
 
@@ -51,7 +51,7 @@ extern "C" {
   #include <string.h>
   #include <ctype.h>
   #include <features.h>
-   
+  
 #elif defined(__sun__) || defined(__sun)
   #define LMP_SOLARIS 1
 
@@ -66,9 +66,9 @@ extern "C" {
   #include <sys/time.h>
   #include <string.h>
   #include <ctype.h>
-
-#elif defined(__APPLE__)
-  #define LMP_DARWIN 1
+  
+#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
+  #define LMP_BSD 1
 
   #include <stdlib.h>
   #include <stdio.h>
@@ -107,6 +107,18 @@ extern "C" {
   typedef unsigned __int64 uint64_t;
 
 #else
+  #include <stdlib.h>
+  #include <stdio.h>
+  #include <unistd.h>
+  #include <stdarg.h>
+  #include <inttypes.h>
+  #include <sys/socket.h>
+  #include <netinet/in.h>
+  #include <netdb.h>
+  #include <sys/time.h>
+  #include <string.h>
+  #include <ctype.h>
+
   typedef signed char int8_t;
   typedef unsigned char uint8_t;
   typedef signed short int int16_t;
@@ -118,7 +130,6 @@ extern "C" {
 
 #endif
 
-extern const char *lmp_strerror (void);
 extern off_t lmp_ftello (FILE *stream);
 extern int lmp_fseeko (FILE *stream, off_t offset, int whence);
 

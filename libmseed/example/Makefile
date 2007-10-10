@@ -6,10 +6,10 @@
 
 # Options specific for GCC
 GCC = gcc
-GCCFLAGS = -O2 -Wall -fPIC
+GCCFLAGS = -O2 -Wall -fPIC -I..
 
 # Required compiler parameters
-REQCFLAGS = -I..
+CFLAGS += -I..
 
 LDFLAGS = -L..
 LDLIBS = -lmseed
@@ -57,7 +57,7 @@ gcc64gprof:
 
 # Implicit rule for building object files
 %.o: %.c
-	$(CC) $(CFLAGS) $(REQCFLAGS) -c $<
+	$(CC) $(CFLAGS) -c $<
 
 install:
 	@echo

@@ -1,4 +1,4 @@
-.TH MST_PACK 3 2006/12/12 "Libmseed API"
+.TH MST_PACK 3 2007/08/16 "Libmseed API"
 .SH DESCRIPTION
 Packing of Mini-SEED records from MSTrace segments.
 
@@ -6,16 +6,17 @@ Packing of Mini-SEED records from MSTrace segments.
 .nf
 .B #include <libmseed.h>
 
-.BI "int  \fBmst_pack\fP ( MSTrace *" mst ", void (*" record_handler ") (char *, int),
-.BI "                int " reclen ", flag " encoding ", flag " byteorder ",
-.BI "                int *" packedsamples ", flag " flush ", flag " verbose ",
-.BI "                MSRecord *" mstemplate " );
+.BI "int  \fBmst_pack\fP ( MSTrace *" mst ","
+.BI "                void (*" record_handler ") (char *, int, void *),"
+.BI "                void *" handlerdata ", int " reclen ", flag " encoding ","
+.BI "                flag " byteorder ", int *" packedsamples ", flag " flush ","
+.BI "                flag " verbose ", MSRecord *" mstemplate " );"
 
-.BI "int  \fBmsr_packgroup\fP ( MSTraceGroup *" mstg ",
-.BI "                     void (*" record_handler ") (char *, int),
-.BI "                     int " reclen ", flag " encoding ", flag " byteorder ",
-.BI "                     int *" packedsamples ", flag " flush ", flag " verbose ",
-.BI "                     MSRecord *" mstemplate " );"
+.BI "int  \fBmsr_packgroup\fP ( MSTraceGroup *" mstg ","
+.BI "                     void (*" record_handler ") (char *, int, void *),"
+.BI "                     void *" handlerdata ", int " reclen ", flag " encoding ","
+.BI "                     flag " byteorder ", int *" packedsamples ", flag " flush ","
+.BI "                     flag " verbose ", MSRecord *" mstemplate " );"
 .fi
 
 .SH DESCRIPTION
@@ -51,19 +52,25 @@ doubles).
 
 The encoding format must be appropriate for the sample type of the
 MSTrace samples.  For example, Steim compression and integer encoding
-formats must be used with integer samples and float encoding formats
-require the appropriate size floats as input.  As a counter example,
-float samples cannot be packed using Steim compression or integer
-encoding formats.
+formats require integer samples and float encoding formats require the
+appropriate size floats as input.  As a counter example, float samples
+cannot be packed using Steim compression or integer encoding formats.
 
 \fIbyteorder\fP must be either 0 (LSBF or little-endian) or 1 (MBF or
 big-endian).
 
 Each time a complete record is packed it will be passed to the
-\fIrecord_handler()\fP function along with it's length in bytes.  It
-is the responsibility of \fIrecord_handler()\fP to process the record,
-the memory will be re-used or freed when \fIrecord_handler()\fP
-returns.
+\fIrecord_handler()\fP function which expects three arguments: 1) a
+char * to the record buffer, 2) the length of the record in bytes and
+3) a void pointer supplied by the caller.  It is the responsibility of
+\fIrecord_handler()\fP to process the record, the memory will be
+re-used or freed when \fIrecord_handler()\fP returns.  This function
+pointer is required, there is no other way to access the packed
+records.
+
+The \fIhandlerdata\fP pointer will be passed as the 3rd argument to
+\fIrecord_handler()\fP.  This allows the caller to optionally pass
+data directly to the \fIrecord_handler()\fP.
 
 The integer pointed to by \fIpackedsamples\fP will be set to the total
 number of samples packed.
@@ -79,11 +86,25 @@ in no diagnostic output.
 specified MSTraceGroup.  The integer pointed to by \fIpackedsamples\fP
 will be set to the total number of samples packed.
 
+.SH COMPRESSION HISTORY
+When the encoding format is Steim 1 or 2 compression contiguous
+records will be created including compression history.  Put simply,
+this means that the first difference in the compression series will be
+the difference between the first sample of the current record and the
+last sample of the previous record.  For the first record in a series
+(no previous record), a so-called cold start, the first difference
+will be zero.
+
+The compression history can be seeded by allocating the StreamState
+struct for the MSTrace and setting the \fBlastintsample\fP member to
+the integer sample value that preceded the first sample in the current
+series and setting the \fBcomphistory\fP flag to true (1).
+
 .SH RETURN VALUES
 \fBmst_pack\fP returns the number records created on success and -1 on
 error.
 
-\fBmsr_packgroup\fP returns the total (for all MSTraces) number of
+\fBmst_packgroup\fP returns the total (for all MSTraces) number of
 record created on success and -1 on error.
 
 .SH CAVEATS
@@ -98,10 +119,10 @@ Skeleton code for creating (packing) Mini-SEED records with
 mst_pack(3):
 
 .nf
-static void record_handler (char *record, int reclen) {
+static void record_handler (char *record, int reclen, void *srcname) {
   if ( fwrite(record, reclen, 1, outfile) != 1 )
     {
-      ms_log (2, "Error writing to output file\n");
+      ms_log (2, "Error writing %s to output file\n", (char *)srcname);
     }
 }
 
@@ -109,6 +130,7 @@ main() {
   int psamples;
   int precords;
   MSTrace *mst;
+  char srcname[50];
 
   mst = mst_init (NULL);
 
@@ -126,8 +148,11 @@ main() {
   mst->numsamples = 1234;
   mst->sampletype = 'i';      /* declare type to be 32-bit integers */
 
+  mst_srcname (mst, srcname, 0);
+
   /* Pack 4096 byte, big-endian records, using Steim-2 compression */
-  precords = mst_pack (mst, &record_handler, 4096, DE_STEIM2, 1, &psamples, 1, verbose, NULL);
+  precords = mst_pack (mst, &record_handler, srcname, 4096, DE_STEIM2,
+                       1, &psamples, 1, verbose, NULL);
 
   ms_log (0, "Packed %d samples into %d records\n", psamples, precords);
 

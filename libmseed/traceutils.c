@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2006.363
+ * modified: 2007.228
  ***************************************************************************/
 
 #include <stdio.h>
@@ -34,6 +34,9 @@ mst_init ( MSTrace *mst )
 
       if ( mst->prvtptr )
 	free (mst->prvtptr);
+
+      if ( mst->ststate )
+        free (mst->ststate);
     }
   else
     {
@@ -71,6 +74,10 @@ mst_free ( MSTrace **ppmst )
       if ( (*ppmst)->prvtptr )
         free ((*ppmst)->prvtptr);
       
+      /* Free stream processing state if present */
+      if ( (*ppmst)->ststate )
+        free ((*ppmst)->ststate);
+
       free (*ppmst);
       
       *ppmst = 0;
@@ -642,7 +649,8 @@ mst_addtracetogroup ( MSTraceGroup *mstg, MSTrace *mst )
  * belong together they will be merged.  This routine is only useful
  * if the trace group was assembled from segments out of time order
  * (e.g. a file of Mini-SEED records not in time order) but forming
- * contiguous time coverage.
+ * contiguous time coverage.  The MSTraceGroup will be sorted using
+ * mst_groupsort() before healing.
  *
  * The time tolerance and sample rate tolerance are used to determine
  * if the traces are indeed the same.  If timetol is -1.0 the default
@@ -664,6 +672,10 @@ mst_groupheal ( MSTraceGroup *mstg, double timetol, double sampratetol )
   double postgap, pregap, delta;
   
   if ( ! mstg )
+    return -1;
+  
+  /* Sort MSTraceGroup before any healing */
+  if ( mst_groupsort (mstg, 1) )
     return -1;
   
   curtrace = mstg->traces;
@@ -738,6 +750,10 @@ mst_groupheal ( MSTraceGroup *mstg, double timetol, double sampratetol )
 	      if ( searchtrace->numsamples <= 0 )
 		curtrace->samplecnt += searchtrace->samplecnt;
 	      
+	      /* If qualities do not match reset the indicator */
+	      if (curtrace->dataquality != searchtrace->dataquality)
+		curtrace->dataquality = 0;
+
 	      merged = 1;
 	    }
 	  
@@ -753,13 +769,21 @@ mst_groupheal ( MSTraceGroup *mstg, double timetol, double sampratetol )
 	      if ( searchtrace->numsamples <= 0 )
 		curtrace->samplecnt += searchtrace->samplecnt;
 	      
+	      /* If qualities do not match reset the indicator */
+	      if (curtrace->dataquality != searchtrace->dataquality)
+		curtrace->dataquality = 0;
+	      
 	      merged = 1;
 	    }
-	  
+	 
+	  /* If searchtrace was merged with curtrace remove it from the chain */
 	  if ( merged )
 	    {
 	      /* Re-link trace chain and free searchtrace */
-	      prevtrace->next = nexttrace;
+	      if ( searchtrace == mstg->traces )
+		mstg->traces = nexttrace;
+	      else
+		prevtrace->next = nexttrace;
 	      
 	      mst_free (&searchtrace);
 	      
@@ -984,18 +1008,18 @@ mst_printtracelist ( MSTraceGroup *mstg, flag timeformat,
 	}
       else if ( timeformat == 1 )
 	{
-	  if ( ms_hptime2isotimestr (mst->starttime, stime) == NULL )
+	  if ( ms_hptime2isotimestr (mst->starttime, stime, 1) == NULL )
 	    ms_log (2, "Cannot convert trace start time for %s\n", srcname);
 	  
-	  if ( ms_hptime2isotimestr (mst->endtime, etime) == NULL )
+	  if ( ms_hptime2isotimestr (mst->endtime, etime, 1) == NULL )
 	    ms_log (2, "Cannot convert trace end time for %s\n", srcname);
 	}
       else
 	{
-	  if ( ms_hptime2seedtimestr (mst->starttime, stime) == NULL )
+	  if ( ms_hptime2seedtimestr (mst->starttime, stime, 1) == NULL )
 	    ms_log (2, "Cannot convert trace start time for %s\n", srcname);
 	  
-	  if ( ms_hptime2seedtimestr (mst->endtime, etime) == NULL )
+	  if ( ms_hptime2seedtimestr (mst->endtime, etime, 1) == NULL )
 	    ms_log (2, "Cannot convert trace end time for %s\n", srcname);
 	}
       
@@ -1177,18 +1201,18 @@ mst_printgaplist (MSTraceGroup *mstg, flag timeformat,
 		}
 	      else if ( timeformat == 1 )
 		{
-		  if ( ms_hptime2isotimestr (mst->endtime, time1) == NULL )
+		  if ( ms_hptime2isotimestr (mst->endtime, time1, 1) == NULL )
 		    ms_log (2, "Cannot convert trace end time for %s\n", src1);
 		  
-		  if ( ms_hptime2isotimestr (mst->next->starttime, time2) == NULL )
+		  if ( ms_hptime2isotimestr (mst->next->starttime, time2, 1) == NULL )
 		    ms_log (2, "Cannot convert next trace start time for %s\n", src1);
 		}
 	      else
 		{
-		  if ( ms_hptime2seedtimestr (mst->endtime, time1) == NULL )
+		  if ( ms_hptime2seedtimestr (mst->endtime, time1, 1) == NULL )
 		    ms_log (2, "Cannot convert trace end time for %s\n", src1);
 		  
-		  if ( ms_hptime2seedtimestr (mst->next->starttime, time2) == NULL )
+		  if ( ms_hptime2seedtimestr (mst->next->starttime, time2, 1) == NULL )
 		    ms_log (2, "Cannot convert next trace start time for %s\n", src1);
 		}
 	      
@@ -1217,9 +1241,11 @@ mst_printgaplist (MSTraceGroup *mstg, flag timeformat,
  * samples were packed.
  *
  * As each record is filled and finished they are passed to
- * record_handler along with their length in bytes.  It is the
+ * record_handler which expects 1) a char * to the record, 2) the
+ * length of the record and 3) a pointer supplied by the original
+ * caller containing optional private data (handlerdata).  It is the
  * responsibility of record_handler to process the record, the memory
- * will be re-used when record_handler returns.
+ * will be re-used or freed when record_handler returns.
  *
  * If the flush flag is > 0 all of the data will be packed into data
  * records even though the last one will probably not be filled.
@@ -1235,8 +1261,8 @@ mst_printgaplist (MSTraceGroup *mstg, flag timeformat,
  * Returns the number of records created on success and -1 on error.
  ***************************************************************************/
 int
-mst_pack ( MSTrace *mst, void (*record_handler) (char *, int),
-	   int reclen, flag encoding, flag byteorder,
+mst_pack ( MSTrace *mst, void (*record_handler) (char *, int, void *),
+	   void *handlerdata, int reclen, flag encoding, flag byteorder,
 	   int *packedsamples, flag flush, flag verbose,
 	   MSRecord *mstemplate )
 {
@@ -1251,6 +1277,19 @@ mst_pack ( MSTrace *mst, void (*record_handler) (char *, int),
   void *preservedatasamples = 0;
   int32_t preservenumsamples = 0;
   char preservesampletype = 0;
+  StreamState *preserveststate = 0;
+
+  /* Allocate stream processing state space if needed */
+  if ( ! mst->ststate )
+    {
+      mst->ststate = (StreamState *) malloc (sizeof(StreamState));
+      if ( ! mst->ststate )
+        {
+          ms_log (2, "mst_pack(): Could not allocate memory for StreamState\n");
+          return -1;
+        }
+      memset (mst->ststate, 0, sizeof(StreamState));
+    }
   
   if ( mstemplate )
     {
@@ -1261,6 +1300,7 @@ mst_pack ( MSTrace *mst, void (*record_handler) (char *, int),
       preservedatasamples = msr->datasamples;
       preservenumsamples = msr->numsamples;
       preservesampletype = msr->sampletype;
+      preserveststate = msr->ststate;
     }
   else
     {
@@ -1289,6 +1329,7 @@ mst_pack ( MSTrace *mst, void (*record_handler) (char *, int),
   msr->datasamples = mst->datasamples;
   msr->numsamples = mst->numsamples;
   msr->sampletype = mst->sampletype;
+  msr->ststate = mst->ststate;
   
   /* Sample count sanity check */
   if ( mst->samplecnt != mst->numsamples )
@@ -1298,7 +1339,7 @@ mst_pack ( MSTrace *mst, void (*record_handler) (char *, int),
     }
   
   /* Pack data */
-  packedrecords = msr_pack (msr, record_handler, packedsamples, flush, verbose);
+  packedrecords = msr_pack (msr, record_handler, handlerdata, packedsamples, flush, verbose);
   
   if ( verbose > 1 )
     {
@@ -1347,10 +1388,12 @@ mst_pack ( MSTrace *mst, void (*record_handler) (char *, int),
       msr->datasamples = preservedatasamples;
       msr->numsamples = preservenumsamples;
       msr->sampletype = preservesampletype;
+      msr->ststate = preserveststate;
     }
   else
     {
       msr->datasamples = 0;
+      msr->ststate = 0;
       msr_free (&msr);
     }
   
@@ -1367,8 +1410,8 @@ mst_pack ( MSTrace *mst, void (*record_handler) (char *, int),
  * Returns the number of records created on success and -1 on error.
  ***************************************************************************/
 int
-mst_packgroup ( MSTraceGroup *mstg, void (*record_handler) (char *, int),
-		int reclen, flag encoding, flag byteorder,
+mst_packgroup ( MSTraceGroup *mstg, void (*record_handler) (char *, int, void *),
+		void *handlerdata, int reclen, flag encoding, flag byteorder,
 		int *packedsamples, flag flush, flag verbose,
 		MSRecord *mstemplate )
 {
@@ -1397,9 +1440,9 @@ mst_packgroup ( MSTraceGroup *mstg, void (*record_handler) (char *, int),
 	}
       else
 	{
-	  packedrecords += mst_pack (mst, record_handler, reclen, encoding,
-				     byteorder, &tracesamples, flush, verbose,
-				     mstemplate);
+	  packedrecords += mst_pack (mst, record_handler, handlerdata, reclen,
+				     encoding, byteorder, &tracesamples, flush,
+				     verbose, mstemplate);
 	  
 	  if ( packedrecords == -1 )
 	    break;

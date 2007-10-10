@@ -1,4 +1,4 @@
-.TH MST_PRINT 3 2006/12/4 "Libmseed API"
+.TH MST_PRINT 3 2007/03/24 "Libmseed API"
 .SH DESCRIPTION
 Printing of MSTrace information.
 
@@ -52,6 +52,11 @@ the gap.  No sample 'coverage' time is included.
 
 The value of an overlap is calculated as the time between two samples
 which represent the maximum amount of timeseries overlap.
+
+When the MSTraces in the MSTraceGroup include a small segment that is
+completely overlapped by another larger segment the gap/overlap value
+will not be correct for either the smaller segment or the segment
+following it.
 
 .SH SEE ALSO
 \fBms_intro(3)\fP

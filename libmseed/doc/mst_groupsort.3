@@ -1,4 +1,4 @@
-.TH MST_GROUPSORT 3 2006/12/29 "Libmseed API"
+.TH MST_GROUPSORT 3 2007/04/12 "Libmseed API"
 .SH DESCRIPTION
 Manipulate MSTrace segments in a MSTraceGroup
 
@@ -27,6 +27,8 @@ tolerance (\fItimetol\fP and \fIsampratetol\fP respectively).  This is
 useful when, for whatever reason, the MSTraceGroup has separate
 MSTrace segments which belong together.  This usually only happens
 when data is added to a MSTraceGroup in random data time order.
+Before attempting to heal the MSTraces the MSTraceGroup will be sorted
+using \fBmst_groupsort\fP.
 
 If \fIsampratetol\fP is -1.0 the default tolerance of abs(1-sr1/sr2)
 is used.  If \fItimetol\fP is -1.0 the default time tolerance of 1/2
@@ -37,14 +39,6 @@ the sample period will be used.
 
 \fBmst_groupheal\fP returns the number of MSTrace segments merged on
 success and -1 on error.
-
-.SH CAVEAT
-In certain cases when the MSTrace segments are in a really jumbled
-order in the MSTraceGroup and have random overlaps \fBmst_groupheal\fP
-will not heal all possible segments.  This is due to a simple group
-traversing algorithm.  Sorting the MSTraceGroup with
-\fBmst_groupsort\fP first or a second call to \fBmst_groupheal\fP will
-probably help.
 
 .SH SEE ALSO
 \fBms_intro(3)\fP and \fBmst_srcname(3)\fP.

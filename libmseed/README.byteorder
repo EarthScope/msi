@@ -25,7 +25,11 @@ UNPACK_HEADER_BYTEORDER
 UNPACK_DATA_BYTEORDER
 
 These variables should be set to either 0 (little endian) or 1 (big
-endian).
+endian).  A programmatic equivalent of setting these environment
+variables is provided via the following macros:
+
+MS_UNPACKHEADERBYTEORDER(X)
+MS_UNPACKDATABYTEORDER(X)
 
 
 Writing MiniSEED - in what byte order libmseed creates records:
@@ -40,7 +44,13 @@ PACK_HEADER_BYTEORDER
 PACK_DATA_BYTEORDER
 
 These variables should be set to either 0 (little endian) or 1 (big
-endian).
+endian).  A programmatic equivalent of setting these environment
+variables is provided via the following macros:
+
+.nf
+MS_PACKHEADERBYTEORDER(X)
+MS_PACKDATABYTEORDER(X)
+.fi
 
 
 Note that some interpretations of the SEED 2.4 format imply that

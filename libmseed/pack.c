@@ -7,7 +7,7 @@
  * Written by Chad Trabant,
  *   IRIS Data Management Center
  *
- * modified: 2006.354
+ * modified: 2007.227
  ***************************************************************************/
 
 #include <stdio.h>
@@ -23,15 +23,15 @@ static int msr_pack_header_raw (MSRecord *msr, char *rawrec, int maxheaderlen,
 				flag swapflag, flag normalize, flag verbose);
 static int msr_update_header (MSRecord * msr, char *rawrec, flag swapflag,
 			      flag verbose);
-static int msr_pack_data (void *dest, void *src,
-			  int maxsamples, int maxdatabytes, int *packsamples,
+static int msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
+			  int *packsamples, int32_t *lastintsample, flag comphistory,
 			  char sampletype, flag encoding, flag swapflag,
 			  flag verbose);
 
 /* Header and data byte order flags controlled by environment variables */
 /* -2 = not checked, -1 = checked but not set, or 0 = LE and 1 = BE */
-static flag headerbyteorder = -2;
-static flag databyteorder = -2;
+flag packheaderbyteorder = -2;
+flag packdatabyteorder = -2;
 
 /* A pointer to the srcname of the record being packed */
 char *PACK_SRCNAME = NULL;
@@ -52,7 +52,9 @@ char *PACK_SRCNAME = NULL;
  * calling routine to adjust the data buffer if desired.
  *
  * As each record is filled and finished they are passed to
- * record_handler along with their length in bytes.  It is the
+ * record_handler which expects 1) a char * to the record, 2) the
+ * length of the record and 3) a pointer supplied by the original
+ * caller containing optional private data (handlerdata).  It is the
  * responsibility of record_handler to process the record, the memory
  * will be re-used or freed when record_handler returns.
  *
@@ -67,8 +69,8 @@ char *PACK_SRCNAME = NULL;
  * Returns the number of records created on success and -1 on error.
  ***************************************************************************/
 int
-msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
-	   int *packedsamples, flag flush, flag verbose )
+msr_pack ( MSRecord * msr, void (*record_handler) (char *, int, void *),
+	   void *handlerdata, int *packedsamples, flag flush, flag verbose )
 {
   uint16_t *HPnumsamples;
   uint16_t *HPdataoffset;
@@ -98,6 +100,18 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
       return -1;
     }
 
+  /* Allocate stream processing state space if needed */
+  if ( ! msr->ststate )
+    {
+      msr->ststate = (StreamState *) malloc (sizeof(StreamState));
+      if ( ! msr->ststate )
+        {
+          ms_log (2, "msr_pack(): Could not allocate memory for StreamState\n");
+          return -1;
+        }
+      memset (msr->ststate, 0, sizeof(StreamState));
+    }
+
   /* Generate source name for MSRecord */
   if ( msr_srcname (msr, srcname, 1) == NULL )
     {
@@ -109,7 +123,7 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
   PACK_SRCNAME = &srcname[0];
   
   /* Read possible environmental variables that force byteorder */
-  if ( headerbyteorder == -2 )
+  if ( packheaderbyteorder == -2 )
     {
       if ( (envvariable = getenv("PACK_HEADER_BYTEORDER")) )
 	{
@@ -120,23 +134,23 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
 	    }
 	  else if ( *envvariable == '0' )
 	    {
-	      headerbyteorder = 0;
+	      packheaderbyteorder = 0;
 	      if ( verbose > 2 )
 		ms_log (1, "PACK_HEADER_BYTEORDER=0, packing little-endian header\n");
 	    }
 	  else
 	    {
-	      headerbyteorder = 1;
+	      packheaderbyteorder = 1;
 	      if ( verbose > 2 )
 		ms_log (1, "PACK_HEADER_BYTEORDER=1, packing big-endian header\n");
 	    }
 	}
       else
 	{
-	  headerbyteorder = -1;
+	  packheaderbyteorder = -1;
 	}
     }
-  if ( databyteorder == -2 )
+  if ( packdatabyteorder == -2 )
     {
       if ( (envvariable = getenv("PACK_DATA_BYTEORDER")) )
 	{
@@ -147,20 +161,20 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
 	    }
 	  else if ( *envvariable == '0' )
 	    {
-	      databyteorder = 0;
+	      packdatabyteorder = 0;
 	      if ( verbose > 2 )
 		ms_log (1, "PACK_DATA_BYTEORDER=0, packing little-endian data samples\n");
 	    }
 	  else
 	    {
-	      databyteorder = 1;
+	      packdatabyteorder = 1;
 	      if ( verbose > 2 )
 		ms_log (1, "PACK_DATA_BYTEORDER=1, packing big-endian data samples\n");
 	    }
 	}
       else
 	{
-	  databyteorder = -1;
+	  packdatabyteorder = -1;
 	}
     }
 
@@ -223,14 +237,14 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
     headerswapflag = dataswapflag = 1;
   
   /* Check if byte order is forced */
-  if ( headerbyteorder >= 0 )
+  if ( packheaderbyteorder >= 0 )
     {
-      headerswapflag = ( msr->byteorder != headerbyteorder ) ? 1 : 0;
+      headerswapflag = ( msr->byteorder != packheaderbyteorder ) ? 1 : 0;
     }
   
-  if ( databyteorder >= 0 )
+  if ( packdatabyteorder >= 0 )
     {
-      dataswapflag = ( msr->byteorder != databyteorder ) ? 1 : 0;
+      dataswapflag = ( msr->byteorder != packdatabyteorder ) ? 1 : 0;
     }
   
   if ( verbose > 2 )
@@ -315,8 +329,8 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
       packret = msr_pack_data (rawrec + dataoffset,
 			       (char *) msr->datasamples + packoffset,
 			       (msr->numsamples - totalpackedsamples), maxdatabytes,
-			       &packsamples, msr->sampletype,
-			       msr->encoding, dataswapflag, verbose);
+			       &packsamples, &msr->ststate->lastintsample, msr->ststate->comphistory,
+			       msr->sampletype, msr->encoding, dataswapflag, verbose);
       
       if ( packret )
 	{
@@ -334,18 +348,25 @@ msr_pack ( MSRecord * msr, void (*record_handler) (char *, int),
 	ms_log (1, "%s: Packed %d samples\n", PACK_SRCNAME, packsamples);
       
       /* Send record to handler */
-      record_handler (rawrec, msr->reclen);
+      record_handler (rawrec, msr->reclen, handlerdata);
       
       totalpackedsamples += packsamples;
       if ( packedsamples ) *packedsamples = totalpackedsamples;
+      msr->ststate->packedsamples += packsamples;
       
       /* Update record header for next record */
-      msr->sequence_number = ( msr->sequence_number >= 999999) ? 1 : msr->sequence_number + 1;
-      msr->starttime += (double) packsamples / msr->samprate * HPTMODULUS;
+      msr->sequence_number = ( msr->sequence_number >= 999999 ) ? 1 : msr->sequence_number + 1;
+      if ( msr->samprate > 0 )
+        msr->starttime += (double) packsamples / msr->samprate * HPTMODULUS;
       msr_update_header (msr, rawrec, headerswapflag, verbose);
       
       recordcnt++;
-      
+      msr->ststate->packedrecords++;
+
+      /* Set compression history flag for subsequent records (Steim encodings) */
+      if ( ! msr->ststate->comphistory )
+        msr->ststate->comphistory = 1;
+     
       if ( totalpackedsamples >= msr->numsamples )
 	break;
     }
@@ -393,7 +414,7 @@ msr_pack_header ( MSRecord *msr, flag normalize, flag verbose )
   PACK_SRCNAME = &srcname[0];
 
   /* Read possible environmental variables that force byteorder */
-  if ( headerbyteorder == -2 )
+  if ( packheaderbyteorder == -2 )
     {
       if ( (envvariable = getenv("PACK_HEADER_BYTEORDER")) )
 	{
@@ -404,20 +425,20 @@ msr_pack_header ( MSRecord *msr, flag normalize, flag verbose )
 	    }
 	  else if ( *envvariable == '0' )
 	    {
-	      headerbyteorder = 0;
+	      packheaderbyteorder = 0;
 	      if ( verbose > 2 )
 		ms_log (1, "PACK_HEADER_BYTEORDER=0, packing little-endian header\n");
 	    }
 	  else
 	    {
-	      headerbyteorder = 1;
+	      packheaderbyteorder = 1;
 	      if ( verbose > 2 )
 		ms_log (1, "PACK_HEADER_BYTEORDER=1, packing big-endian header\n");
 	    }
 	}
       else
 	{
-	  headerbyteorder = -1;
+	  packheaderbyteorder = -1;
 	}
     }
 
@@ -451,9 +472,9 @@ msr_pack_header ( MSRecord *msr, flag normalize, flag verbose )
     headerswapflag = 1;
   
   /* Check if byte order is forced */
-  if ( headerbyteorder >= 0 )
+  if ( packheaderbyteorder >= 0 )
     {
-      headerswapflag = ( msr->byteorder != headerbyteorder ) ? 1: 0;
+      headerswapflag = ( msr->byteorder != packheaderbyteorder ) ? 1: 0;
     }
   
   if ( verbose > 2 )
@@ -483,20 +504,19 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
 		      flag swapflag, flag normalize, flag verbose )
 {
   struct blkt_link_s *cur_blkt;
+  struct fsdh_s *fsdh;
   int16_t offset;
   int blktcnt = 0;
   int nextoffset;
-  
-  struct fsdh_s *fsdh;
-  
+
   if ( ! msr || ! rawrec )
     return -1;
   
   /* Make sure a fixed section of data header is available */
   if ( ! msr->fsdh )
     {
-      msr->fsdh = (struct fsdh_s *) malloc (sizeof (struct fsdh_s));
-
+      msr->fsdh = (struct fsdh_s *) calloc (1, sizeof (struct fsdh_s));
+      
       if ( msr->fsdh == NULL )
 	{
 	  ms_log (2, "msr_pack_header_raw(%s): Cannot allocate memory\n",
@@ -740,8 +760,8 @@ msr_pack_header_raw ( MSRecord *msr, char *rawrec, int maxheaderlen,
 	  offset += sizeof (struct blkt_1000_s);
 	  
 	  /* This guarantees that the byte order is in sync with msr_pack() */
-	  if ( databyteorder >= 0 )
-	    blkt_1000->byteorder = databyteorder;
+	  if ( packdatabyteorder >= 0 )
+	    blkt_1000->byteorder = packdatabyteorder;
 	}
       
       else if ( cur_blkt->blkt_type == 1001 )
@@ -842,14 +862,22 @@ msr_update_header ( MSRecord *msr, char *rawrec, flag swapflag,
  *
  *  Pack Mini-SEED data samples.  The input data samples specified as
  *  'src' will be packed with 'encoding' format and placed in 'dest'.
+ *  
+ *  If a pointer to a 32-bit integer sample is provided in the
+ *  argument 'lastintsample' and 'comphistory' is true the sample
+ *  value will be used to seed the difference buffer for Steim1/2
+ *  encoding and provide a compression history.  It will also be
+ *  updated with the last sample packed in order to be used with a
+ *  subsequent call to this routine.
+ *
  *  The number of samples packed will be placed in 'packsamples' and
  *  the number of bytes packed will be placed in 'packbytes'.
  *
  *  Return 0 on success and a negative number on error.
  ************************************************************************/
 static int
-msr_pack_data (void *dest, void *src,
-	       int maxsamples, int maxdatabytes, int *packsamples,
+msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
+	       int *packsamples, int32_t *lastintsample, flag comphistory,
 	       char sampletype, flag encoding, flag swapflag, flag verbose)
 {
   int retval;
@@ -961,7 +989,8 @@ msr_pack_data (void *dest, void *src,
 	  return -1;
 	}
       
-      diffbuff[0] = 0;
+      /* If a previous sample is supplied use it for compression history otherwise cold-start */      
+      diffbuff[0] = ( lastintsample && comphistory ) ? (intbuff[0] - *lastintsample) : 0;
       for (npacked=1; npacked < maxsamples; npacked++)
 	diffbuff[npacked] = intbuff[npacked] - intbuff[npacked-1];
       
@@ -972,6 +1001,10 @@ msr_pack_data (void *dest, void *src,
       
       retval = msr_pack_steim1 (dest, src, diffbuff, maxsamples, nframes, 1,
 				&npacked, packsamples, swapflag);
+      
+      /* If a previous sample is supplied update it with the last sample value */
+      if ( lastintsample && retval == 0 )
+	*lastintsample = intbuff[*packsamples-1];
       
       free (diffbuff);
       break;
@@ -985,17 +1018,18 @@ msr_pack_data (void *dest, void *src,
 	}
       
       intbuff = (int32_t *) src;
-
+      
       /* Allocate and populate the difference buffer */
       diffbuff = (int32_t *) malloc (maxsamples * sizeof(int32_t));
-
+      
       if ( diffbuff == NULL )
 	{
 	  ms_log (2, "msr_pack_data(%s): Cannot allocate diff buffer\n", PACK_SRCNAME);
 	  return -1;
 	}
       
-      diffbuff[0] = 0;
+      /* If a previous sample is supplied use it for compression history otherwise cold-start */
+      diffbuff[0] = ( lastintsample && comphistory ) ? (intbuff[0] - *lastintsample) : 0;
       for (npacked=1; npacked < maxsamples; npacked++)
 	diffbuff[npacked] = intbuff[npacked] - intbuff[npacked-1];
       
@@ -1006,6 +1040,10 @@ msr_pack_data (void *dest, void *src,
       
       retval = msr_pack_steim2 (dest, src, diffbuff, maxsamples, nframes, 1,
 				&npacked, packsamples, swapflag);
+      
+      /* If a previous sample is supplied update it with the last sample value */
+      if ( lastintsample && retval == 0 )
+	*lastintsample = intbuff[*packsamples-1];
       
       free (diffbuff);
       break;
