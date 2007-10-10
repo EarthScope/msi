@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2006.363
+ * modified 2007.282
  ***************************************************************************/
 
 #include <stdio.h>
@@ -28,7 +28,7 @@ static int lisnumber (char *number);
 static void addfile (char *filename);
 static void usage (void);
 
-#define VERSION "2.0"
+#define VERSION "2.1"
 #define PACKAGE "msi"
 
 static flag    verbose      = 0;
@@ -159,7 +159,7 @@ main (int argc, char **argv)
 	      if ( verbose >= 3 )
 		{
 		  msr_srcname (msr, srcname, 1);
-		  ms_hptime2seedtimestr (msr->starttime, stime);
+		  ms_hptime2seedtimestr (msr->starttime, stime, 1);
 		  ms_log (1, "Skipping (starttime) %s, %s\n", srcname, stime);
 		}
 	      continue;
@@ -170,7 +170,7 @@ main (int argc, char **argv)
 	      if ( verbose >= 3 )
 		{
 		  msr_srcname (msr, srcname, 1);
-		  ms_hptime2seedtimestr (msr->starttime, stime);
+		  ms_hptime2seedtimestr (msr->starttime, stime, 1);
 		  ms_log (1, "Skipping (starttime) %s, %s\n", srcname, stime);
 		}
 	      continue;
@@ -188,7 +188,7 @@ main (int argc, char **argv)
 		    {
 		      if ( verbose >= 3 )
 			{
-			  ms_hptime2seedtimestr (msr->starttime, stime);
+			  ms_hptime2seedtimestr (msr->starttime, stime, 1);
 			  ms_log (1, "Skipping (match) %s, %s\n", srcname, stime);
 			}
 		      continue;
@@ -202,7 +202,7 @@ main (int argc, char **argv)
 		    {
 		      if ( verbose >= 3 )
 			{
-			  ms_hptime2seedtimestr (msr->starttime, stime);
+			  ms_hptime2seedtimestr (msr->starttime, stime, 1);
 			  ms_log (1, "Skipping (reject) %s, %s\n", srcname, stime);
 			}
 		      continue;
