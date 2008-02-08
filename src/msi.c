@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2007.282
+ * modified 2008.039
  ***************************************************************************/
 
 #include <stdio.h>
@@ -28,7 +28,7 @@ static int lisnumber (char *number);
 static void addfile (char *filename);
 static void usage (void);
 
-#define VERSION "2.1"
+#define VERSION "2.2"
 #define PACKAGE "msi"
 
 static flag    verbose      = 0;
@@ -78,11 +78,11 @@ main (int argc, char **argv)
   int retcode = MS_NOERROR;
 
   char envvariable[100];
-  int dataflag   = 0;
+  int dataflag = 0;
   long long int totalrecs  = 0;
   long long int totalsamps = 0;
   long long int totalfiles = 0;
-  off_t filepos  = 0;
+  off_t filepos = 0;
   
   char srcname[50];
   char stime[30];
@@ -150,7 +150,7 @@ main (int argc, char **argv)
       while ( reccntdown != 0 )
 	{
 	  if ( (retcode = ms_readmsr (&msr, flp->filename, reclen, &filepos,
-				      NULL, 1, dataflag, verbose)) != MS_NOERROR )
+				      NULL, 1, 0, verbose)) != MS_NOERROR )
 	    break;
 	  
 	  /* Check if record matches start/end time criteria */
@@ -232,7 +232,10 @@ main (int argc, char **argv)
 	  
 	  if ( dataflag )
 	    {
-	      if ( printdata && ! tracegaponly )
+	      /* Parse the record (again) and unpack the data */
+	      int rv = msr_unpack (msr->record, msr->reclen, &msr, 1, verbose);
+	      
+	      if ( rv == MS_NOERROR && printdata && ! tracegaponly )
 		{
 		  int line, col, cnt, samplesize;
 		  int lines = (msr->numsamples / 6) + 1;
