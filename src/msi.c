@@ -295,8 +295,11 @@ main (int argc, char **argv)
       
       /* Print error if not EOF and not counting down records */
       if ( retcode != MS_ENDOFFILE && reccntdown != 0 )
-	ms_log (2, "Cannot read %s: %s\n",
-		flp->filename, ms_errorstr(retcode));
+	{
+	  ms_log (2, "Cannot read %s: %s\n", flp->filename, ms_errorstr(retcode));
+	  ms_readmsr (&msr, NULL, 0, NULL, NULL, 0, 0, 0);
+	  exit (1);
+	}
       
       /* Make sure everything is cleaned up */
       ms_readmsr (&msr, NULL, 0, NULL, NULL, 0, 0, 0);
@@ -307,7 +310,7 @@ main (int argc, char **argv)
   
   if ( binfile )
     fclose (bfp);
-
+  
   if ( outfile )
     fclose (ofp);
   
