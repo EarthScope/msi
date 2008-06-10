@@ -1,3 +1,6 @@
+2008.162: 2.3
+	- Update to libmseed 2.1.5.
+
 2008.039: 2.2
 	- Only unpack the the data samples after the record selection
 	criteria has been applied.

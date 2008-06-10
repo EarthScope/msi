@@ -1,4 +1,4 @@
-.TH MSI 1 2006/12/5
+.TH MSI 1 2008/6/10
 .SH NAME
 Mini-SEED Inspector
 
@@ -59,13 +59,17 @@ commas (,), colons (:) or periods (.).
 Limit processing to Mini-SEED records that match the \fImatch\fP
 regular expression.  For each input record a source name string
 composed of 'NET_STA_LOC_CHAN_QUAL' is created and compared to the
-regular expression.
+regular expression.  If the match expression begins with an '@'
+character it is assumed to indicate a file containing a list of
+expressions to match, see the \fBLIST FILE\fR section below.
 
 .IP "-R \fIreject\fP"
 Limit processing to Mini-SEED records that do not match the
 \fIreject\fP regular expression.  For each input record a source name
 string composed of 'NET_STA_LOC_CHAN_QUAL' is created and compared to
-the regular expression.
+the regular expression.  If the reject expression begins with an '@'
+character it is assumed to indicate a file containing a list of
+expressions to reject, see the \fBLIST FILE\fR section below.
 
 .IP "-n \fIcount\fP"
 Only process \fIcount\fP input records.
@@ -159,6 +163,25 @@ to \fIbinfile\fP.
 
 .IP "-o \fIoutfile\fP"
 Write all processed Mini-SEED records to \fIoutfile\fP.
+
+.SH "LIST FILE"
+A list file used with either the \fB-M\fP or \fB-R\fP contains a list
+of regular expressions (one on each line) that will be combined into a
+single compound expression.  The initial '@' character indicating a
+list file is not considered part of the file name.  As an example, if
+the following command line option was used:
+
+.nf
+\fB-M @match.list\fP
+.fi
+
+The 'match.list' file might look like this:
+
+.nf
+IU_ANMO_.*
+IU_ADK_00_BHZ.*
+II_BFO_00_BHZ_Q
+.fi
 
 .SH AUTHOR
 .nf
