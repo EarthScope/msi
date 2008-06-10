@@ -1,5 +1,7 @@
 2008.162: 2.3
 	- Update to libmseed 2.1.5.
+	- Change error message prefix to "ERROR:".
+	- Return exit value of 1 for errors and 0 otherwise.
 
 2008.039: 2.2
 	- Only unpack the the data samples after the record selection

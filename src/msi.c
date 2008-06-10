@@ -1,14 +1,16 @@
 /***************************************************************************
  * msi.c - Mini-SEED Inspector
  *
- * A rather useful example of using the libmseed Mini-SEED library.
- *
  * Opens a user specified file, parses the Mini-SEED records and prints
  * details for each record, trace list or gap list.
  *
+ * In general critical error messages are prefixed with "ERROR:" and
+ * the return code will be 1.  On successfull operation the return
+ * code will be 0.
+ *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2008.039
+ * modified 2008.162
  ***************************************************************************/
 
 #include <stdio.h>
@@ -76,7 +78,7 @@ main (int argc, char **argv)
   FILE *bfp = 0;
   FILE *ofp = 0;
   int retcode = MS_NOERROR;
-
+  
   char envvariable[100];
   int dataflag = 0;
   long long int totalrecs  = 0;
@@ -87,9 +89,12 @@ main (int argc, char **argv)
   char srcname[50];
   char stime[30];
   
+  /* Set default error message prefix */
+  ms_loginit (NULL, NULL, NULL, "ERROR: ");
+  
   /* Process given parameters (command line and parameter file) */
   if ( processparam (argc, argv) < 0 )
-    return -1;
+    return 1;
   
   /* Setup encoding environment variable if specified, ugly kludge */
   if ( encodingstr )
@@ -99,7 +104,7 @@ main (int argc, char **argv)
       if ( putenv (envvariable) )
 	{
 	  ms_log (2, "Cannot set environment variable UNPACK_DATA_FORMAT\n");
-	  return -1;
+	  return 1;
 	}
     }
   
@@ -114,7 +119,7 @@ main (int argc, char **argv)
 	{
 	  ms_log (2, "Cannot open binary data output file: %s (%s)\n",
 		  binfile, strerror(errno));
-	  return -1;
+	  return 1;
 	}
     }
 
@@ -129,7 +134,7 @@ main (int argc, char **argv)
 	{
 	  ms_log (2, "Cannot open output file: %s (%s)\n",
 		  outfile, strerror(errno));
-	  return -1;
+	  return 1;
 	}
     }
   
@@ -295,11 +300,11 @@ main (int argc, char **argv)
       
       /* Make sure everything is cleaned up */
       ms_readmsr (&msr, NULL, 0, NULL, NULL, 0, 0, 0);
-
+      
       totalfiles++;
       flp = flp->next;
     } /* End of looping over file list */
-
+  
   if ( binfile )
     fclose (bfp);
 
@@ -735,7 +740,7 @@ addfile (char *filename)
 
 /***************************************************************************
  * usage():
- * Print the usage message and exit.
+ * Print the usage message.
  ***************************************************************************/
 static void
 usage (void)
