@@ -10,7 +10,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2008.162
+ * modified 2008.294
  ***************************************************************************/
 
 #include <stdio.h>
@@ -30,7 +30,7 @@ static int lisnumber (char *number);
 static void addfile (char *filename);
 static void usage (void);
 
-#define VERSION "2.3"
+#define VERSION "2.4dev"
 #define PACKAGE "msi"
 
 static flag    verbose      = 0;
@@ -281,12 +281,23 @@ main (int argc, char **argv)
 			  break;
 		      }
 		}
+	      
 	      if ( binfile )
 		{
-		  fwrite (msr->datasamples, 4, msr->numsamples, bfp);
+		  uint8_t samplesize = ms_samplesize (msr->sampletype);
+		  
+		  if ( samplesize )
+		    {
+		      fwrite (msr->datasamples, samplesize, msr->numsamples, bfp);
+		    }
+		  else
+		    {
+		      ms_log (1, "Cannot write to binary file, unknown sample type: %c\n",
+			      msr->sampletype);
+		    }
 		}
 	    }
-
+	  
 	  if ( outfile )
 	    {
 	      fwrite (msr->record, 1, msr->reclen, ofp);

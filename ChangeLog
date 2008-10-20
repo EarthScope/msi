@@ -1,3 +1,7 @@
+2008.294:
+	- Fix binary output file logic to handle sample sizes that
+	are not 4 byte quantities.
+
 2008.162: 2.3
 	- Update to libmseed 2.1.5.
 	- Change error message prefix to "ERROR:".
