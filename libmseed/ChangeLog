@@ -1,3 +1,40 @@
+2008.320: 2.2rc
+	- Add MSTraceList facility which is functionally equivalent to
+	the existing MSTraceGroup facility but more efficiently populated,
+	especially when data records are in time order or the time series
+	are very gappy.  The MSTraceList related functions are prefixed
+	with "mstl_" and exist in the new source file tracelist.c.	
+	- Add mst_printsynclist() and mstl_printsynclist() functions to
+	print trace segment lists in SYNC format.
+
+2008.318:
+	- Change one call in fileutils.c to fseeko() to lmp_fseeko()
+	so Win32 builds work again.
+
+2008.313:
+	- Optimize mst_findadjacent() by first testing for time segment
+	match, then sample rate and finally source name components.
+
+2008.283: 2.1.7
+	- Allow a caller of ms_readmsr()/ms_readmsr_r() to specify a
+	starting offset into the file by setting the value pointed to by
+	the fpos argument to a negative value (interpreted as a positive
+	offset).
+
+2008.220: 2.1.6
+	- Optimize Steim 1 & 2 encoders significantly by using small local
+	working buffers and eliminating many redundant calculations.
+	Thanks to Jean-Francois Fels.
+
+2008.171:
+	- Add Matlab/GNU Octave interface routines, thanks to Stefan Mertl.
+	- Remove 'const' qualifier from argument of log printing function
+	pointers, too many useless compiler warnings.
+
+2008.163:
+	- Allow data record sequence numbers to be NULL values in addition
+	to ASCII numbers.
+ 
 2008.161: 2.1.5
 	- Fix string parsing error for IRIS DMC packed files, thanks Sandy!
 	- Use a merge sort algorithm insteam of the bubble sort previsouly

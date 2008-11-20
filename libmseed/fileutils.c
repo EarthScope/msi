@@ -4,7 +4,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2008.161
+ * modified: 2008.318
  ***************************************************************************/
 
 #include <stdio.h>
@@ -87,7 +87,10 @@ ms_readmsr (MSRecord **ppmsr, char *msfile, int reclen, off_t *fpos,
  *
  * If *fpos is not NULL it will be updated to reflect the file
  * position (offset from the beginning in bytes) from where the
- * returned record was read.
+ * returned record was read.  As a special case, if *fpos is not NULL
+ * and the value it points to is less than 0 this will be interpreted
+ * as a (positive) starting offset from which to begin reading data;
+ * this feature does not work with packed files.
  *
  * If *last is not NULL it will be set to 1 when the last record in
  * the file is being returned, otherwise it will be 0.
@@ -224,21 +227,50 @@ ms_readmsr_r (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
 	}
     }
   
+  /* Seek to a specified offset if requested */
+  if ( fpos != NULL && *fpos < 0 )
+    {
+      /* Only try to seek in real files, not stdin */
+      if ( msfp->fp != stdin )
+	{
+	  if ( lmp_fseeko (msfp->fp, *fpos * -1, SEEK_SET) )
+	    {
+	      ms_log (2, "Cannot seek in file: %s (%s)\n", msfile, strerror (errno));
+	      
+	      if ( msfp->fp )
+		{ fclose (msfp->fp); msfp->fp = NULL; }
+	      if ( msfp->rawrec )
+		{ free (msfp->rawrec); msfp->rawrec = NULL; }
+	      
+	      return MS_GENERROR;
+	    }
+	  
+	  msfp->filepos = *fpos * -1;
+	}
+    }
+  
   /* Force the record length if specified */
   if ( reclen > 0 && msfp->autodet )
     {
       msfp->readlen = reclen;
       msfp->autodet = 0;
       
+      if ( msfp->rawrec )
+	free (msfp->rawrec);
+      
       msfp->rawrec = (char *) malloc (msfp->readlen);
       
       if ( msfp->rawrec == NULL )
 	{
 	  ms_log (2, "ms_readmsr_r(): Cannot allocate memory\n");
+	  
+	  if ( msfp->fp )
+	    { fclose (msfp->fp); msfp->fp = NULL; }
+	  
 	  return MS_GENERROR;
 	}
     }
-
+  
   /* If reclen is negative reset readlen for autodetection */
   if ( reclen < 0 )
     msfp->readlen = (unsigned int) 1 << autodetexp;

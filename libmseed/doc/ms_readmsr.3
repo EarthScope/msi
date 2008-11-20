@@ -1,4 +1,4 @@
-.TH MS_READMSR 3 2007/07/19 "Libmseed API"
+.TH MS_READMSR 3 2008/10/09 "Libmseed API"
 .SH DESCRIPTION
 Read Mini-SEED data from files
 
@@ -48,7 +48,10 @@ valid record length from 256 up to 8192 bytes in length.
 
 If the \fIfpos\fP pointer is not NULL the value will be set to the
 file position (offset from the beginning in bytes) from where the
-returned record was read.
+returned record was read.  As a special case, if \fIfpos\fP is not
+NULL and the value it points to is less than zero it will be
+interpreted as the (positive) offset in the file at which to begin
+reading data; this feauture does not work with packed files.
 
 If the \fIlast\fP pointer is not NULL the value will be set to 1 when
 the last record in the file is being returned, otherwise it will be 0.

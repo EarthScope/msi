@@ -1,3 +1,9 @@
+2008.322:
+	- Update libmseed to 2.2rc.
+	- Convert MSTraceGroup usage to the new MSTraceList family of routines.
+	- Add -S option to print trace listings in SYNC format.
+	- Remove -H option, traces are always healed during trace construction.
+
 2008.294:
 	- Fix binary output file logic to handle sample sizes that
 	are not 4 byte quantities.

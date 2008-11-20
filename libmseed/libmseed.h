@@ -30,8 +30,8 @@ extern "C" {
 
 #include "lmplatform.h"
 
-#define LIBMSEED_VERSION "2.1.5"
-#define LIBMSEED_RELEASE "2008.161"
+#define LIBMSEED_VERSION "2.2rc"
+#define LIBMSEED_RELEASE "2008.320"
 
 #define MINRECLEN   256      /* Minimum Mini-SEED record length, 2^8 bytes */
 #define MAXRECLEN   1048576  /* Maximum Mini-SEED record length, 2^20 bytes */
@@ -84,7 +84,7 @@ extern "C" {
  * if the memory contains a valid record.
  * 
  * Offset = Value
- * [0-5]  = Digits, SEED sequence number
+ * [0-5]  = Digits or NULL, SEED sequence number
  *     6  = Data record quality indicator
  *     7  = Space or NULL [not valid SEED]
  *     24 = Start hour (0-23)
@@ -94,16 +94,16 @@ extern "C" {
  * Usage:
  *   MS_ISVALIDHEADER ((char *)X)  X buffer must contain at least 27 bytes
  */
-#define MS_ISVALIDHEADER(X) (isdigit ((unsigned char) *(X)) &&              \
-			     isdigit ((unsigned char) *(X+1)) &&            \
-			     isdigit ((unsigned char) *(X+2)) &&            \
-			     isdigit ((unsigned char) *(X+3)) &&            \
-			     isdigit ((unsigned char) *(X+4)) &&            \
-			     isdigit ((unsigned char) *(X+5)) &&            \
-			     MS_ISDATAINDICATOR(*(X+6)) &&                  \
-			     (*(X+7) == ' ' || *(X+7) == '\0') &&           \
-			     (int)(*(X+24)) >= 0 && (int)(*(X+24)) <= 23 && \
-			     (int)(*(X+25)) >= 0 && (int)(*(X+25)) <= 59 && \
+#define MS_ISVALIDHEADER(X) ((isdigit ((unsigned char) *(X)) || !*(X) ) &&     \
+			     (isdigit ((unsigned char) *(X+1)) || !*(X+1) ) && \
+			     (isdigit ((unsigned char) *(X+2)) || !*(X+2) ) && \
+			     (isdigit ((unsigned char) *(X+3)) || !*(X+3) ) && \
+			     (isdigit ((unsigned char) *(X+4)) || !*(X+4) ) && \
+			     (isdigit ((unsigned char) *(X+5)) || !*(X+5) ) && \
+			     MS_ISDATAINDICATOR(*(X+6)) &&                     \
+			     (*(X+7) == ' ' || *(X+7) == '\0') &&              \
+			     (int)(*(X+24)) >= 0 && (int)(*(X+24)) <= 23 &&    \
+			     (int)(*(X+25)) >= 0 && (int)(*(X+25)) <= 59 &&    \
 			     (int)(*(X+26)) >= 0 && (int)(*(X+26)) <= 60)
 
 /* Macro to test memory for a blank/noise SEED data record signature
@@ -111,18 +111,18 @@ extern "C" {
  * to determine if the memory contains a valid blank/noise record.
  * 
  * Offset = Value
- * [0-5]  = Digits, SEED sequence number
+ * [0-5]  = Digits or NULL, SEED sequence number
  * [6-47] = Space character (ASCII 32), remainder of fixed header
  *
  * Usage:
  *   MS_ISVALIDBLANK ((char *)X)  X buffer must contain at least 27 bytes
  */
-#define MS_ISVALIDBLANK(X) (isdigit ((unsigned char) *(X)) &&                 \
-			    isdigit ((unsigned char) *(X+1)) &&		      \
-			    isdigit ((unsigned char) *(X+2)) &&		      \
-			    isdigit ((unsigned char) *(X+3)) &&		      \
-			    isdigit ((unsigned char) *(X+4)) &&		      \
-			    isdigit ((unsigned char) *(X+5)) &&	 	      \
+#define MS_ISVALIDBLANK(X) ((isdigit ((unsigned char) *(X)) || !*(X) ) &&     \
+			    (isdigit ((unsigned char) *(X+1)) || !*(X+1) ) && \
+			    (isdigit ((unsigned char) *(X+2)) || !*(X+2) ) && \
+			    (isdigit ((unsigned char) *(X+3)) || !*(X+3) ) && \
+			    (isdigit ((unsigned char) *(X+4)) || !*(X+4) ) && \
+			    (isdigit ((unsigned char) *(X+5)) || !*(X+5) ) && \
 			    (*(X+6)==' ')&&(*(X+7)==' ')&&(*(X+8)==' ') &&    \
 			    (*(X+9)==' ')&&(*(X+10)==' ')&&(*(X+11)==' ') &&  \
 			    (*(X+12)==' ')&&(*(X+13)==' ')&&(*(X+14)==' ') && \
@@ -422,6 +422,49 @@ typedef struct MSTraceGroup_s {
 }
 MSTraceGroup;
 
+/* Container for a continuous trace segment, linkable */
+typedef struct MSTraceSeg_s {
+  hptime_t        starttime;         /* Time of first sample */
+  hptime_t        endtime;           /* Time of last sample */
+  double          samprate;          /* Nominal sample rate (Hz) */
+  int32_t         samplecnt;         /* Number of samples in trace coverage */
+  void           *datasamples;       /* Data samples, 'numsamples' of type 'sampletype'*/
+  int32_t         numsamples;        /* Number of data samples in datasamples */
+  char            sampletype;        /* Sample type code: a, i, f, d */
+  void           *prvtptr;           /* Private pointer for general use, unused by libmseed */
+  struct MSTraceSeg_s *prev;         /* Pointer to previous segment */
+  struct MSTraceSeg_s *next;         /* Pointer to next segment */
+}
+MSTraceSeg;
+
+/* Container for a trace ID, linkable */
+typedef struct MSTraceID_s {
+  char            network[11];       /* Network designation, NULL terminated */
+  char            station[11];       /* Station designation, NULL terminated */
+  char            location[11];      /* Location designation, NULL terminated */
+  char            channel[11];       /* Channel designation, NULL terminated */
+  char            dataquality;       /* Data quality indicator */
+  char            srcname[45];       /* Source name (Net_Sta_Loc_Chan_Qual), NULL terminated */
+  char            type;              /* Trace type code */
+  hptime_t        earliest;          /* Time of earliest sample */
+  hptime_t        latest;            /* Time of latest sample */
+  void           *prvtptr;           /* Private pointer for general use, unused by libmseed */
+  int32_t         numsegments;       /* Number of segments for this ID */
+  struct MSTraceSeg_s *first;        /* Pointer to first of list of segments */
+  struct MSTraceSeg_s *last;         /* Pointer to last of list of segments */
+  struct MSTraceID_s *next;          /* Pointer to next trace */
+}
+MSTraceID;
+
+/* Container for a continuous trace segment, linkable */
+typedef struct MSTraceList_s {
+  int32_t             numtraces;     /* Number of traces in list */
+  struct MSTraceID_s *traces;        /* Pointer to list of traces */
+  struct MSTraceID_s *last;          /* Pointer to last used trace in list */
+}
+MSTraceList;
+
+
 /* Global variables (defined in pack.c) and macros to set/force
  * pack byte orders */
 extern flag packheaderbyteorder;
@@ -492,6 +535,7 @@ extern int           mst_groupsort (MSTraceGroup *mstg, flag quality);
 extern char *        mst_srcname (MSTrace *mst, char *srcname, flag quality);
 extern void          mst_printtracelist (MSTraceGroup *mstg, flag timeformat,
 					 flag details, flag gaps);
+extern void          mst_printsynclist ( MSTraceGroup *mstg, char *dccid, flag subsecond );
 extern void          mst_printgaplist (MSTraceGroup *mstg, flag timeformat,
 				       double *mingap, double *maxgap);
 extern int           mst_pack (MSTrace *mst, void (*record_handler) (char *, int, void *),
@@ -503,6 +547,16 @@ extern int           mst_packgroup (MSTraceGroup *mstg, void (*record_handler) (
 				    int *packedsamples, flag flush, flag verbose,
 				    MSRecord *mstemplate);
 
+/* MSTraceList related functions */
+extern MSTraceList * mstl_init ( MSTraceList *mstl );
+extern void          mstl_free ( MSTraceList **ppmstl, flag freeprvtptr );
+extern MSTraceSeg *  mstl_addmsr ( MSTraceList *mstl, MSRecord *msr, flag dataquality,
+				   flag autoheal, double timetol, double sampratetol );
+extern void          mstl_printtracelist ( MSTraceList *mstl, flag timeformat,
+					   flag details, flag gaps );
+extern void          mstl_printsynclist ( MSTraceList *mstl, char *dccid, flag subsecond );
+extern void          mstl_printgaplist (MSTraceList *mstl, flag timeformat,
+					double *mingap, double *maxgap);
 
 /* Reading Mini-SEED records from files */
 typedef struct MSFileParam_s
@@ -570,11 +624,11 @@ typedef struct MSLogParam_s
 
 extern int    ms_log (int level, ...);
 extern int    ms_log_l (MSLogParam *logp, int level, ...);
-extern void   ms_loginit (void (*log_print)(const char*), const char *logprefix,
-			  void (*diag_print)(const char*), const char *errprefix);
+extern void   ms_loginit (void (*log_print)(char*), const char *logprefix,
+			  void (*diag_print)(char*), const char *errprefix);
 extern MSLogParam *ms_loginit_l (MSLogParam *logp,
-			         void (*log_print)(const char*), const char *logprefix,
-			         void (*diag_print)(const char*), const char *errprefix);
+			         void (*log_print)(char*), const char *logprefix,
+			         void (*diag_print)(char*), const char *errprefix);
 
 /* Generic byte swapping routines */
 extern void     ms_gswap2 ( void *data2 );

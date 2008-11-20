@@ -10,7 +10,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2008.294
+ * modified 2008.322
  ***************************************************************************/
 
 #include <stdio.h>
@@ -30,7 +30,7 @@ static int lisnumber (char *number);
 static void addfile (char *filename);
 static void usage (void);
 
-#define VERSION "2.4dev"
+#define VERSION "3.0dev"
 #define PACKAGE "msi"
 
 static flag    verbose      = 0;
@@ -50,7 +50,6 @@ static double  mingap       = 0;    /* Minimum gap/overlap seconds when printing
 static double *mingapptr    = NULL;
 static double  maxgap       = 0;    /* Maximum gap/overlap seconds when printing gap list */
 static double *maxgapptr    = NULL;
-static flag    traceheal    = 0;    /* Controls healing of trace group */
 static int     reccntdown   = -1;
 static int     reclen       = -1;
 static char   *encodingstr  = 0;
@@ -74,7 +73,7 @@ main (int argc, char **argv)
 {
   struct filelink *flp;
   MSRecord *msr = 0;
-  MSTraceGroup *mstg = 0;
+  MSTraceList *mstl = 0;
   FILE *bfp = 0;
   FILE *ofp = 0;
   int retcode = MS_NOERROR;
@@ -142,7 +141,7 @@ main (int argc, char **argv)
     dataflag = 1;
   
   if ( tracegapsum || tracegaponly )
-    mstg = mst_initgroup (NULL);
+    mstl = mstl_init (NULL);
   
   flp = filelist;
 
@@ -233,7 +232,7 @@ main (int argc, char **argv)
 	    }
 	  
 	  if ( tracegapsum || tracegaponly )
-	    mst_addmsrtogroup (mstg, msr, dataquality, timetol, sampratetol);
+	    mstl_addmsr (mstl, msr, dataquality, 1, timetol, sampratetol);
 	  
 	  if ( dataflag )
 	    {
@@ -330,20 +329,22 @@ main (int argc, char **argv)
   
   if ( tracegapsum || tracegaponly )
     {
-      mst_groupsort (mstg, dataquality);
-      
-      if ( traceheal )
-	mst_groupheal (mstg, -1.0, -1.0);
-      
       if ( tracegapsum == 1 || tracegaponly == 1 )
 	{
-	  mst_printtracelist (mstg, timeformat, 1, tracegaps);
+	  mstl_printtracelist (mstl, timeformat, 1, tracegaps);
 	}
       if ( tracegapsum == 2 || tracegaponly == 2 )
 	{
-	  mst_printgaplist (mstg, timeformat, mingapptr, maxgapptr);
+	  mstl_printgaplist (mstl, timeformat, mingapptr, maxgapptr);
+	}
+      if ( tracegaponly == 3 )
+	{
+	  mstl_printsynclist (mstl, NULL, 1);
 	}
     }
+  
+  if ( mstl )
+    mstl_free (&mstl, 0);
   
   return 0;
 }  /* End of main() */
@@ -464,6 +465,10 @@ processparam (int argcount, char **argvec)
 	{
 	  tracegaponly = 2;
 	}
+      else if (strcmp (argvec[optind], "-S") == 0)
+	{
+	  tracegaponly = 3;
+	}
       else if (strcmp (argvec[optind], "-gmin") == 0)
 	{
 	  mingap = strtod (getoptval(argcount, argvec, optind++), NULL);
@@ -477,10 +482,6 @@ processparam (int argcount, char **argvec)
       else if (strcmp (argvec[optind], "-Q") == 0)
 	{
 	  dataquality = 1;
-	}
-      else if (strcmp (argvec[optind], "-H") == 0)
-	{
-	  traceheal = 1;
 	}
       else if (strcmp (argvec[optind], "-tf") == 0)
 	{
@@ -796,8 +797,8 @@ usage (void)
 	   " -G           Only print a sorted gap/overlap list\n"
 	   " -gmin secs   Only report gaps/overlaps larger or equal to specified seconds\n"
 	   " -gmax secs   Only report gaps/overlaps smaller or equal to specified seconds\n"
+	   " -S           Print a SYNC trace summary\n"
 	   " -Q           Additionally group traces by data quality\n"
-	   " -H           Heal trace segments, for out of time order data\n"
 	   " -tf format   Specify a time string format for trace and gap lists\n"
 	   "                format: 0 = SEED time, 1 = ISO time, 2 = epoch time\n"
 	   "\n"

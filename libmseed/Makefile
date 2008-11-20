@@ -9,11 +9,11 @@ GCC = gcc
 GCCFLAGS = -O2 -Wall -fPIC
 
 LIB_OBJS = fileutils.o genutils.o gswap.o lmplatform.o lookup.o \
-           msrutils.o pack.o packdata.o traceutils.o unpack.o \
-           unpackdata.o logging.o
+           msrutils.o pack.o packdata.o traceutils.o tracelist.o \
+           unpack.o unpackdata.o logging.o
 
-CURRENT_VER = 2.0
-COMPAT_VER = 2.0
+CURRENT_VER = 2.2
+COMPAT_VER = 2.2
 
 LIB_A = libmseed.a
 LIB_SO = libmseed.so.$(CURRENT_VER)
