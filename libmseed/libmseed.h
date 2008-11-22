@@ -30,8 +30,8 @@ extern "C" {
 
 #include "lmplatform.h"
 
-#define LIBMSEED_VERSION "2.2rc"
-#define LIBMSEED_RELEASE "2008.320"
+#define LIBMSEED_VERSION "2.2rc2"
+#define LIBMSEED_RELEASE "2008.326"
 
 #define MINRECLEN   256      /* Minimum Mini-SEED record length, 2^8 bytes */
 #define MAXRECLEN   1048576  /* Maximum Mini-SEED record length, 2^20 bytes */
@@ -578,6 +578,8 @@ extern int      ms_readmsr_r (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfi
 			      off_t *fpos, int *last, flag skipnotdata, flag dataflag, flag verbose);
 extern int      ms_readtraces (MSTraceGroup **ppmstg, char *msfile, int reclen, double timetol, double sampratetol,
 			       flag dataquality, flag skipnotdata, flag dataflag, flag verbose);
+extern int      ms_readtracelist (MSTraceList **ppmstl, char *msfile, int reclen, double timetol, double sampratetol,
+				  flag dataquality, flag skipnotdata, flag dataflag, flag verbose);
 extern int      ms_find_reclen (const char *recbuf, int recbuflen, FILE *fileptr);
 
 

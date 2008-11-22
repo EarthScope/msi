@@ -1,3 +1,9 @@
+2008.327: 2.2rc2
+	- Add ms_readtracelist() to read all records from a file into a
+	MSTraceList.
+	- Update all man pages with changes and add new man pages.
+	- Fix auto sorting of traces in mstl_addmsr().
+
 2008.320: 2.2rc
 	- Add MSTraceList facility which is functionally equivalent to
 	the existing MSTraceGroup facility but more efficiently populated,

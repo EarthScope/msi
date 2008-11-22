@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.320
+ * modified: 2008.326
  ***************************************************************************/
 
 #include <stdio.h>
@@ -142,7 +142,6 @@ mstl_addmsr ( MSTraceList *mstl, MSRecord *msr, flag dataquality,
 {
   MSTraceID *id = 0;
   MSTraceID *searchid = 0;
-  MSTraceID *nextid = 0;
   MSTraceID *ltid = 0;
   
   MSTraceSeg *seg = 0;
@@ -163,14 +162,13 @@ mstl_addmsr ( MSTraceList *mstl, MSRecord *msr, flag dataquality,
   char srcname[45];
   char *s1, *s2;
   flag whence;
-  flag looped;
   flag lastratecheck;
   flag firstratecheck;
   int mag;
   int cmp;
   int ltmag;
   int ltcmp;
-  
+
   if ( ! mstl || ! msr )
     return 0;
   
@@ -188,58 +186,75 @@ mstl_addmsr ( MSTraceList *mstl, MSRecord *msr, flag dataquality,
       return 0;
     }
   
-  /* Search for matching trace ID starting with last accessed ID.
-   * Simultaneoulsy track the source name which is closest but less
-   * than the MSRecord to allow for later insertion with sort order. */
-  searchid = mstl->last;
-  looped = 0;
-  ltcmp = 0;
-  ltmag = 0;
-  while ( searchid )
+  /* Search for matching trace ID starting with last accessed ID and
+     then looping through the trace ID list. */
+  if ( mstl->last )
     {
-      /* Next ID is either next in list or skip to top */
-      nextid = (searchid->next) ? searchid->next : mstl->traces;
-      
-      /* Loop control, starting and ending with last ID */
-      if ( searchid == mstl->last )
-	{
-	  if ( ! looped )
-	    looped = 1;
-	  else
-	    break;
-	}
-      
-      /* Compare source names */
-      s1 = searchid->srcname;
+      s1 = mstl->last->srcname;
       s2 = srcname;
-      mag = 0;
       while ( *s1 == *s2++ )
 	{
-	  mag++;
 	  if ( *s1++ == '\0' )
 	    break;
 	}
       cmp = (*s1 - *--s2);
       
-      /* If source names did not match track closest "less than" value 
-       * and continue searching. */
-      if ( cmp != 0 )
-        {
-	  if ( cmp < 0 && (ltcmp == 0 || cmp >= ltcmp) && mag >= ltmag )
+      if ( ! cmp )
+	{
+	  id = mstl->last;
+	}
+      else
+	{
+	  /* Loop through trace ID list searching for a match, simultaneously
+	   * track the source name which is closest but less than the MSRecord
+	   * to allow for later insertion with sort order. */
+	  searchid = mstl->traces;
+	  ltcmp = 0;
+	  ltmag = 0;
+	  while ( searchid )
 	    {
-	      ltcmp = cmp;
-	      ltmag = mag;
-	      ltid = searchid;
+	      /* Compare source names */
+	      s1 = searchid->srcname;
+	      s2 = srcname;
+	      mag = 0;
+	      while ( *s1 == *s2++ )
+		{
+		  mag++;
+		  if ( *s1++ == '\0' )
+		    break;
+		}
+	      cmp = (*s1 - *--s2);
+	      
+	      /* If source names did not match track closest "less than" value 
+	       * and continue searching. */
+	      if ( cmp != 0 )
+		{
+		  if ( cmp < 0 )
+		    {
+		      if ( (ltcmp == 0 || cmp >= ltcmp) && mag >= ltmag )
+			{
+			  ltcmp = cmp;
+			  ltmag = mag;
+			  ltid = searchid;
+			}
+		      else if ( mag > ltmag )
+			{
+			  ltcmp = cmp;
+			  ltmag = mag;
+			  ltid = searchid;
+			}
+		    }
+		  
+		  searchid = searchid->next;
+		  continue;
+		}
+	      
+	      /* If we made it this far we found a match */
+	      id = searchid;
+	      break;
 	    }
-	  
-	  searchid = nextid;
-          continue;
-        }
-      
-      /* If we made it this far we found a match */
-      id = searchid;
-      break;
-    }
+	}
+    } /* Done searching for match in trace ID list */
   
   /* If no matching ID was found create new MSTraceID and MSTraceSeg entries */
   if ( ! id )

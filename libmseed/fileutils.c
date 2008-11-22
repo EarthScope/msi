@@ -4,7 +4,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2008.318
+ * modified: 2008.327
  ***************************************************************************/
 
 #include <stdio.h>
@@ -720,6 +720,61 @@ ms_readtraces (MSTraceGroup **ppmstg, char *msfile, int reclen,
   
   return retcode;
 }  /* End of ms_readtraces() */
+
+
+/*********************************************************************
+ * ms_readtracelist:
+ *
+ * This routine will open and read all Mini-SEED records in specified
+ * file and populate a trace list.  This routine is thread safe.
+ *
+ * If reclen is 0 the length of the first record is automatically
+ * detected, all subsequent records are then expected to have the same
+ * length as the first.
+ *
+ * If reclen is negative the length of every record is automatically
+ * detected.
+ *
+ * Returns MS_NOERROR and populates an MSTraceList struct at *ppmstl
+ * on successful read, otherwise returns a libmseed error code (listed
+ * in libmseed.h).
+ *********************************************************************/
+int
+ms_readtracelist (MSTraceList **ppmstl, char *msfile, int reclen,
+		  double timetol, double sampratetol, flag dataquality,
+		  flag skipnotdata, flag dataflag, flag verbose)
+{
+  MSRecord *msr = 0;
+  MSFileParam *msfp = 0;
+  int retcode;
+  
+  if ( ! ppmstl )
+    return MS_GENERROR;
+  
+  /* Initialize MSTraceList if needed */
+  if ( ! *ppmstl )
+    {
+      *ppmstl = mstl_init (*ppmstl);
+      
+      if ( ! *ppmstl )
+	return MS_GENERROR;
+    }
+  
+  /* Loop over the input file */
+  while ( (retcode = ms_readmsr_r (&msfp, &msr, msfile, reclen, NULL, NULL,
+				   skipnotdata, dataflag, verbose)) == MS_NOERROR)
+    {
+      mstl_addmsr (*ppmstl, msr, dataquality, 1, timetol, sampratetol);
+    }
+  
+  /* Reset return code to MS_NOERROR on successful read by ms_readmsr() */
+  if ( retcode == MS_ENDOFFILE )
+    retcode = MS_NOERROR;
+  
+  ms_readmsr_r (&msfp, &msr, NULL, 0, NULL, NULL, 0, 0, 0);
+  
+  return retcode;
+}  /* End of ms_readtracelist() */
 
 
 /********************************************************************
