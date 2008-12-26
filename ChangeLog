@@ -1,3 +1,8 @@
+2008.358:
+	- Change -ts and -te option logic to be more inclusive, records
+	containing the start or end times are not skipped.
+	- Make -tg option imply the -T option when neither -t or -g are set.
+
 2008.322:
 	- Update libmseed to 2.2rc.
 	- Convert MSTraceGroup usage to the new MSTraceList family of routines.
