@@ -1,4 +1,4 @@
-.TH MSI 1 2008/6/10
+.TH MSI 1 2008/12/23
 .SH NAME
 Mini-SEED Inspector
 
@@ -44,14 +44,14 @@ Specify the data encoding format.  These encoding values are the same
 as those specified in the SEED 1000 Blockette.
 
 .IP "-ts \fItime\fP"
-Limit processing to Mini-SEED records that start after \fItime\fP.
-The format of the \fItime\fP arguement
+Limit processing to Mini-SEED records that contain or start after
+\fItime\fP.  The format of the \fItime\fP arguement
 is: 'YYYY[,DDD,HH,MM,SS,FFFFFF]' where valid delimiters are either
 commas (,), colons (:) or periods (.).
 
 .IP "-te \fItime\fP"
-Limit processing to Mini-SEED records that end before \fItime\fP.
-The format of the \fItime\fP arguement
+Limit processing to Mini-SEED records that contain or end before
+\fItime\fP.  The format of the \fItime\fP arguement
 is: 'YYYY[,DDD,HH,MM,SS,FFFFFF]' where valid delimiters are either
 commas (,), colons (:) or periods (.).
 
@@ -136,17 +136,15 @@ of seconds.
 Only include gaps in the gap list smaller or equal to \fIsec\fP number
 of seconds.
 
+.IP "-S         "
+Print a sorted SYNC format trace list after processing all input
+records and suppress record-by-record output.
+
 .IP "-Q         "
 Additionally group input data based on SEED data qualitiy flags.  By
 default data are grouped by network, station, location, channel and
 adjacent time windows, this option adds data quality to the grouping
 parameters.
-
-.IP "-H         "
-Heal trace segments when printing trace or gap/overlap lists.  When
-Mini-SEED records are read out of time order continuous trace segments
-might be split into multiple segments.  This option attempts to "heal"
-all such segments together.
 
 .IP "-tf \fIformat\fP"
 Specify the time stamp format for trace and gap/overlap lists.  The

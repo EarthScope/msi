@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.326
+ * modified: 2008.361
  ***************************************************************************/
 
 #include <stdio.h>
@@ -168,7 +168,7 @@ mstl_addmsr ( MSTraceList *mstl, MSRecord *msr, flag dataquality,
   int cmp;
   int ltmag;
   int ltcmp;
-
+  
   if ( ! mstl || ! msr )
     return 0;
   
@@ -340,7 +340,7 @@ mstl_addmsr ( MSTraceList *mstl, MSRecord *msr, flag dataquality,
        *
        * If none of those scenarios are true search the complete segment list.
        */
-
+      
       /* Record coverage fits at end of last segment */
       if ( lastgap <= hptimetol && lastgap >= nhptimetol && lastratecheck )
 	{
@@ -353,7 +353,7 @@ mstl_addmsr ( MSTraceList *mstl, MSRecord *msr, flag dataquality,
 	    id->latest = endtime;
 	}
       /* Record coverage is after all other coverage */
-      else if ( (msr->starttime - hptimetol) > id->latest )
+      else if ( (msr->starttime - hpdelta - hptimetol) > id->latest )
 	{
 	  if ( ! (seg = mstl_msr2seg (msr, endtime)) )
 	    return 0;
@@ -368,7 +368,7 @@ mstl_addmsr ( MSTraceList *mstl, MSRecord *msr, flag dataquality,
 	    id->latest = endtime;
 	}
       /* Record coverage is before all other coverage */
-      else if ( (endtime + hptimetol) < id->earliest )
+      else if ( (endtime + hpdelta + hptimetol) < id->earliest )
 	{
 	  if ( ! (seg = mstl_msr2seg (msr, endtime)) )
 	    {
@@ -547,7 +547,50 @@ mstl_addmsr ( MSTraceList *mstl, MSRecord *msr, flag dataquality,
 	  
 	  if ( endtime > id->latest )
 	    id->latest = endtime;
-	}
+	} /* End of searching segment list */
+    } /* End of adding coverage to matching ID */
+  
+  /* Sort modified segment into place, logic above should limit these to few shifts if any */
+  while ( seg->next && seg->starttime > seg->next->starttime )
+    {
+      /* Move segment down list, swap seg and seg->next */
+      segafter = seg->next;
+      
+      if ( seg->prev )
+	seg->prev->next = segafter;
+      
+      if ( segafter->next )
+	segafter->next->prev = seg;
+      
+      segafter->prev = seg->prev;
+      seg->prev = segafter;
+      seg->next = segafter->next;
+      segafter->next = seg;
+      
+      /* Reset first segment pointer if replaced */
+      if ( id->last == segafter )
+	id->last = seg;
+    }
+  while ( seg->prev && ( seg->starttime < seg->prev->starttime ||
+			 (seg->starttime == seg->prev->starttime && seg->endtime > seg->prev->endtime) ) )
+    {
+      /* Move segment up list, swap seg and seg->prev */
+      segbefore = seg->prev;
+      
+      if ( seg->next )
+	seg->next->prev = segbefore;
+      
+      if ( segbefore->prev )
+	segbefore->prev->next = seg;
+      
+      segbefore->next = seg->next;
+      seg->next = segbefore;
+      seg->prev = segbefore->prev;
+      segbefore->prev = seg;
+      
+      /* Reset first segment pointer if replaced */
+      if ( id->first == segbefore )
+	id->first = seg;
     }
   
   /* Set MSTraceID as last accessed */

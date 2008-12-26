@@ -1,3 +1,7 @@
+2008.361: 2.2rc3
+	- Improve mstl_addmsr() sorting and suturing logic so that it
+	matches the healed and sorted output from the trace group routines.
+
 2008.327: 2.2rc2
 	- Add ms_readtracelist() to read all records from a file into a
 	MSTraceList.

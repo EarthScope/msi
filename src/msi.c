@@ -10,7 +10,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2008.322
+ * modified 2008.358
  ***************************************************************************/
 
 #include <stdio.h>
@@ -30,7 +30,7 @@ static int lisnumber (char *number);
 static void addfile (char *filename);
 static void usage (void);
 
-#define VERSION "3.0dev"
+#define VERSION "3.0dev2"
 #define PACKAGE "msi"
 
 static flag    verbose      = 0;
@@ -55,8 +55,8 @@ static int     reclen       = -1;
 static char   *encodingstr  = 0;
 static char   *binfile      = 0;
 static char   *outfile      = 0;
-static hptime_t starttime   = HPTERROR;  /* Limit to records after starttime */
-static hptime_t endtime     = HPTERROR;  /* Limit to records before endtime */
+static hptime_t starttime   = HPTERROR;  /* Limit to records containing or after starttime */
+static hptime_t endtime     = HPTERROR;  /* Limit to records containing or before endtime */
 static regex_t *match       = 0;    /* Compiled match regex */
 static regex_t *reject      = 0;    /* Compiled reject regex */
 
@@ -158,26 +158,31 @@ main (int argc, char **argv)
 	    break;
 	  
 	  /* Check if record matches start/end time criteria */
-	  if ( starttime != HPTERROR && (msr->starttime < starttime) )
+	  if ( starttime != HPTERROR || endtime != HPTERROR )
 	    {
-	      if ( verbose >= 3 )
+	      hptime_t recendtime = msr_endtime (msr);
+	      
+	      if ( starttime != HPTERROR && (msr->starttime < starttime && ! (msr->starttime <= starttime && recendtime >= starttime)) )
 		{
-		  msr_srcname (msr, srcname, 1);
-		  ms_hptime2seedtimestr (msr->starttime, stime, 1);
-		  ms_log (1, "Skipping (starttime) %s, %s\n", srcname, stime);
+		  if ( verbose >= 3 )
+		    {
+		      msr_srcname (msr, srcname, 1);
+		      ms_hptime2seedtimestr (msr->starttime, stime, 1);
+		      ms_log (1, "Skipping (starttime) %s, %s\n", srcname, stime);
+		    }
+		  continue;
 		}
-	      continue;
-	    }
-	  
-	  if ( endtime != HPTERROR && (msr_endtime(msr) > endtime) )
-	    {
-	      if ( verbose >= 3 )
+	      
+	      if ( endtime != HPTERROR && (recendtime > endtime && ! (msr->starttime <= endtime && recendtime >= endtime)) )
 		{
-		  msr_srcname (msr, srcname, 1);
-		  ms_hptime2seedtimestr (msr->starttime, stime, 1);
-		  ms_log (1, "Skipping (starttime) %s, %s\n", srcname, stime);
+		  if ( verbose >= 3 )
+		    {
+		      msr_srcname (msr, srcname, 1);
+		      ms_hptime2seedtimestr (msr->starttime, stime, 1);
+		      ms_log (1, "Skipping (starttime) %s, %s\n", srcname, stime);
+		    }
+		  continue;
 		}
-	      continue;
 	    }
 	  
 	  if ( match || reject )
@@ -448,6 +453,10 @@ processparam (int argcount, char **argvec)
       else if (strcmp (argvec[optind], "-tg") == 0)
 	{
 	  tracegaps = 1;
+	  
+	  /* -T is assumed if -t/-g is not already set */
+	  if ( ! tracegapsum )
+	    tracegaponly = 1;
 	}
       else if (strcmp (argvec[optind], "-tt") == 0)
 	{
