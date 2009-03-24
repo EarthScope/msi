@@ -10,7 +10,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2008.358
+ * modified 2009.082
  ***************************************************************************/
 
 #include <stdio.h>
@@ -27,10 +27,11 @@ static int processparam (int argcount, char **argvec);
 static char *getoptval (int argcount, char **argvec, int argopt);
 static int readregexfile (char *regexfile, char **pppattern);
 static int lisnumber (char *number);
-static void addfile (char *filename);
+static int addfile (char *filename);
+static int addlistfile (char *filename);
 static void usage (void);
 
-#define VERSION "3.0dev2"
+#define VERSION "3.0rc1"
 #define PACKAGE "msi"
 
 static flag    verbose      = 0;
@@ -66,6 +67,7 @@ struct filelink {
 };
 
 struct filelink *filelist = 0;
+struct filelink *filelisttail = 0;
 
 
 int
@@ -256,7 +258,30 @@ main (int argc, char **argv)
 		    }
 		  
 		  if ( msr->sampletype == 'a' )
-		    ms_log (0, "ASCII Data:\n%.*s\n", msr->numsamples, (char *)msr->datasamples);
+		    {
+		      char *ascii = (char *)msr->datasamples;
+		      int length = msr->numsamples;
+		      
+		      ms_log (0, "ASCII Data:\n");
+		      
+		      /* Print maximum log message segments */
+		      while ( length > (MAX_LOG_MSG_LENGTH-1) )
+			{
+			  ms_log (0, "%.*s", (MAX_LOG_MSG_LENGTH-1), ascii);
+			  ascii += MAX_LOG_MSG_LENGTH-1;
+			  length -= MAX_LOG_MSG_LENGTH-1;
+			}
+		      
+		      /* Print any remaining ASCII and add a newline */
+		      if ( length > 0 )
+			{
+			  ms_log (0, "%.*s\n", length, ascii);
+			}
+		      else
+			{
+			  ms_log (0, "\n");
+			}
+		    }
 		  else
 		    for ( cnt = 0, line = 0; line < lines; line++ )
 		      {
@@ -512,10 +537,30 @@ processparam (int argcount, char **argvec)
 	}
       else
 	{
-	  addfile (argvec[optind]);
+	  tptr = argvec[optind];
+	  
+          /* Check for an input file list */
+          if ( tptr[0] == '@' )
+            {
+              if ( addlistfile (tptr+1) < 0 )
+                {
+                  ms_log (2, "Error adding list file %s", tptr+1);
+                  exit (1);
+                }
+            }
+          /* Otherwise this is an input file */
+          else
+            {
+              /* Add file to global file list */
+              if ( addfile (tptr) )
+                {
+                  ms_log (2, "Error adding file to input list %s", tptr);
+                  exit (1);
+                }
+            }
 	}
     }
-
+  
   /* Make sure input file were specified */
   if ( filelist == 0 )
     {
@@ -729,37 +774,104 @@ lisnumber (char *number)
  * addfile:
  *
  * Add file to end of the global file list (filelist).
+ *
+ * Returns 0 on success and -1 on error.
  ***************************************************************************/
-static void
+static int
 addfile (char *filename)
 {
-  struct filelink *lastlp, *newlp;
+  struct filelink *newlp;
   
   if ( filename == NULL )
     {
       ms_log (2, "addfile(): No file name specified\n");
-      return;
+      return -1;
     }
   
-  lastlp = filelist;
-  while ( lastlp != 0 )
+  newlp = (struct filelink *) calloc (1, sizeof (struct filelink));
+  
+  if ( ! newlp )
     {
-      if ( lastlp->next == 0 )
-	break;
-      
-      lastlp = lastlp->next;
+      ms_log (2, "addfile(): Cannot allocate memory\n");
+      return -1;
     }
   
-  newlp = (struct filelink *) malloc (sizeof (struct filelink));
   newlp->filename = strdup(filename);
-  newlp->next = 0;
   
-  if ( lastlp == 0 )
-    filelist = newlp;
+  if ( ! newlp->filename )
+    {
+      ms_log (2, "addfile(): Cannot duplicate string\n");
+      return -1;
+    }
+  
+  /* Add new file to the end of the list */
+  if ( filelisttail == 0 )
+    {
+      filelist = newlp;
+      filelisttail = newlp;
+    }
   else
-    lastlp->next = newlp;
+    {
+      filelisttail->next = newlp;
+      filelisttail = newlp;
+    }
   
+  return 0;
 }  /* End of addfile() */
+
+
+/***************************************************************************
+ * addlistfile:
+ *
+ * Add files listed in the specified file to the global input file list.
+ *
+ * Returns count of files added on success and -1 on error.
+ ***************************************************************************/
+static int
+addlistfile (char *filename) 
+{
+  FILE *fp;
+  char filelistent[1024];
+  int filecount = 0;
+  
+  if ( verbose >= 1 )
+    ms_log (1, "Reading list file '%s'\n", filename);
+  
+  if ( ! (fp = fopen(filename, "rb")) )
+    {
+      ms_log (2, "Cannot open list file %s: %s\n", filename, strerror(errno));
+      return -1;
+    }
+  
+  while ( fgets (filelistent, sizeof(filelistent), fp) )
+    {
+      char *cp;
+      
+      /* End string at first newline character */
+      if ( (cp = strchr(filelistent, '\n')) )
+        *cp = '\0';
+      
+      /* Skip empty lines */
+      if ( ! strlen (filelistent) )
+        continue;
+      
+      /* Skip comment lines */
+      if ( *filelistent == '#' )
+        continue;
+      
+      if ( verbose > 1 )
+        ms_log (1, "Adding '%s' from list file\n", filelistent);
+      
+      if ( addfile (filelistent) )
+        return -1;
+      
+      filecount++;
+    }
+  
+  fclose (fp);
+  
+  return filecount;
+}  /* End of addlistfile() */
 
 
 /***************************************************************************
@@ -815,6 +927,6 @@ usage (void)
 	   " -b binfile   Unpack/decompress data and write binary samples to binfile\n"
 	   " -o outfile   Write processed records to outfile\n"
 	   "\n"
-	   " file#        File of Mini-SEED records\n"
+	   " files        File(s) of Mini-SEED records, list files prefixed with '@'\n"
 	   "\n");
 }  /* End of usage() */

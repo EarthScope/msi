@@ -1,4 +1,4 @@
-.TH MSI 1 2008/12/23
+.TH MSI 1 2009/03/23
 .SH NAME
 Mini-SEED Inspector
 
@@ -18,6 +18,10 @@ specified via the numerous options.
 
 If '-' is specified standard input will be read.  Multiple input files
 will be processed in the order specified.
+
+Files on the command line prefixed with a '@' character are input list
+files and are expected to contain a simple list of input files, see
+\fBINPUT LIST FILE\fR for more details.
 
 When a input file is full SEED including both SEED headers and data
 records all of the headers will be skipped and completely unprocessed.
@@ -61,7 +65,8 @@ regular expression.  For each input record a source name string
 composed of 'NET_STA_LOC_CHAN_QUAL' is created and compared to the
 regular expression.  If the match expression begins with an '@'
 character it is assumed to indicate a file containing a list of
-expressions to match, see the \fBLIST FILE\fR section below.
+expressions to match, see the \fBMATCH OR REJECT LIST FILE\fR section
+below.
 
 .IP "-R \fIreject\fP"
 Limit processing to Mini-SEED records that do not match the
@@ -69,7 +74,8 @@ Limit processing to Mini-SEED records that do not match the
 string composed of 'NET_STA_LOC_CHAN_QUAL' is created and compared to
 the regular expression.  If the reject expression begins with an '@'
 character it is assumed to indicate a file containing a list of
-expressions to reject, see the \fBLIST FILE\fR section below.
+expressions to reject, see the \fBMATCH OR REJECT LIST FILE\fR section
+below.
 
 .IP "-n \fIcount\fP"
 Only process \fIcount\fP input records.
@@ -162,12 +168,30 @@ to \fIbinfile\fP.
 .IP "-o \fIoutfile\fP"
 Write all processed Mini-SEED records to \fIoutfile\fP.
 
-.SH "LIST FILE"
-A list file used with either the \fB-M\fP or \fB-R\fP contains a list
-of regular expressions (one on each line) that will be combined into a
-single compound expression.  The initial '@' character indicating a
-list file is not considered part of the file name.  As an example, if
-the following command line option was used:
+.SH "INPUT LIST FILE"
+A list file can be used to specify input files, one file per line.
+The initial '@' character indicating a list file is not considered
+part of the file name.  As an example, if the following command line
+option was used:
+
+.nf
+\fB@files.list\fP
+.fi
+
+The 'files.list' file might look like this:
+
+.nf
+data/day1.mseed
+data/day2.mseed
+data/day3.mseed
+.fi
+	
+.SH "MATCH OR REJECT LIST FILE"
+A list file used with either the \fB-M\fP or \fB-R\fP options contains
+a list of regular expressions (one on each line) that will be combined
+into a single compound expression.  The initial '@' character
+indicating a list file is not considered part of the file name.  As an
+example, if the following command line option was used:
 
 .nf
 \fB-M @match.list\fP
