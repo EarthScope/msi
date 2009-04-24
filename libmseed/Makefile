@@ -12,14 +12,17 @@ LIB_OBJS = fileutils.o genutils.o gswap.o lmplatform.o lookup.o \
            msrutils.o pack.o packdata.o traceutils.o tracelist.o \
            unpack.o unpackdata.o logging.o
 
-CURRENT_VER = 2.2
-COMPAT_VER = 2.2
+MAJOR_VER = 2
+MINOR_VER = 2
+CURRENT_VER = $(MAJOR_VER).$(MINOR_VER)
+COMPAT_VER = $(MAJOR_VER).$(MINOR_VER)
 
 LIB_A = libmseed.a
-LIB_SO = libmseed.so.$(CURRENT_VER)
-LIB_SO_ALIAS = libmseed.so
-LIB_DYN = libmseed.$(CURRENT_VER).dylib
+LIB_SO_FILENAME = libmseed.so
+LIB_SO_ALIAS = $(LIB_SO_FILENAME).$(MAJOR_VER)
+LIB_SO = $(LIB_SO_FILENAME).$(CURRENT_VER)
 LIB_DYN_ALIAS = libmseed.dylib
+LIB_DYN = libmseed.$(CURRENT_VER).dylib
 
 all: static
 
@@ -34,9 +37,9 @@ $(LIB_A): $(LIB_OBJS)
 	ar -csq $(LIB_A) $(LIB_OBJS)
 
 $(LIB_SO): $(LIB_OBJS)
-	rm -f $(LIB_SO) $(LIB_SO_ALIAS)
+	rm -f $(LIB_SO) $(LIB_SO_FILENAME)
 	$(GCC) $(GCCFLAGS) -shared -Wl,-soname -Wl,$(LIB_SO_ALIAS) -o $(LIB_SO) $(LIB_OBJS)
-	ln -s $(LIB_SO) $(LIB_SO_ALIAS)
+	ln -s $(LIB_SO) $(LIB_SO_FILENAME)
 
 $(LIB_DYN): $(LIB_OBJS)
 	rm -f $(LIB_DYN) $(LIB_DYN_ALIAS)

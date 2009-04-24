@@ -13,7 +13,7 @@
  *   ORFEUS/EC-Project MEREDIAN
  *   IRIS Data Management Center
  *
- * modified: 2007.178
+ * modified: 2009.111
  ***************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
@@ -728,6 +728,7 @@ msr_unpack_data ( MSRecord *msr, int swapflag, int verbose )
     case DE_GEOSCOPE24:
     case DE_GEOSCOPE163:
     case DE_GEOSCOPE164:
+    case DE_CDSN:
     case DE_SRO:
     case DE_DWWSSN:
       samplesize = 4; break;
@@ -877,6 +878,15 @@ msr_unpack_data ( MSRecord *msr, int swapflag, int verbose )
       nsamples = msr_unpack_geoscope (dbuf, msr->samplecnt, msr->samplecnt,
 				      msr->datasamples, msr->encoding, swapflag);
       msr->sampletype = 'f';
+      break;
+      
+    case DE_CDSN:
+      if ( verbose > 1 )
+	ms_log (1, "%s: Unpacking CDSN encoded data samples\n", UNPACK_SRCNAME);
+      
+      nsamples = msr_unpack_cdsn ((int16_t *)dbuf, msr->samplecnt, msr->samplecnt,
+				  msr->datasamples, swapflag);
+      msr->sampletype = 'i';
       break;
       
     case DE_SRO:

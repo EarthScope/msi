@@ -1,3 +1,11 @@
+2009.111: 2.2
+	- Add CDSN decoding support due to popular demand.
+	- Incorporate enhanced dynamic library versioning as recommended
+	by Laurence Withers.
+	- Fix bug in ASCII encoding routine, thanks again Laurence Withers.
+	- Add and update libmseed.def which can be used with the Win32 DLL
+	for linking, original file contributed by Robert Barsch.
+
 2008.361: 2.2rc3
 	- Improve mstl_addmsr() sorting and suturing logic so that it
 	matches the healed and sorted output from the trace group routines.
