@@ -10,7 +10,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2009.082
+ * modified 2009.177
  ***************************************************************************/
 
 #include <stdio.h>
@@ -31,12 +31,13 @@ static int addfile (char *filename);
 static int addlistfile (char *filename);
 static void usage (void);
 
-#define VERSION "3.0"
+#define VERSION "3.1dev"
 #define PACKAGE "msi"
 
 static flag    verbose      = 0;
 static flag    ppackets     = 0;    /* Controls printing of header/blockettes */
 static flag    printdata    = 0;    /* Controls printing of sample values: 1=first 6, 2=all*/
+static flag    printraw     = 0;    /* Controls printing of header values in raw form */
 static flag    printoffset  = 0;    /* Controls printing offset into input file */
 static flag    printlatency = 0;    /* Controls printing latency based on system time */
 static flag    basicsum     = 0;    /* Controls printing of basic summary */
@@ -63,6 +64,7 @@ static regex_t *reject      = 0;    /* Compiled reject regex */
 
 struct filelink {
   char *filename;
+  uint64_t offset;
   struct filelink *next;
 };
 
@@ -146,11 +148,19 @@ main (int argc, char **argv)
     mstl = mstl_init (NULL);
   
   flp = filelist;
-
+  
   while ( flp != 0 )
     {
       if ( verbose >= 2 )
-	ms_log (1, "Processing: %s\n", flp->filename);
+	{
+	  if ( flp->offset )
+	    ms_log (1, "Processing: %s (starting at byte %lld)\n", flp->filename, flp->offset);
+	  else
+	    ms_log (1, "Processing: %s\n", flp->filename);
+	}
+      
+      /* Set starting byte offset if supplied as negative file position */
+      filepos = - flp->offset;
       
       /* Loop over the input file */
       while ( reccntdown != 0 )
@@ -230,12 +240,15 @@ main (int argc, char **argv)
 	  if ( ! tracegaponly )
 	    {
 	      if ( printoffset )
-		ms_log (1, "%-10lld", (long long) filepos);
+		ms_log (0, "%-10lld", (long long) filepos);
 	      
 	      if ( printlatency )
-		ms_log (1, "%-10.6g secs ", msr_host_latency(msr));
+		ms_log (0, "%-10.6g secs ", msr_host_latency(msr));
 	      
-	      msr_print (msr, ppackets);
+	      if ( printraw )
+		ms_parse_raw (msr->record, msr->reclen, ppackets, -1);
+	      else
+		msr_print (msr, ppackets);
 	    }
 	  
 	  if ( tracegapsum || tracegaponly )
@@ -466,6 +479,10 @@ processparam (int argcount, char **argvec)
       else if (strcmp (argvec[optind], "-D") == 0)
 	{
 	  printdata = 2;
+	}
+      else if (strcmp (argvec[optind], "-z") == 0)
+	{
+	  printraw = 1;
 	}
       else if (strcmp (argvec[optind], "-t") == 0)
 	{
@@ -781,6 +798,7 @@ static int
 addfile (char *filename)
 {
   struct filelink *newlp;
+  char *at;
   
   if ( filename == NULL )
     {
@@ -794,6 +812,17 @@ addfile (char *filename)
     {
       ms_log (2, "addfile(): Cannot allocate memory\n");
       return -1;
+    }
+  
+  /* Check for starting offset */
+  if ( (at = strrchr (filename, '@')) )
+    {
+      *at++ = '\0';
+      newlp->offset = strtoull (at, NULL, 10);
+    }
+  else
+    {
+      newlp->offset = 0;
     }
   
   newlp->filename = strdup(filename);
@@ -907,6 +936,7 @@ usage (void)
 	   " -s           Print a basic summary after processing file(s)\n"
 	   " -d           Unpack/decompress data and print the first 6 samples/record\n"
 	   " -D           Unpack/decompress data and print all samples\n"
+	   " -z           Validate and print record details in a raw form\n"
 	   "\n"
 	   " ## Trace and gap list output options ##\n"
 	   " -t           Print a sorted trace list after processing file(s)\n"
