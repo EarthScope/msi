@@ -30,8 +30,8 @@ extern "C" {
 
 #include "lmplatform.h"
 
-#define LIBMSEED_VERSION "2.2"
-#define LIBMSEED_RELEASE "2009.114"
+#define LIBMSEED_VERSION "2.3dev"
+#define LIBMSEED_RELEASE "2009.175"
 
 #define MINRECLEN   256      /* Minimum Mini-SEED record length, 2^8 bytes */
 #define MAXRECLEN   1048576  /* Maximum Mini-SEED record length, 2^20 bytes */
@@ -138,6 +138,9 @@ extern "C" {
 			    (*(X+39)==' ')&&(*(X+40)==' ')&&(*(X+41)==' ') && \
 			    (*(X+42)==' ')&&(*(X+43)==' ')&&(*(X+44)==' ') && \
 			    (*(X+45)==' ')&&(*(X+46)==' ')&&(*(X+47)==' ') )
+
+/* A simple bitwise AND test to return 0 or 1 */
+#define bit(x,y) (x&y)?1:0
 
 /* Require a large (>= 64-bit) integer type for hptime_t */
 typedef int64_t hptime_t;
@@ -344,6 +347,7 @@ struct blkt_2000_s
 /* Blockette chain link, generic linkable blockette index */
 typedef struct blkt_link_s
 {
+  uint16_t            blktoffset;    /* Offset to this blockette */
   uint16_t            blkt_type;     /* Blockette type */
   uint16_t            next_blkt;     /* Offset to next blockette */
   void               *blktdata;      /* Blockette data */
@@ -601,10 +605,13 @@ extern char*    ms_hptime2seedtimestr (hptime_t hptime, char *seedtimestr, flag 
 extern hptime_t ms_time2hptime (int year, int day, int hour, int min, int sec, int usec);
 extern hptime_t ms_seedtimestr2hptime (char *seedtimestr);
 extern hptime_t ms_timestr2hptime (char *timestr);
+extern double   ms_nomsamprate (int factor, int multiplier);
 extern int      ms_genfactmult (double samprate, int16_t *factor, int16_t *multiplier);
 extern int      ms_ratapprox (double real, int *num, int *den, int maxval, double precision);
 extern int      ms_bigendianhost ();
 extern double   ms_dabs (double val);
+extern int      ms_parse_raw (char *record, int maxreclen, flag details, flag swapflag);
+
 
 /* Lookup functions */
 extern uint8_t  ms_samplesize (const char sampletype);
