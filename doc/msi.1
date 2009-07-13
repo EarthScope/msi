@@ -24,7 +24,8 @@ files and are expected to contain a simple list of input files, see
 \fBINPUT LIST FILE\fR for more details.
 
 When a input file is full SEED including both SEED headers and data
-records all of the headers will be skipped and completely unprocessed.
+records all of the headers will be skipped and completely unprocessed
+unless the \fB-y\fP option has been specified.
 
 .SH OPTIONS
 
@@ -173,6 +174,15 @@ to \fIbinfile\fP.
 
 .IP "-o \fIoutfile\fP"
 Write all processed Mini-SEED records to \fIoutfile\fP.
+
+.SH "INPUT FILES"
+
+An input file name may be followed by an \fB@\fP charater followed by
+a byte offset.  In this case the program will interpret the byte
+offset as the starting offset into the file.  Useful for diagnosing
+specific records.  As an example an input file specified as
+\fBANMO.mseed@8192\fP would result in the file \fBANMO.mseed\fP being
+read starting at byte 8192.
 
 .SH "INPUT LIST FILE"
 A list file can be used to specify input files, one file per line.
