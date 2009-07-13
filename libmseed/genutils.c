@@ -7,7 +7,7 @@
  * ORFEUS/EC-Project MEREDIAN
  * IRIS Data Management Center
  *
- * modified: 2009.175
+ * modified: 2009.194
  ***************************************************************************/
 
 #include <stdio.h>
@@ -1165,7 +1165,7 @@ ms_parse_raw (char *record, int maxreclen, flag details, flag swapflag)
   /* Check to see if byte swapping is needed by testing the year */
   if ( swapflag == -1 &&
        ((fsdh->start_time.year < 1920) ||
-	(fsdh->start_time.year > 2030)) )
+	(fsdh->start_time.year > 2050)) )
     swapflag = 1;
   else
     swapflag = 0;
@@ -1205,14 +1205,14 @@ ms_parse_raw (char *record, int maxreclen, flag details, flag swapflag)
   /* Check header/quality indicator */
   if ( ! MS_ISDATAINDICATOR(*(X+6)) )
     {
-      ms_log (2, "%s: Invalid header indicator: '%c'\n", srcname, X+6);
+      ms_log (2, "%s: Invalid header indicator (DRQM): '%c'\n", srcname, X+6);
       retval++;
     }
   
   /* Check reserved byte, space or NULL */
   if ( ! (*(X+7) == ' ' || *(X+7) == '\0') )
     {
-      ms_log (2, "%s: Invalid fixed section reserved byte: '%c'\n", srcname, X+7);
+      ms_log (2, "%s: Invalid fixed section reserved byte (Space): '%c'\n", srcname, X+7);
       retval++;
     }
   
@@ -1253,9 +1253,9 @@ ms_parse_raw (char *record, int maxreclen, flag details, flag swapflag)
     }
   
   /* Check start time fields */
-  if ( fsdh->start_time.year < 1920 || fsdh->start_time.year > 2030 )
+  if ( fsdh->start_time.year < 1920 || fsdh->start_time.year > 2050 )
     {
-      ms_log (2, "%s: Unlikely start year (1920-2030): '%d'\n", srcname, fsdh->start_time.year);
+      ms_log (2, "%s: Unlikely start year (1920-2050): '%d'\n", srcname, fsdh->start_time.year);
       retval++;
     }
   if ( fsdh->start_time.day < 1 || fsdh->start_time.day > 366 )
@@ -1280,7 +1280,7 @@ ms_parse_raw (char *record, int maxreclen, flag details, flag swapflag)
     }
   if ( fsdh->start_time.fract > 9999 )
     {
-      ms_log (2, "%s: Invalid start fractional seconds: '%d'\n", srcname, fsdh->start_time.fract);
+      ms_log (2, "%s: Invalid start fractional seconds (0-9999): '%d'\n", srcname, fsdh->start_time.fract);
       retval++;
     }
   
@@ -1307,16 +1307,16 @@ ms_parse_raw (char *record, int maxreclen, flag details, flag swapflag)
       nomsamprate = ms_nomsamprate (fsdh->samprate_fact, fsdh->samprate_mult);
   
       /* Print header values */
-      ms_log (0, "RECORD -- %s, %6.6s\n", srcname, fsdh->sequence_number);
-      ms_log (0, "           station code: '%c%c%c%c%c'\n", fsdh->station[0], fsdh->station[1], fsdh->station[2], fsdh->station[3], fsdh->station[4]);
-      ms_log (0, "            location ID: '%c%c'\n", fsdh->location[0], fsdh->location[1]);
-      ms_log (0, "          channel codes: '%c%c%c'\n", fsdh->channel[0], fsdh->channel[1], fsdh->channel[2]);
-      ms_log (0, "           network code: '%c%c'\n", fsdh->network[0], fsdh->network[1]);
+      ms_log (0, "RECORD -- %s\n", srcname);
       ms_log (0, "        sequence number: '%c%c%c%c%c%c'\n", fsdh->sequence_number[0], fsdh->sequence_number[1], fsdh->sequence_number[2],
 	      fsdh->sequence_number[3], fsdh->sequence_number[4], fsdh->sequence_number[5]);
       ms_log (0, " data quality indicator: '%c'\n", fsdh->dataquality);
       if ( details > 0 )
         ms_log (0, "               reserved: '%c'\n", fsdh->reserved);
+      ms_log (0, "           station code: '%c%c%c%c%c'\n", fsdh->station[0], fsdh->station[1], fsdh->station[2], fsdh->station[3], fsdh->station[4]);
+      ms_log (0, "            location ID: '%c%c'\n", fsdh->location[0], fsdh->location[1]);
+      ms_log (0, "          channel codes: '%c%c%c'\n", fsdh->channel[0], fsdh->channel[1], fsdh->channel[2]);
+      ms_log (0, "           network code: '%c%c'\n", fsdh->network[0], fsdh->network[1]);
       ms_log (0, "             start time: %d,%d,%d:%d:%d.%04d (unused: %d)\n", fsdh->start_time.year, fsdh->start_time.day,
 	      fsdh->start_time.hour, fsdh->start_time.min, fsdh->start_time.sec, fsdh->start_time.fract, fsdh->start_time.unused);
       ms_log (0, "      number of samples: %d\n", fsdh->numsamples);
@@ -1794,14 +1794,14 @@ ms_parse_raw (char *record, int maxreclen, flag details, flag swapflag)
 		   ! (b1000encoding >= 10 && b1000encoding <= 19) &&
 		   ! (b1000encoding >= 30 && b1000encoding <= 33) )
 		{
-		  ms_log (2, "%s: Blockette 1000 encoding format invalid: %d\n", srcname, b1000encoding);
+		  ms_log (2, "%s: Blockette 1000 encoding format invalid (0-5,10-19,30-33): %d\n", srcname, b1000encoding);
 		  retval++;
 		}
 	      
 	      /* Sanity check byte order flag */
 	      if ( blkt_1000->byteorder != 0 && blkt_1000->byteorder != 1 )
 		{
-		  ms_log (2, "%s: Blockette 1000 byte order flag invalid: %d\n", srcname, blkt_1000->byteorder);
+		  ms_log (2, "%s: Blockette 1000 byte order flag invalid (0 or 1): %d\n", srcname, blkt_1000->byteorder);
 		  retval++;
 		}
 	    }

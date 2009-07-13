@@ -18,7 +18,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2007.179
+ * modified: 2009.177
  ***************************************************************************/
 
 #ifndef LMPLATFORM_H
@@ -96,6 +96,7 @@ extern "C" {
   #define vsnprintf _vsnprintf
   #define strcasecmp _stricmp
   #define strncasecmp _strnicmp
+  #define strtoull _strtoui64
 
   typedef signed char int8_t;
   typedef unsigned char uint8_t;

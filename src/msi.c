@@ -10,7 +10,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2009.177
+ * modified 2009.194
  ***************************************************************************/
 
 #include <stdio.h>
@@ -46,6 +46,7 @@ static flag    tracegaponly = 0;    /* Controls printing of trace or gap list on
 static flag    tracegaps    = 0;    /* Controls printing of gaps with a trace list */
 static flag    timeformat   = 0;    /* Time string format for trace or gap lists */
 static flag    dataquality  = 0;    /* Control matching of data qualities */
+static flag    skipnotdata  = 1;    /* Controls skipping of non-SEED data */
 static double  timetol      = -1.0; /* Time tolerance for continuous traces */
 static double  sampratetol  = -1.0; /* Sample rate tolerance for continuous traces */
 static double  mingap       = 0;    /* Minimum gap/overlap seconds when printing gap list */
@@ -166,7 +167,7 @@ main (int argc, char **argv)
       while ( reccntdown != 0 )
 	{
 	  if ( (retcode = ms_readmsr (&msr, flp->filename, reclen, &filepos,
-				      NULL, 1, 0, verbose)) != MS_NOERROR )
+				      NULL, skipnotdata, 0, verbose)) != MS_NOERROR )
 	    break;
 	  
 	  /* Check if record matches start/end time criteria */
@@ -455,6 +456,10 @@ processparam (int argcount, char **argvec)
       else if (strcmp (argvec[optind], "-n") == 0)
 	{
 	  reccntdown = strtol (getoptval(argcount, argvec, optind++), NULL, 10);
+	}
+      else if (strcmp (argvec[optind], "-y") == 0)
+	{
+	  skipnotdata = 0;
 	}
       else if (strncmp (argvec[optind], "-p", 2) == 0)
 	{
@@ -928,6 +933,7 @@ usage (void)
 	   " -R reject    Limit to records not matching the specfied regular expression\n"
 	   "                Regular expressions are applied to: 'NET_STA_LOC_CHAN_QUAL'\n"
 	   " -n count     Only process count number of records\n"
+	   " -y           Do not quietly skip non-SEED data\n"
 	   "\n"
 	   " ## Output options ##\n"
 	   " -p           Print details of header, multiple flags can be used\n"

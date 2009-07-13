@@ -4,7 +4,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2008.327
+ * modified: 2009.194
  ***************************************************************************/
 
 #include <stdio.h>
@@ -117,7 +117,7 @@ ms_readmsr_r (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
   MSFileParam *msfp;
   int packdatasize;
   int autodetexp = 8;
-  int prevreadlen;
+  int prevreadlen = 0;
   int detsize;
   int retcode = MS_NOERROR;
   
@@ -440,12 +440,15 @@ ms_readmsr_r (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
 		  msfp->readlen = (unsigned int) 1 << autodetexp;
 		}
 	    }
-	}
+	}  /* End of record length detection */
       
       if ( detsize <= 0 )
 	{
 	  ms_log (2, "Cannot detect record length at byte offset %lld: %s\n",
-		  (long long) msfp->filepos - msfp->readlen, msfile);
+		  (long long) msfp->filepos - prevreadlen, msfile);
+	  
+	  /* Print common errors and raw details if verbose */
+	  ms_parse_raw (msfp->rawrec, prevreadlen, verbose, -1);
 	  
 	  if ( msfp->fp )
 	    { fclose (msfp->fp); msfp->fp = NULL; }
@@ -633,8 +636,17 @@ ms_readmsr_r (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
 			msfp->readlen, (long long) msfp->filepos - msfp->readlen);
 	    }
 	}
+      else if ( ! MS_ISVALIDHEADER(msfp->rawrec) )
+	{
+	  /* Print common errors and raw details if verbose */
+	  ms_parse_raw (msfp->rawrec, msfp->readlen, verbose, -1);
+	  
+	  return MS_NOTSEED;
+	}
       else
-	break;
+	{
+	  break;
+	}
     }
   
   if ( (retcode = msr_unpack (msfp->rawrec, msfp->readlen, ppmsr, dataflag, verbose)) != MS_NOERROR )

@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.361
+ * modified: 2009.176
  ***************************************************************************/
 
 #include <stdio.h>
@@ -371,9 +371,7 @@ mstl_addmsr ( MSTraceList *mstl, MSRecord *msr, flag dataquality,
       else if ( (endtime + hpdelta + hptimetol) < id->earliest )
 	{
 	  if ( ! (seg = mstl_msr2seg (msr, endtime)) )
-	    {
-	      return 0;
-	    }
+	    return 0;
 	  
 	  /* Add to beginning of list */
 	  id->first->prev = seg;
@@ -388,9 +386,7 @@ mstl_addmsr ( MSTraceList *mstl, MSRecord *msr, flag dataquality,
       else if ( firstgap <= hptimetol && firstgap >= nhptimetol && firstratecheck )
 	{
 	  if ( ! mstl_addmsrtoseg (id->first, msr, endtime, 2) )
-	    {
-	      return 0;
-	    }
+	    return 0;
 	  
 	  seg = id->first;
 	  
@@ -522,7 +518,7 @@ mstl_addmsr ( MSTraceList *mstl, MSRecord *msr, flag dataquality,
 		  seg->next = id->first;
 		  if ( id->first )
 		    id->first->prev = seg;
-
+		  
 		  id->first = seg;
 		}
 	      /* Add new segment after the followseg segment */
@@ -551,7 +547,8 @@ mstl_addmsr ( MSTraceList *mstl, MSRecord *msr, flag dataquality,
     } /* End of adding coverage to matching ID */
   
   /* Sort modified segment into place, logic above should limit these to few shifts if any */
-  while ( seg->next && seg->starttime > seg->next->starttime )
+  while ( seg->next && ( seg->starttime > seg->next->starttime ||
+			 (seg->starttime == seg->next->starttime && seg->endtime < seg->next->endtime) ) )
     {
       /* Move segment down list, swap seg and seg->next */
       segafter = seg->next;
@@ -567,7 +564,7 @@ mstl_addmsr ( MSTraceList *mstl, MSRecord *msr, flag dataquality,
       seg->next = segafter->next;
       segafter->next = seg;
       
-      /* Reset first segment pointer if replaced */
+      /* Reset last segment pointer if replaced */
       if ( id->last == segafter )
 	id->last = seg;
     }

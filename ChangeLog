@@ -1,9 +1,10 @@
-2009.194:
+2009.194: 3.1rc
 	- Add -y option to turn off skipping of non-SEED data.  By
 	default data which is not detected as SEED is quiet skipped
 	including full SEED headers or invalid records.
+	- update libmseed to 2.3rc.
 
-2009.177: 3.1dev
+2009.177:
 	- Input file names of the form "filename@offset" will cause
 	msi to start reading records from "filename" at byte "offset".
 	- Add -z option to print record headers in raw form using

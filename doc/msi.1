@@ -1,4 +1,4 @@
-.TH MSI 1 2009/03/23
+.TH MSI 1 2009/07/13
 .SH NAME
 Mini-SEED Inspector
 
@@ -79,6 +79,12 @@ below.
 
 .IP "-n \fIcount\fP"
 Only process \fIcount\fP input records.
+
+.IP "-y         "
+Do not skip non-SEED data records.  By default the program will
+quietly skip any data which cannot be identified as a SEED data
+record, allowing the program to work with full SEED volumes and skip
+bad data.  This option is useful to help identify bad data records.
 
 .IP "-p         "
 Print details of each record header.  This flag can be used multiple
