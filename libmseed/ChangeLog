@@ -1,3 +1,7 @@
+2009.201: 2.3
+	- msr_unpack(): change new blockette count and data offset
+	test failures to "Warning" instead of "ERROR".
+
 2009.194: 2.3rc
 	- Fix record offset reporting when record length detection fails.
 	- Add diagnostic reporting of data problems in ms_readmsr_r()

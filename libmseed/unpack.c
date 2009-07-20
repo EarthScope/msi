@@ -13,7 +13,7 @@
  *   ORFEUS/EC-Project MEREDIAN
  *   IRIS Data Management Center
  *
- * modified: 2009.174
+ * modified: 2009.201
  ***************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
@@ -627,14 +627,14 @@ msr_unpack ( char *record, int reclen, MSRecord **ppmsr,
   /* Check that the data offset is after the blockette chain */
   if ( blkt_link && msr->fsdh->numsamples && msr->fsdh->data_offset < (blkt_link->blktoffset + blkt_link->blktdatalen + 4) )
     {
-      ms_log (2, "msr_unpack(%s): Data offset in fixed header (%d) is within the blockette chain ending at %d\n",
+      ms_log (1, "%s: Warning: Data offset in fixed header (%d) is within the blockette chain ending at %d\n",
 	      UNPACK_SRCNAME, msr->fsdh->data_offset, (blkt_link->blktoffset + blkt_link->blktdatalen + 4));
     }
   
   /* Check that the blockette count matches the number parsed */
   if ( msr->fsdh->numblockettes != blkt_count )
     {
-      ms_log (2, "msr_unpack(%s): Number of blockettes in fixed header (%d) does not match the number parsed (%d)\n",
+      ms_log (1, "%s: Warning: Number of blockettes in fixed header (%d) does not match the number parsed (%d)\n",
 	      UNPACK_SRCNAME, msr->fsdh->numblockettes, blkt_count);
     }
   

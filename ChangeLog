@@ -1,3 +1,7 @@
+2009.201: 3.1
+	- Update libmseed to version 2.3, fixes bug with corner case
+	trace list sorting.
+
 2009.194: 3.1rc
 	- Add -y option to turn off skipping of non-SEED data.  By
 	default data which is not detected as SEED is quiet skipped
