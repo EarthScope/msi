@@ -31,7 +31,7 @@ static int addfile (char *filename);
 static int addlistfile (char *filename);
 static void usage (void);
 
-#define VERSION "3.2dev"
+#define VERSION "3.2"
 #define PACKAGE "msi"
 
 static flag    verbose      = 0;

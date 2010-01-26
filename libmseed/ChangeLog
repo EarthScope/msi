@@ -1,3 +1,12 @@
+2010.015: 2.4
+	- Change ms_addselect() to take a srcname argument and create
+	ms_addselect_comp() as a wrapper that creates a srcname from
+	individual source name components.
+
+2010.012:
+	- Fix unpacking of 16-bit integer encoded data, thanks to
+	Robert Barsch. 
+	
 2010.008:
 	- Fix special case of "--" location ID in ms_addselect().
 	
