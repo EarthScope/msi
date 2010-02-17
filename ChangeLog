@@ -1,3 +1,7 @@
+2010.048: 3.3
+	- Update libmseed to version 2.5, fix for sorting MSTraceSeg
+	entries.
+	
 2010.026: 3.2
 	- Update libmseed to version 2.4.
 
@@ -6,9 +10,9 @@
 	trace list sorting.
 
 2009.194: 3.1rc
-	- Add -y option to turn off skipping of non-SEED data.  By
-	default data which is not detected as SEED is quiet skipped
-	including full SEED headers or invalid records.
+	- Add -y option to turn off skipping of non-SEED data.  By default
+	data which is not detected as SEED is quiet skipped including
+	SEED headers or invalid records.
 	- update libmseed to 2.3rc.
 
 2009.177:

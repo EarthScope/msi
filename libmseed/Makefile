@@ -13,7 +13,7 @@ LIB_OBJS = fileutils.o genutils.o gswap.o lmplatform.o lookup.o \
            unpack.o unpackdata.o selection.o logging.o
 
 MAJOR_VER = 2
-MINOR_VER = 4
+MINOR_VER = 5
 CURRENT_VER = $(MAJOR_VER).$(MINOR_VER)
 COMPAT_VER = $(MAJOR_VER).$(MINOR_VER)
 
