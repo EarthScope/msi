@@ -11,6 +11,7 @@
 	- Fix bug when either mst_pack() or mst_packgroup() was called with
 	a NULL packedsamples pointer.
 	- Fix bugs when (re)initializing read buffer.
+	- Fix return of file position in ms_readmsr_main()..
 	
 2010.365:
 	- Add internal ms_gmtime_r() to replace call to system gmtime_r(). The

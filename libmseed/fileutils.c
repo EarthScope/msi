@@ -556,6 +556,10 @@ ms_readmsr_main (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
 		if ( (msfp->filesize - (msfp->filepos + (*ppmsr)->reclen)) < MINRECLEN )
 		  *last = 1;
 	      
+	      /* Return file position for this record */
+	      if ( fpos )
+		*fpos = msfp->filepos;
+	      
 	      /* Update reading offset, file position and record count */
 	      msfp->readoffset += (*ppmsr)->reclen;
 	      msfp->filepos += (*ppmsr)->reclen;
