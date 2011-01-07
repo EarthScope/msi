@@ -256,6 +256,7 @@ ms_readmsr_main (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
       
       msfp->fp = NULL;
       msfp->filename[0] = '\0';
+      msfp->rawrec = NULL;
       msfp->readlen = 0;
       msfp->readoffset = 0;
       msfp->packtype = 0;
@@ -301,7 +302,7 @@ ms_readmsr_main (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
     }
   
   /* Allocate reading buffer */
-  if ( ! msfp->rawrec )
+  if ( msfp->rawrec == NULL )
     {
       if ( ! (msfp->rawrec = (char *) malloc (MAXRECLEN)) )
 	{
