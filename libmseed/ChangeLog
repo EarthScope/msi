@@ -8,8 +8,9 @@
 	   msr_writemseed()
 	   mst_writemseed()
 	   mst_writemseedgroup().
-	- Fix a bug when either mst_pack() or mst_packgroup() was called with
+	- Fix bug when either mst_pack() or mst_packgroup() was called with
 	a NULL packedsamples pointer.
+	- Fix bug when free'ing global read buffer.
 	
 2010.365:
 	- Add internal ms_gmtime_r() to replace call to system gmtime_r(). The

@@ -281,6 +281,7 @@ ms_readmsr_main (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
 	{
 	  gMSFileParam.fp = NULL;
 	  gMSFileParam.filename[0] = '\0';
+          gMSFileParam.rawrec = NULL;
 	  gMSFileParam.readlen = 0;
 	  gMSFileParam.readoffset = 0;
 	  gMSFileParam.packtype = 0;
