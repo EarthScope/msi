@@ -1,5 +1,6 @@
 LIBRARY libmseed.dll
 EXPORTS
+   msr_parse
    msr_unpack
    msr_pack
    msr_pack_header
@@ -17,6 +18,8 @@ EXPORTS
    msr_srcname
    msr_print
    msr_host_latency
+   ms_detect
+   ms_parse_raw
    mst_init
    mst_free
    mst_initgroup
@@ -44,7 +47,6 @@ EXPORTS
    ms_readmsr
    ms_readmsr_r
    ms_readtraces
-   ms_find_reclen
    ms_recsrcname
    ms_strncpclean
    ms_strncpopen

@@ -1,3 +1,6 @@
+2011.007:
+	- Update libmseed to version 2.6rc1.
+
 2010.048: 3.3
 	- Update libmseed to version 2.5, fix for sorting MSTraceSeg
 	entries.

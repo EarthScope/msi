@@ -451,5 +451,8 @@ main() {
 
   ms_log (0, "Packed %d samples into %d records\n", psamples, precords);
 
+  /* Disconnect datasamples pointer, otherwise mst_free() will free it */
+  mst->datasamples = NULL;
+
   mst_free (&mst);
 }

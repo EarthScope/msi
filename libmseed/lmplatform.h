@@ -18,7 +18,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2010.006
+ * modified: 2010.304
  ***************************************************************************/
 
 #ifndef LMPLATFORM_H
@@ -98,7 +98,7 @@ extern "C" {
   #include <string.h>
   #include <ctype.h>
 
-#elif defined(WIN32)
+#elif defined(WIN32) || defined(WIN64)
   #define LMP_WIN32 1
 
   #include <windows.h>

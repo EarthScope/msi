@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.320
+ * modified: 2011.006
  ***************************************************************************/
 
 #include <stdio.h>
@@ -1518,7 +1518,8 @@ mst_pack ( MSTrace *mst, void (*record_handler) (char *, int, void *),
 {
   MSRecord *msr;
   char srcname[50];
-  int packedrecords;
+  int trpackedrecords;
+  int trpackedsamples;
   int samplesize;
   int bufsize;
   
@@ -1528,7 +1529,10 @@ mst_pack ( MSTrace *mst, void (*record_handler) (char *, int, void *),
   int32_t preservenumsamples = 0;
   char preservesampletype = 0;
   StreamState *preserveststate = 0;
-
+  
+  if ( packedsamples )
+    *packedsamples = 0;
+  
   /* Allocate stream processing state space if needed */
   if ( ! mst->ststate )
     {
@@ -1589,26 +1593,26 @@ mst_pack ( MSTrace *mst, void (*record_handler) (char *, int, void *),
     }
   
   /* Pack data */
-  packedrecords = msr_pack (msr, record_handler, handlerdata, packedsamples, flush, verbose);
+  trpackedrecords = msr_pack (msr, record_handler, handlerdata, &trpackedsamples, flush, verbose);
   
   if ( verbose > 1 )
     {
-      ms_log (1, "Packed %d records for %s trace\n", packedrecords, mst_srcname (mst, srcname, 1));
+      ms_log (1, "Packed %d records for %s trace\n", trpackedrecords, mst_srcname (mst, srcname, 1));
     }
   
   /* Adjust MSTrace start time, data array and sample count */
-  if ( *packedsamples > 0 )
+  if ( trpackedsamples > 0 )
     {
       /* The new start time was calculated my msr_pack */
       mst->starttime = msr->starttime;
       
       samplesize = ms_samplesize (mst->sampletype);
-      bufsize = (mst->numsamples - *packedsamples) * samplesize;
+      bufsize = (mst->numsamples - trpackedsamples) * samplesize;
       
       if ( bufsize )
 	{
 	  memmove (mst->datasamples,
-		   (char *) mst->datasamples + (*packedsamples * samplesize),
+		   (char *) mst->datasamples + (trpackedsamples * samplesize),
 		   bufsize);
 	  
 	  mst->datasamples = realloc (mst->datasamples, bufsize);
@@ -1626,8 +1630,8 @@ mst_pack ( MSTrace *mst, void (*record_handler) (char *, int, void *),
 	  mst->datasamples = 0;
 	}
       
-      mst->samplecnt -= *packedsamples;
-      mst->numsamples -= *packedsamples;
+      mst->samplecnt -= trpackedsamples;
+      mst->numsamples -= trpackedsamples;
     }
     
   /* Reinstate preserved values if a template was used */
@@ -1647,7 +1651,10 @@ mst_pack ( MSTrace *mst, void (*record_handler) (char *, int, void *),
       msr_free (&msr);
     }
   
-  return packedrecords;
+  if ( packedsamples )
+    *packedsamples = trpackedsamples;
+  
+  return trpackedrecords;
 }  /* End of mst_pack() */
 
 
@@ -1666,8 +1673,8 @@ mst_packgroup ( MSTraceGroup *mstg, void (*record_handler) (char *, int, void *)
 		MSRecord *mstemplate )
 {
   MSTrace *mst;
-  int packedrecords = 0;
-  int tracesamples = 0;
+  int trpackedrecords = 0;
+  int trpackedsamples = 0;
   char srcname[50];
 
   if ( ! mstg )
@@ -1675,7 +1682,9 @@ mst_packgroup ( MSTraceGroup *mstg, void (*record_handler) (char *, int, void *)
       return -1;
     }
   
-  *packedsamples = 0;
+  if ( packedsamples )
+    *packedsamples = 0;
+  
   mst = mstg->traces;
   
   while ( mst )
@@ -1690,18 +1699,19 @@ mst_packgroup ( MSTraceGroup *mstg, void (*record_handler) (char *, int, void *)
 	}
       else
 	{
-	  packedrecords += mst_pack (mst, record_handler, handlerdata, reclen,
-				     encoding, byteorder, &tracesamples, flush,
+	  trpackedrecords += mst_pack (mst, record_handler, handlerdata, reclen,
+				     encoding, byteorder, &trpackedsamples, flush,
 				     verbose, mstemplate);
 	  
-	  if ( packedrecords == -1 )
+	  if ( trpackedrecords == -1 )
 	    break;
 	  
-	  *packedsamples += tracesamples;
+	  if ( packedsamples )
+	    *packedsamples += trpackedsamples;
 	}
       
       mst = mst->next;
     }
   
-  return packedrecords;
+  return trpackedrecords;
 }  /* End of mst_packgroup() */

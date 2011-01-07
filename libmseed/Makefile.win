@@ -24,6 +24,7 @@ OBJS=	fileutils.obj	\
 	packdata.obj	\
 	traceutils.obj	\
 	tracelist.obj	\
+	parseutils.obj	\
 	unpack.obj	\
 	unpackdata.obj  \
 	selection.obj	\
@@ -38,7 +39,7 @@ dll: $(OBJS)
 	link.exe /dll /nologo /out:$(DLL) $(OBJS)
 
 .c.obj:
-   $(cc) /nologo $(cflags) $(cdebug) $(cvarsmt) $(tflags) $(INCS) $<
+	$(cc) /nologo $(cflags) $(cdebug) $(cvarsmt) $(tflags) $(INCS) $<
 
 
 # Clean-up directives
