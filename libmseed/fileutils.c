@@ -5,7 +5,7 @@
  * Written by Chad Trabant
  *   IRIS Data Management Center
  *
- * modified: 2011.006
+ * modified: 2011.032
  ***************************************************************************/
 
 #include <stdio.h>
@@ -430,8 +430,9 @@ ms_readmsr_main (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
 	  /* Update read buffer length */
 	  msfp->readlen += readcount;
 	  
-	  /* File position corresponding to start of buffer */
-	  msfp->filepos = lmp_ftello (msfp->fp) - msfp->readlen;
+	  /* File position corresponding to start of buffer; not strictly necessary */
+	  if ( msfp->fp != stdin )
+	    msfp->filepos = lmp_ftello (msfp->fp) - msfp->readlen;
 	}
       
       /* Test for packed file signature at the beginning of the file */
@@ -600,9 +601,35 @@ ms_readmsr_main (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
 		  break;
 		}
 	    }
+	  else /* parseval > 0 (found record but need more data) */
+	    {
+	      /* Finished if requested data is more than file size */
+	      if ( msfp->filesize)
+		{
+		  if ( (msfp->filepos + MSFPBUFLEN(msfp) + parseval) > msfp->filesize )
+		    {
+		      if ( verbose )
+			ms_log (1, "Truncated record at offset %lld, filesize %d: %s\n",
+				(long long) msfp->filepos, msfp->filesize, msfile);
+		      
+		      retcode = MS_ENDOFFILE;
+		      break;
+		    }
+		}
+	      
+	      /* Finished if at end of file */
+	      if ( feof (msfp->fp) )
+		{
+		  if ( verbose )
+		    ms_log (1, "Truncated record at byte offset %lld\n", (long long) msfp->filepos);
+		  
+		  retcode = MS_ENDOFFILE;
+		  break;
+		}
+	    }
 	}  /* End of record detection */
       
-      /* Finished when within MINRECLEN frmo EOF and buffer less than MINRECLEN */
+      /* Finished when within MINRECLEN from EOF and buffer less than MINRECLEN */
       if ( (msfp->filesize - msfp->filepos) < MINRECLEN && MSFPBUFLEN(msfp) < MINRECLEN )
 	{
 	  if ( msfp->recordcount == 0 )

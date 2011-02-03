@@ -1,3 +1,7 @@
+2011.032: 2.6rc2
+	- Fix handling of truncated records, partial reads at EOF.
+	- Fix offset tracking when reading from stdin.
+
 2011.006: 2.6rc1
 	- Add convience routines to only read selected records from a file:
 	   ms_readtracegroup_timewin()
@@ -30,7 +34,7 @@
 	The internal read buffer size is MAXRECLEN as defined in libmseed.h.
 	Each file parameter structure used, including the global default,
 	will allocate a buffer of this size.  For specialized applications
-	requiring low memory use the MAXRECLEN, current 1 MB,  can be reduced.
+	requiring low memory use the MAXRECLEN, current 1 MB, can be reduced.
 
 	- Change ms_readmsr_main() to interpret reclen <= 0 as a request
 	for autodetection of each record, a value of 0 no longer means all
