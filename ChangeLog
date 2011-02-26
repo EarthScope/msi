@@ -1,15 +1,15 @@
 2011.057: 3.4
-	- Update to final libmseed 2.6.
+	- Update to final libmseed 2.6, including more efficient input reading
+	and many small bug fixes.
 
 2011.034: 3.4rc2
-	- Update libmseed to version 2.6rc2.
+	- Update to libmseed 2.6rc2.
 
 2011.007: 3.4rc1
-	- Update libmseed to version 2.6rc1.
+	- Update to libmseed 2.6rc1.
 
 2010.048: 3.3
-	- Update libmseed to version 2.5, fix for sorting MSTraceSeg
-	entries.
+	- Update to libmseed 2.5, fix for sorting MSTraceSeg entries.
 	
 2010.026: 3.2
 	- Update libmseed to version 2.4.
