@@ -5,7 +5,7 @@
  * Written by Chad Trabant
  *   IRIS Data Management Center
  *
- * modified: 2011.032
+ * modified: 2011.039
  ***************************************************************************/
 
 #include <stdio.h>
@@ -603,28 +603,54 @@ ms_readmsr_main (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
 	    }
 	  else /* parseval > 0 (found record but need more data) */
 	    {
-	      /* Finished if requested data is more than file size */
-	      if ( msfp->filesize)
+	      /* Determine implied record length if needed */
+	      int32_t impreclen = reclen;
+	      
+	      /* Pack header check, if pack header offset is within buffer */
+	      if ( impreclen <= 0 && msfp->packhdroffset &&
+		   msfp->packhdroffset < (msfp->filepos + MSFPBUFLEN(msfp)) )
 		{
-		  if ( (msfp->filepos + MSFPBUFLEN(msfp) + parseval) > msfp->filesize )
+		  impreclen =  msfp->packhdroffset - msfp->filepos;
+		  
+		  /* Check that record length is within range and a power of 2.
+		   * Power of two if (X & (X - 1)) == 0 */
+		  if ( impreclen >= MINRECLEN && impreclen <= MAXRECLEN &&
+		       (impreclen & (impreclen - 1)) == 0 )
+		    {
+		      /* Set the record length implied by the next pack header */
+		      reclen = impreclen;
+		    }
+		}
+	      
+	      /* End of file check */
+	      if ( impreclen <= 0 && feof (msfp->fp) )
+		{
+		  impreclen = msfp->filesize - msfp->filepos;
+		  
+		  /* Check that record length is within range and a power of 2.
+		   * Power of two if (X & (X - 1)) == 0 */
+		  if ( impreclen >= MINRECLEN && impreclen <= MAXRECLEN &&
+		       (impreclen & (impreclen - 1)) == 0 )
+		    {
+		      /* Set the record length implied by the end of the file */
+		      reclen = impreclen;
+		    }
+		  /* Otherwise a trucated record */
+		  else
 		    {
 		      if ( verbose )
-			ms_log (1, "Truncated record at offset %lld, filesize %d: %s\n",
-				(long long) msfp->filepos, msfp->filesize, msfile);
+			{
+			  if ( msfp->filesize )
+			    ms_log (1, "Truncated record at byte offset %lld, filesize %d: %s\n",
+				    (long long) msfp->filepos, msfp->filesize, msfile);
+			  else
+			    ms_log (1, "Truncated record at byte offset %lld\n",
+				    (long long) msfp->filepos);
+			}
 		      
 		      retcode = MS_ENDOFFILE;
 		      break;
 		    }
-		}
-	      
-	      /* Finished if at end of file */
-	      if ( feof (msfp->fp) )
-		{
-		  if ( verbose )
-		    ms_log (1, "Truncated record at byte offset %lld\n", (long long) msfp->filepos);
-		  
-		  retcode = MS_ENDOFFILE;
-		  break;
 		}
 	    }
 	}  /* End of record detection */
@@ -632,7 +658,7 @@ ms_readmsr_main (MSFileParam **ppmsfp, MSRecord **ppmsr, char *msfile,
       /* Finished when within MINRECLEN from EOF and buffer less than MINRECLEN */
       if ( (msfp->filesize - msfp->filepos) < MINRECLEN && MSFPBUFLEN(msfp) < MINRECLEN )
 	{
-	  if ( msfp->recordcount == 0 )
+	  if ( msfp->recordcount == 0 && msfp->packtype == 0 )
 	    {
 	      if ( verbose > 0 )
 		ms_log (2, "%s: No data records read, not SEED?\n", msfile);

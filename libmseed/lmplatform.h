@@ -108,11 +108,15 @@ extern "C" {
   #include <sys/types.h>
   #include <ctype.h>
 
-  #define snprintf _snprintf
-  #define vsnprintf _vsnprintf
-  #define strcasecmp _stricmp
-  #define strncasecmp _strnicmp
-  #define strtoull _strtoui64
+  #if defined(_MSC_VER)
+    #define snprintf _snprintf
+    #define vsnprintf _vsnprintf
+    #define strcasecmp _stricmp
+    #define strncasecmp _strnicmp
+    #define strtoull _strtoui64
+    #define strdup _strdup
+    #define fileno _fileno
+  #endif
 
   typedef signed char int8_t;
   typedef unsigned char uint8_t;

@@ -46,8 +46,18 @@ EXPORTS
    mstl_printgaplist
    ms_readmsr
    ms_readmsr_r
+   ms_readmsr_main
    ms_readtraces
+   ms_readtraces_timewin
+   ms_readtraces_selection
+   ms_readtracelist
+   ms_readtracelist_timewin
+   ms_readtracelist_selection
+   msr_writemseed
+   mst_writemseed
+   mst_writemseedgroup
    ms_recsrcname
+   ms_splitsrcname
    ms_strncpclean
    ms_strncpopen
    ms_doy2md
@@ -63,6 +73,7 @@ EXPORTS
    ms_time2hptime
    ms_seedtimestr2hptime
    ms_timestr2hptime
+   ms_nomsamprate
    ms_genfactmult
    ms_ratapprox
    ms_bigendianhost

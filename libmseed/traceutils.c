@@ -29,7 +29,7 @@ static int mst_groupsort_cmp ( MSTrace *mst1, MSTrace *mst2, flag quality );
 MSTrace *
 mst_init ( MSTrace *mst )
 {
-  /* Free datasamples if present */
+  /* Free datasamples, prvtptr and stream state if present */
   if ( mst )
     {
       if ( mst->datasamples )
@@ -37,7 +37,7 @@ mst_init ( MSTrace *mst )
 
       if ( mst->prvtptr )
 	free (mst->prvtptr);
-
+      
       if ( mst->ststate )
         free (mst->ststate);
     }
@@ -291,11 +291,11 @@ mst_findadjacent ( MSTraceGroup *mstg, flag *whence, char dataquality,
   *whence = 0;
   
   /* Calculate high-precision sample period */
-  hpdelta = ( samprate ) ? (HPTMODULUS / samprate) : 0.0;
+  hpdelta = (hptime_t)(( samprate ) ? (HPTMODULUS / samprate) : 0.0);
   
   /* Calculate high-precision time tolerance */
   if ( timetol == -1.0 )
-    hptimetol = 0.5 * hpdelta;   /* Default time tolerance is 1/2 sample period */
+    hptimetol = (hptime_t) (0.5 * hpdelta);   /* Default time tolerance is 1/2 sample period */
   else if ( timetol >= 0.0 )
     hptimetol = (hptime_t) (timetol * HPTMODULUS);
   
@@ -314,7 +314,7 @@ mst_findadjacent ( MSTraceGroup *mstg, flag *whence, char dataquality,
       /* If not checking the time tolerance decide if beginning or end is a better fit */
       if ( timetol == -2.0 )
 	{
-	  if ( ms_dabs(postgap) < ms_dabs(pregap) )
+	  if ( ms_dabs((double)postgap) < ms_dabs((double)pregap) )
 	    *whence = 1;
 	  else
 	    *whence = 2;

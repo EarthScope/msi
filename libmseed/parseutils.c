@@ -5,7 +5,7 @@
  * Written by Chad Trabant
  *   IRIS Data Management Center
  *
- * modified: 2010.364
+ * modified: 2011.036
  ***************************************************************************/
 
 #include <stdio.h>
@@ -161,7 +161,7 @@ ms_detect ( const char *record, int recbuflen )
   
   fsdh = (struct fsdh_s *) record;
   
-  /* Check to see if byte swapping is needed (bogus year makes good test) */
+  /* Check to see if byte swapping is needed by checking for sane year */
   if ( (fsdh->start_time.year < 1900) ||
        (fsdh->start_time.year > 2050) )
     swapflag = 1;
@@ -214,6 +214,7 @@ ms_detect ( const char *record, int recbuflen )
             {
 	      foundlen = 1;
 	      reclen = nextfsdh - record;
+	      break;
 	    }
 	  
 	  nextfsdh += 256;

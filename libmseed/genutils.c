@@ -557,7 +557,7 @@ ms_hptime2btime (hptime_t hptime, BTime *btime)
   
   /* Reduce to Unix/POSIX epoch time and fractional seconds */
   isec = MS_HPTIME2EPOCH(hptime);
-  ifract = hptime - ((hptime_t)isec * HPTMODULUS);
+  ifract = (int)(hptime - (isec * HPTMODULUS));
   
   /* BTime only has 1/10000 second precision */
   bfract = ifract / (HPTMODULUS / 10000);
@@ -615,7 +615,7 @@ ms_hptime2isotimestr (hptime_t hptime, char *isotimestr, flag subseconds)
 
   /* Reduce to Unix/POSIX epoch time and fractional seconds */
   isec = MS_HPTIME2EPOCH(hptime);
-  ifract = (hptime_t) hptime - (isec * HPTMODULUS);
+  ifract = (int)(hptime - (isec * HPTMODULUS));
   
   /* Adjust for negative epoch times */
   if ( hptime < 0 && ifract != 0 )
@@ -671,7 +671,7 @@ ms_hptime2mdtimestr (hptime_t hptime, char *mdtimestr, flag subseconds)
 
   /* Reduce to Unix/POSIX epoch time and fractional seconds */
   isec = MS_HPTIME2EPOCH(hptime);
-  ifract = (hptime_t) hptime - (isec * HPTMODULUS);
+  ifract = (int)(hptime - (isec * HPTMODULUS));
 
   /* Adjust for negative epoch times */
   if ( hptime < 0 && ifract != 0 )
@@ -726,7 +726,7 @@ ms_hptime2seedtimestr (hptime_t hptime, char *seedtimestr, flag subseconds)
   
   /* Reduce to Unix/POSIX epoch time and fractional seconds */
   isec = MS_HPTIME2EPOCH(hptime);
-  ifract = (hptime_t) hptime - (isec * HPTMODULUS);
+  ifract = (int)(hptime - (isec * HPTMODULUS));
   
   /* Adjust for negative epoch times */
   if ( hptime < 0 && ifract != 0 )
@@ -1293,7 +1293,7 @@ ms_gmtime_r (int64_t *timep, struct tm *result)
   tv /= 60;
   v_tm_hour = ((int64_t) tv % (int64_t) 24);
   tv /= 24;
-  v_tm_tday = tv;
+  v_tm_tday = (int)tv;
   
   TM_WRAP (v_tm_sec, v_tm_min, 60);
   TM_WRAP (v_tm_min, v_tm_hour, 60);

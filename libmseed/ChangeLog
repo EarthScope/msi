@@ -1,3 +1,22 @@
+2011.056: 2.6
+	- Fix handling of sample data in internal MSTraceList routines.
+	- Cleanup WIN32 defines, make MSVC and Open Watcom play nicely.
+	- Default data byte order to big endian when blockette 1000 contains
+	invalid byte order value, previously defaulted to host byte order.
+
+2011.042: 
+	- Update libmseed.def to match current libmseed.h declaractions.
+	- Cleanup to avoid MSVC warnings.
+
+2011.039: 2.6rc4
+	- Do not return MS_NOTSEED when no records read from packed file.
+	- Update user guide to include note about MSTraceLists and change
+	the miniSEED creation example to use mst_writemseed().
+
+2011.036: 2.6rc3
+	- Fix parsing of records without blockette 1000, use pack headers
+	and end-of-file to determine implied record lengths.
+
 2011.032: 2.6rc2
 	- Fix handling of truncated records, partial reads at EOF.
 	- Fix offset tracking when reading from stdin.
