@@ -1,4 +1,4 @@
-2011.144: 3.4.1rc1
+2011.144: 3.4.1
 	- Update to libmseed 2.6.1 with fixes for more graceful handling of bad 
 	data and corner-case IRIS archive files.
 
