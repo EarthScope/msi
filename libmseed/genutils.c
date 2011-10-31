@@ -1260,7 +1260,7 @@ ms_dabs (double val)
 
 */
 
-const char pivotal_gmtime_r_stamp[] =
+const char pivotal_gmtime_r_stamp_lm[] =
   "pivotal_gmtime_r. Copyright (C) 2009  Paul Sheer. Terms and "
   "conditions apply. Visit http://2038bug.com/ for more info.";
 

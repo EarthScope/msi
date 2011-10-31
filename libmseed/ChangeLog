@@ -1,3 +1,26 @@
+2010.304: 2.6.2
+	- Increase precision of sample rate in SYNC printing routines to
+	avoid trucation of rate values.
+
+2011.262:
+	- Add '_lm' suffix to declaration of pivotal_gmtime_r_stamp in
+	genutils.c to avoid conflicts with other libraries.  Thanks to Doug
+	Neuhauser for the tip.
+
+2011.164:
+	- example/msrepack.c: add -N option to specify network code for output
+	data records.
+
+2011.160:
+	- example/msrepack.c: make sure input buffer is flushed/packed, retain
+	good input data when the end of the file contains bad data.
+
+2011.158:
+	- example/msrepack.c: convert samples to needed type for specified
+	output encoding, e.g. integers to floats.
+	- example/msrepack.c: do not open output file until after all options
+	have been parsed to avoid clobbering the output file unnecessarily.
+
 2011.144: 2.6.1
 	- Update dynamic library version.
 	- Add notes to the users guide and intro about functions useful for

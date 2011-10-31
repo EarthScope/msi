@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2011.129
+ * modified: 2011.304
  ***************************************************************************/
 
 #include <stdio.h>
@@ -1329,7 +1329,7 @@ mst_printsynclist ( MSTraceGroup *mstg, char *dccid, flag subsecond )
       ms_hptime2seedtimestr (mst->endtime, etime, subsecond);
       
       /* Print SYNC line */
-      ms_log (0, "%s|%s|%s|%s|%s|%s||%.2g|%lld|||||||%s\n",
+      ms_log (0, "%s|%s|%s|%s|%s|%s||%.10g|%lld|||||||%s\n",
 	      mst->network, mst->station, mst->location, mst->channel,
 	      stime, etime, mst->samprate, (long long int)mst->samplecnt,
 	      yearday);

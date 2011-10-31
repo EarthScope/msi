@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2011.129
+ * modified: 2011.304
  ***************************************************************************/
 
 #include <stdio.h>
@@ -987,7 +987,7 @@ mstl_printsynclist ( MSTraceList *mstl, char *dccid, flag subsecond )
 	  ms_hptime2seedtimestr (seg->endtime, endtime, subsecond);
 	  
 	  /* Print SYNC line */
-	  ms_log (0, "%s|%s|%s|%s|%s|%s||%.2g|%lld|||||||%s\n",
+	  ms_log (0, "%s|%s|%s|%s|%s|%s||%.10g|%lld|||||||%s\n",
 		  id->network, id->station, id->location, id->channel,
 		  starttime, endtime, seg->samprate, (long long int)seg->samplecnt,
 		  yearday);
