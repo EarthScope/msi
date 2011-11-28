@@ -1,3 +1,7 @@
+2011.332: 3.4.3
+	- Fix parsing of match/rejection list files, the error only occurred
+	with multiple lines on systems with specific snprintf() behavior.
+
 2011.304: 3.4.2
 	- Update to libmseed 2.6.2 with fixes to avoid sample rate precision
 	truncation for SYNC output.

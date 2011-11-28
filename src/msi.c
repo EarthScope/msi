@@ -31,7 +31,7 @@ static int addfile (char *filename);
 static int addlistfile (char *filename);
 static void usage (void);
 
-#define VERSION "3.4.2"
+#define VERSION "3.4.3"
 #define PACKAGE "msi"
 
 static flag    verbose      = 0;
@@ -712,7 +712,8 @@ readregexfile (char *regexfile, char **pppattern)
   char  line[1024];
   char  linepattern[1024];
   int   regexcnt = 0;
-  int   newpatternsize;
+  int   lengthbase;
+  int   lengthadd;
   
   /* Open the regex list file */
   if ( (fp = fopen (regexfile, "rb")) == NULL )
@@ -742,15 +743,36 @@ readregexfile (char *regexfile, char **pppattern)
       /* Add regex to compound regex */
       if ( *pppattern )
 	{
-	  newpatternsize = strlen(*pppattern) + strlen(linepattern) + 4;
-	  *pppattern = realloc (*pppattern, newpatternsize);	  
-	  snprintf (*pppattern, newpatternsize, "%s|(%s)", *pppattern, linepattern);
+	  lengthbase = strlen(*pppattern);
+	  lengthadd = strlen(linepattern) + 4; /* Length of addition plus 4 characters: |()\0 */
+	  
+	  *pppattern = realloc (*pppattern, lengthbase + lengthadd);
+	  
+	  if ( *pppattern )
+	    {
+	      snprintf ((*pppattern)+lengthbase, lengthadd, "|(%s)", linepattern);
+	    }
+	  else
+	    {
+	      ms_log (2, "Cannot allocate memory for regex string\n");
+	      return -1;
+	    }
 	}
       else
 	{
-	  newpatternsize = strlen(linepattern) + 3;
-	  *pppattern = realloc (*pppattern, newpatternsize);
-	  snprintf (*pppattern, newpatternsize, "(%s)", linepattern);
+	  lengthadd = strlen(linepattern) + 3; /* Length of addition plus 3 characters: ()\0 */
+	  
+	  *pppattern = realloc (*pppattern, lengthadd);
+
+	  if ( *pppattern )
+	    {
+	      snprintf (*pppattern, lengthadd, "(%s)", linepattern);
+	    }
+	  else
+	    {
+	      ms_log (2, "Cannot allocate memory for regex string\n");
+	      return -1;
+	    }
 	}
     }
   
