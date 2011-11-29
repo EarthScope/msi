@@ -1,4 +1,4 @@
-***************************************************************************
+/***************************************************************************
  * msi.c - Mini-SEED Inspector
  *
  * Opens a user specified file, parses the Mini-SEED records and prints
@@ -10,7 +10,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2009.194
+ * modified 2011.332
  ***************************************************************************/
 
 #include <stdio.h>
