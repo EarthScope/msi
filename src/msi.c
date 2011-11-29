@@ -1,4 +1,4 @@
-/***************************************************************************
+***************************************************************************
  * msi.c - Mini-SEED Inspector
  *
  * Opens a user specified file, parses the Mini-SEED records and prints
@@ -447,11 +447,11 @@ processparam (int argcount, char **argvec)
 	}
       else if (strcmp (argvec[optind], "-M") == 0)
 	{
-	  matchpattern = getoptval(argcount, argvec, optind++);
+	  matchpattern = strdup (getoptval(argcount, argvec, optind++));
 	}
       else if (strcmp (argvec[optind], "-R") == 0)
 	{
-	  rejectpattern = getoptval(argcount, argvec, optind++);
+	  rejectpattern = strdup (getoptval(argcount, argvec, optind++));
 	}
       else if (strcmp (argvec[optind], "-n") == 0)
 	{
@@ -597,7 +597,8 @@ processparam (int argcount, char **argvec)
     {
       if ( *matchpattern == '@' )
 	{
-	  tptr = matchpattern + 1; /* Skip the @ sign */
+	  tptr = strdup(matchpattern + 1); /* Skip the @ sign */
+	  free (matchpattern);
 	  matchpattern = 0;
 	  
 	  if ( readregexfile (tptr, &matchpattern) <= 0 )
@@ -605,6 +606,8 @@ processparam (int argcount, char **argvec)
 	      ms_log (2, "Cannot read match pattern regex file\n");
 	      exit (1);
 	    }
+	  
+	  free (tptr);
 	}
     }
   
@@ -613,7 +616,8 @@ processparam (int argcount, char **argvec)
     {
       if ( *rejectpattern == '@' )
 	{
-	  tptr = rejectpattern + 1; /* Skip the @ sign */
+	  tptr = strdup(rejectpattern + 1); /* Skip the @ sign */
+	  free (rejectpattern);
 	  rejectpattern = 0;
 	  
 	  if ( readregexfile (tptr, &rejectpattern) <= 0 )
@@ -621,6 +625,8 @@ processparam (int argcount, char **argvec)
 	      ms_log (2, "Cannot read reject pattern regex file\n");
 	      exit (1);
 	    }
+	  
+	  free (tptr);
 	}
     }
   
@@ -633,6 +639,8 @@ processparam (int argcount, char **argvec)
 	{
 	  ms_log (2, "Cannot compile match regex: '%s'\n", matchpattern);
 	}
+
+      free (matchpattern);
     }
   
   if ( rejectpattern )
@@ -643,6 +651,8 @@ processparam (int argcount, char **argvec)
 	{
 	  ms_log (2, "Cannot compile reject regex: '%s'\n", rejectpattern);
 	}
+      
+      free (rejectpattern);
     }
   
   /* Report the program version */
@@ -715,6 +725,18 @@ readregexfile (char *regexfile, char **pppattern)
   int   lengthbase;
   int   lengthadd;
   
+  if ( ! regexfile )
+    {
+      ms_log (2, "readregexfile: regex file not supplied\n");
+      return -1;
+    }
+  
+  if ( ! pppattern )
+    {
+      ms_log (2, "readregexfile: pattern string buffer not supplied\n");
+      return -1;
+    }
+  
   /* Open the regex list file */
   if ( (fp = fopen (regexfile, "rb")) == NULL )
     {
@@ -762,8 +784,8 @@ readregexfile (char *regexfile, char **pppattern)
 	{
 	  lengthadd = strlen(linepattern) + 3; /* Length of addition plus 3 characters: ()\0 */
 	  
-	  *pppattern = realloc (*pppattern, lengthadd);
-
+	  *pppattern = malloc (lengthadd);
+	  
 	  if ( *pppattern )
 	    {
 	      snprintf (*pppattern, lengthadd, "(%s)", linepattern);
@@ -779,7 +801,7 @@ readregexfile (char *regexfile, char **pppattern)
   fclose (fp);
   
   return regexcnt;
-}  /* End readregexfile() */
+}  /* End of readregexfile() */
 
 
 /***************************************************************************
