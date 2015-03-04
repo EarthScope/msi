@@ -1,3 +1,64 @@
+2015.062: 2.14
+	- Fix memory leak when msr_pack() returns after an error. Patch
+	contributed by Larry Baker and Eric Thomas.
+	- Change casting of values passed to isdigit() to int intead of
+	unsigned character.  Apparently this was consufing on ARM archs.
+	
+2015.061:
+	- Add ms_readleapseconds() and ms_readleapsecondfile() routines to
+	read a leap seconds file into an internal list.
+	- Modify msr_endtime() to check for an internal leap second list,
+	check for overlap with the record and adjust the end time as needed
+	when leap seconds are present.  When a leap second list is present
+	any indication of positive leap seconds in the fixed section data
+	header are ignored.
+
+2014.248:
+	- Add casting to size_t and int to avoid build warnings on certain
+	build systems (e.g. older MS Visual Studio).
+	The effective maximum sample buffer and record buffer size is ~2GB.
+
+2014.234: 2.13
+	- Clean up Makefile and example/Makefile, remove all GCC-specific and
+	debug targets.  Makefiles are compatible with both GNU and BSD make. 
+	As before, the shared target works only for GCC-compatible compilers.
+	Thanks to Elliott Sales de Andrade for pointing out that shared library
+	targets did not work with parallel builds, prompting this clean up.
+
+2014.197: 2.13rc
+	- Support 128-byte record length by changing MINRECLEN to 128 (was 256).
+	The current SEED specification is a minimum record length of 256-bytes,
+	but there are cases (e.g. low latency data flow) using 128-byte records.
+	- Add declarations, casting and string truncation to clear warnings
+	uncovered in ObsPy testing (thanks to Elliott Sales de Andrade).
+
+2014.074:
+	- Add __CYGWIN__ defined test to Linux section of lmplatform.h.
+
+2013.273: 2.12
+	- Add mst_convertsamples() and mstl_convertsamples() to convert sample
+	types.  When converting from float & double types to integer type
+	a simple rounding is employed to compensate for machine representation
+	of floating point numbers.
+
+2013.267:
+	- msr_endtime(): Check activity flags in fixed section of data header,
+	if bit 4 is set then a positive leap occurred during the record and
+	the end time should be reduced by one second to properly match the now
+	shifted UTC time.  As long as the next record in the series is
+	properly marked with the correct UTC time no artificial time tear
+	will be generated when reconstructing the time series.
+
+2013.137:
+	- Update docs for transition to 64-bit sample counts done in 2011!
+
+2013.117: 2.11
+	- Initialize internal counters in mst_pack() to avoid their use 
+	in error conditions. Thanks to D. Ketchum and M. Potter for help. 
+	- Add 'const' qualifier to the msfile argument of the file reading and
+	writing family of routines to stop compiler warnings resulting from
+	generated binding functions.  Thanks to M. Bach for reporting.
+
 2013.056: 2.10
 	- Add more sanity checks to msr_unpack_data() to catch bad/corrupted
 	data records and avoid crashes due to impossible pointer construction.

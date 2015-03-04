@@ -5,7 +5,7 @@
  * Written by Chad Trabant
  *   IRIS Data Management Center
  *
- * modified: 2013.050
+ * modified: 2014.248
  ***************************************************************************/
 
 #include <stdio.h>
@@ -75,7 +75,7 @@ msr_parse ( char *record, int recbuflen, MSRecord **ppmsr, int reclen,
       /* Found record but could not determine length */
       if ( detlen == 0 )
 	{
-	  return 256;
+	  return MINRECLEN;
 	}
       
       if ( verbose > 2 )
@@ -164,14 +164,14 @@ msr_parse_selection ( char *recbuf, int recbuflen, int64_t *offset,
   
   while ( *offset < recbuflen )
     {
-      retval = msr_parse (recbuf+*offset, recbuflen-*offset, ppmsr, reclen, 0, verbose);
+      retval = msr_parse (recbuf+*offset, (int)(recbuflen-*offset), ppmsr, reclen, 0, verbose);
       
       if ( retval )
         {
           if ( verbose )
             ms_log (2, "Error parsing record at offset %lld\n", *offset);
 	  
-          *offset += 256;
+          *offset += MINRECLEN;
         }
       else
         {
@@ -218,9 +218,9 @@ msr_parse_selection ( char *recbuf, int recbuflen, int64_t *offset,
  *
  * 2) search the record up to recbuflen bytes for a 1000 blockette.
  *
- * 3) If no blockette 1000 is found search at 256-byte offsets for the
- * fixed section of the next header or blank/noise record, thereby
- * implying the record length.
+ * 3) If no blockette 1000 is found search at MINRECLEN-byte offsets
+ * for the fixed section of the next header or blank/noise record,
+ * thereby implying the record length.
  *
  * Returns:
  * -1 : data record not detected or error
@@ -303,9 +303,9 @@ ms_detect ( const char *record, int recbuflen )
    * and search for the next record */
   if ( reclen == -1 )
     {
-      nextfsdh = record + 256;
+      nextfsdh = record + MINRECLEN;
       
-      /* Check for record header or blank/noise record at 256 byte offsets */
+      /* Check for record header or blank/noise record at MINRECLEN byte offsets */
       while ( ((nextfsdh - record) + 48) < recbuflen )
 	{
 	  if ( MS_ISVALIDHEADER(nextfsdh) || MS_ISVALIDBLANK(nextfsdh) )
@@ -315,7 +315,7 @@ ms_detect ( const char *record, int recbuflen )
 	      break;
 	    }
 	  
-	  nextfsdh += 256;
+	  nextfsdh += MINRECLEN;
 	}
     }
   
@@ -411,9 +411,9 @@ ms_parse_raw ( char *record, int maxreclen, flag details, flag swapflag )
   X = record;  /* Pointer of convenience */
   
   /* Check record sequence number, 6 ASCII digits */
-  if ( ! isdigit((unsigned char) *(X)) || ! isdigit ((unsigned char) *(X+1)) ||
-       ! isdigit((unsigned char) *(X+2)) || ! isdigit ((unsigned char) *(X+3)) ||
-       ! isdigit((unsigned char) *(X+4)) || ! isdigit ((unsigned char) *(X+5)) )
+  if ( ! isdigit((int) *(X))   || ! isdigit ((int) *(X+1)) ||
+       ! isdigit((int) *(X+2)) || ! isdigit ((int) *(X+3)) ||
+       ! isdigit((int) *(X+4)) || ! isdigit ((int) *(X+5)) )
     {
       ms_log (2, "%s: Invalid sequence number: '%c%c%c%c%c%c'\n", srcname, X, X+1, X+2, X+3, X+4, X+5);
       retval++;
