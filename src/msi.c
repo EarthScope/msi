@@ -10,7 +10,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center.
  *
- * modified 2011.332
+ * modified 2015.062
  ***************************************************************************/
 
 #include <stdio.h>
@@ -31,7 +31,7 @@ static int addfile (char *filename);
 static int addlistfile (char *filename);
 static void usage (void);
 
-#define VERSION "3.5"
+#define VERSION "3.6"
 #define PACKAGE "msi"
 
 static flag    verbose      = 0;
@@ -99,6 +99,9 @@ main (int argc, char **argv)
   /* Process given parameters (command line and parameter file) */
   if ( processparam (argc, argv) < 0 )
     return 1;
+  
+  /* Read leap second list file if env. var. LIBMSEED_LEAPSECOND_FILE is set */
+  ms_readleapseconds ("LIBMSEED_LEAPSECOND_FILE");
   
   /* Setup encoding environment variable if specified, ugly kludge */
   if ( encodingstr )

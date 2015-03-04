@@ -1,4 +1,4 @@
-.TH MSI 1 2009/07/13
+.TH MSI 1 2015/03/03
 .SH NAME
 Mini-SEED Inspector
 
@@ -220,6 +220,16 @@ IU_ANMO_.*
 IU_ADK_00_BHZ.*
 II_BFO_00_BHZ_Q
 .fi
+
+.SH LEAP SECOND LIST FILE
+If the environment variable LIBMSEED_LEAPSECOND_FILE is set it is
+expected to indicate a file containing a list of leap seconds as
+published by NIST and IETF, usually available here:
+http://www.ietf.org/timezones/data/leap-seconds.list
+
+If present, the leap seconds listed in this file will be used to
+adjust the time coverage for records that contain a leap second.
+Also, leap second indicators in the miniSEED headers will be ignored.
 
 .SH AUTHOR
 .nf
