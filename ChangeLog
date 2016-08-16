@@ -1,6 +1,6 @@
 2015.062: 3.6
 	- Update libmseed to 2.14.
-	- Read any leap second list file indicated by the LEAP_SECOND_FILE 
+	- Read any leap second list file indicated by the LIBMSEED_LEAPSECOND_FILE
 	environment variable and use it when determining trace listings.
 
 2013.056: 3.5
