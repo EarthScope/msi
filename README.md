@@ -17,9 +17,6 @@ In most environments a simple 'make' will build the program.
 The CC and CFLAGS environment variables can be used to configure
 the build parameters.
 
-In the Win32 environment the Makefile.win can be used with the nmake
-build tool included with Visual Studio.
-
 ## Licensing
 
 GNU GPL version 3.  See included LICENSE file for details.

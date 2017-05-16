@@ -1,3 +1,9 @@
+2017.136: 3.7
+
+	- Remove Windows/Watcom build files and documentation, this will not build
+	on Windows with the current uses of system regex usage.
+	- Update licensing to GNU GPL 3.
+
 2015.062: 3.6
 	- Update libmseed to 2.14.
 	- Read any leap second list file indicated by the LIBMSEED_LEAPSECOND_FILE
