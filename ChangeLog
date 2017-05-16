@@ -1,5 +1,5 @@
 2017.136: 3.7
-
+	- Update libmseed to 2.19.4.
 	- Remove Windows/Watcom build files and documentation, this will not build
 	on Windows with the current uses of system regex usage.
 	- Update licensing to GNU GPL 3.
