@@ -9,7 +9,7 @@ For usage infromation see the [msi manual](doc/msi.md) in the
 
 ## Downloading and building
 
-The [releases](https://github.com/iris-edu/msi/msi) area
+The [releases](https://github.com/iris-edu/msi/releases) area
 contains release versions.
 
 In most environments a simple 'make' will build the program.
