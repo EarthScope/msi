@@ -1,3 +1,6 @@
+2017.283: 3.8
+	- Update libmseed to 2.19.5, with fix for leap second calculation.
+
 2017.136: 3.7
 	- Update libmseed to 2.19.4.
 	- Remove Windows/Watcom build files and documentation, this will not build
