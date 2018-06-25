@@ -9,8 +9,6 @@
  * code will be 0.
  *
  * Written by Chad Trabant, IRIS Data Management Center.
- *
- * modified 2015.062
  ***************************************************************************/
 
 #include <stdio.h>
@@ -973,8 +971,8 @@ usage (void)
 	   " -e encoding  Specify encoding format of data samples\n"
 	   "\n"
 	   " ## Data selection options ##\n"
-	   " -ts time     Limit to records that start after time\n"
-	   " -te time     Limit to records that end before time\n"
+	   " -ts time     Limit to records that contain or start after time\n"
+	   " -te time     Limit to records that contain or end before time\n"
 	   "                time format: 'YYYY[,DDD,HH,MM,SS,FFFFFF]' delimiters: [,:.]\n"
 	   " -M match     Limit to records matching the specified regular expression\n"
 	   " -R reject    Limit to records not matching the specfied regular expression\n"
