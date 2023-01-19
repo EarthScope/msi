@@ -13,8 +13,8 @@ REQCFLAGS = -I../libmseed
 
 BIN = msi
 
-LDFLAGS = -L../libmseed
-LDLIBS = -lmseed
+LDFLAGS += -L../libmseed
+LDLIBS += -lmseed
 
 OBJS = $(BIN).o
 
