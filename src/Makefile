@@ -4,29 +4,30 @@
 #   CC : Specify the C compiler to use
 #   CFLAGS : Specify compiler options to use
 
-# Required compiler parameters
-REQCFLAGS = -I../libmseed
-
 BIN = msi
 
-LDFLAGS += -L../libmseed
-LDLIBS += -lmseed
+SRCS = msi.c
+OBJS = $(SRCS:.c=.o)
 
-OBJS = $(BIN).o
+# Required compiler parameters
+EXTRACFLAGS = -I../libmseed
+EXTRALDFLAGS = -L../libmseed
+
+LDLIBS = -lmseed
 
 all: $(BIN)
 
 $(BIN): $(OBJS)
-	$(CC) $(CFLAGS) -o ../$@ $(OBJS) $(LDLIBS) $(LDFLAGS)
+	$(CC) $(CFLAGS) -o ../$@ $(OBJS) $(EXTRALDFLAGS) $(LDLIBS) $(LDFLAGS)
 
 clean:
 	rm -f $(OBJS) ../$(BIN)
 
 # Implicit rule for building object files
 %.o: %.c
-	$(CC) $(CFLAGS) $(REQCFLAGS) -c $<
+	$(CC) $(CFLAGS) $(EXTRACFLAGS) -c $<
 
 install:
 	@echo
-	@echo "No install target, copy the executable and documentation to desired location"
+	@echo "No install target, copy the executable and documentation as needed"
 	@echo
