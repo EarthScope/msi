@@ -151,7 +151,7 @@ main (int argc, char **argv)
     if (verbose >= 2)
     {
       if (flp->offset)
-        ms_log (1, "Processing: %s (starting at byte %lld)\n", flp->filename, flp->offset);
+        ms_log (1, "Processing: %s (starting at byte %" PRId64 ")\n", flp->filename, flp->offset);
       else
         ms_log (1, "Processing: %s\n", flp->filename);
     }
