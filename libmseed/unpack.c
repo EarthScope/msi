@@ -9,7 +9,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2020 Chad Trabant, IRIS Data Management Center
+ * Copyright (c) 2023 Chad Trabant, EarthScope Data Services
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1462,7 +1462,7 @@ ms_nomsamprate (int factor, int multiplier)
 /***************************************************************************
  * ms2_recordsid:
  *
- * Generate an XFDSN: source identifier string for a specified raw
+ * Generate an FDSN source identifier string for a specified raw
  * miniSEED 2.x data record.
  *
  * Returns a pointer to the resulting string or NULL on error.

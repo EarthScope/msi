@@ -8,7 +8,7 @@
  * the return code will be 1.  On successfull operation the return
  * code will be 0.
  *
- * Written by Chad Trabant, IRIS Data Management Center.
+ * Written by Chad Trabant, EarthScope Data Services
  ***************************************************************************/
 
 #include <ctype.h>
