@@ -1,4 +1,4 @@
-# <p >Mini-SEED Inspector</p>
+# <p >miniSEED Inspector</p>
 
 1. [Name](#)
 1. [Synopsis](#synopsis)
@@ -18,7 +18,7 @@ msi [options] file1 [file2 file3 ...]
 
 ## <a id='description'>Description</a>
 
-<p ><b>msi</b> is a general purpose Mini-SEED parser.  In addition to parsing and displaying the contents of Mini-SEED records, <b>msi</b> will derive continuous trace information for Mini-SEED data.</p>
+<p ><b>msi</b> is a general purpose miniSEED parser.  In addition to parsing and displaying the contents of miniSEED records, <b>msi</b> will derive continuous trace information for miniSEED data.</p>
 
 <p >By default, <b>msi</b> will output a single line of information to summarize each record parsed.  More verbose or different output can be specified via the numerous options.</p>
 
@@ -42,29 +42,29 @@ msi [options] file1 [file2 file3 ...]
 
 <p style="padding-left: 30px;">Be more verbose.  This flag can be used multiple times ("-v -v" or "-vv") for more verbosity.</p>
 
-<b>-r </b><i>reclen</i>
+<b>-H </b><i>Header</i>
 
-<p style="padding-left: 30px;">Specify the input record length in bytes.  By default the record length of each input Mini-SEED record is automatically detected, this option forces the record length.</p>
+<p style="padding-left: 30px;">Add custom header to URL-based reads.  Only avaialable when compiled with URL support.</p>
 
-<b>-e </b><i>encoding</i>
+<b>-u </b><i>user:pass</i>
 
-<p style="padding-left: 30px;">Specify the data encoding format.  These encoding values are the same as those specified in the SEED 1000 Blockette.</p>
+<p style="padding-left: 30px;">Set <i>user</i> and <i>pass</i> credentials for URL-based reads.  Only avaialable when compiled with URL support.</p>
 
 <b>-ts </b><i>time</i>
 
-<p style="padding-left: 30px;">Limit processing to Mini-SEED records that contain or start after <i>time</i>.  The format of the <i>time</i> arguement is: 'YYYY[,DDD,HH,MM,SS,FFFFFF]' where valid delimiters are either commas (,), colons (:) or periods (.).</p>
+<p style="padding-left: 30px;">Limit processing to miniSEED records that contain or start after <i>time</i>.  The format of the <i>time</i> arguement is: 'YYYY[,DDD,HH,MM,SS,FFFFFF]' where valid delimiters are either commas (,), colons (:) or periods (.).</p>
 
 <b>-te </b><i>time</i>
 
-<p style="padding-left: 30px;">Limit processing to Mini-SEED records that contain or end before <i>time</i>.  The format of the <i>time</i> arguement is: 'YYYY[,DDD,HH,MM,SS,FFFFFF]' where valid delimiters are either commas (,), colons (:) or periods (.).</p>
+<p style="padding-left: 30px;">Limit processing to miniSEED records that contain or end before <i>time</i>.  The format of the <i>time</i> arguement is: 'YYYY[,DDD,HH,MM,SS,FFFFFF]' where valid delimiters are either commas (,), colons (:) or periods (.).</p>
 
 <b>-M </b><i>match</i>
 
-<p style="padding-left: 30px;">Limit processing to Mini-SEED records that match the <i>match</i> regular expression.  For each input record a source name string composed of 'NET_STA_LOC_CHAN_QUAL' is created and compared to the regular expression.  If the match expression begins with an '@' character it is assumed to indicate a file containing a list of expressions to match, see the \fBMATCH OR REJECT LIST FILE\fR section below.</p>
+<p style="padding-left: 30px;">Limit processing to miniSEED records that match the <i>match</i> regular expression.  For each input record a source name string composed of 'NET_STA_LOC_CHAN_QUAL' is created and compared to the regular expression.  If the match expression begins with an '@' character it is assumed to indicate a file containing a list of expressions to match, see the \fBMATCH OR REJECT LIST FILE\fR section below.</p>
 
 <b>-R </b><i>reject</i>
 
-<p style="padding-left: 30px;">Limit processing to Mini-SEED records that do not match the <i>reject</i> regular expression.  For each input record a source name string composed of 'NET_STA_LOC_CHAN_QUAL' is created and compared to the regular expression.  If the reject expression begins with an '@' character it is assumed to indicate a file containing a list of expressions to reject, see the \fBMATCH OR REJECT LIST FILE\fR section below.</p>
+<p style="padding-left: 30px;">Limit processing to miniSEED records that do not match the <i>reject</i> regular expression.  For each input record a source name string composed of 'NET_STA_LOC_CHAN_QUAL' is created and compared to the regular expression.  If the reject expression begins with an '@' character it is assumed to indicate a file containing a list of expressions to reject, see the \fBMATCH OR REJECT LIST FILE\fR section below.</p>
 
 <b>-n </b><i>count</i>
 
@@ -138,9 +138,9 @@ msi [options] file1 [file2 file3 ...]
 
 <p style="padding-left: 30px;">Print a sorted SYNC format trace list after processing all input records and suppress record-by-record output.</p>
 
-<b>-Q</b>
+<b>-P</b>
 
-<p style="padding-left: 30px;">Additionally group input data based on SEED data qualitiy flags.  By default data are grouped by network, station, location, channel and adjacent time windows, this option adds data quality to the grouping parameters.</p>
+<p style="padding-left: 30px;">Additionally group input data by publication.  Note: for miniSEED version 2 records, SEED data qualitiy values are translated to publication versions. By default data are grouped by network, station, location, channel and adjacent time windows, this option adds publication version to the grouping parameters.</p>
 
 <b>-tf </b><i>format</i>
 
@@ -157,7 +157,7 @@ msi [options] file1 [file2 file3 ...]
 
 <b>-o </b><i>outfile</i>
 
-<p style="padding-left: 30px;">Write all processed Mini-SEED records to <i>outfile</i>.</p>
+<p style="padding-left: 30px;">Write all processed miniSEED records to <i>outfile</i>.</p>
 
 ## <a id='input-files'>Input Files</a>
 
@@ -205,8 +205,8 @@ II_BFO_00_BHZ_Q
 
 <pre >
 Chad Trabant
-IRIS Data Management Center
+EarthScope Data Services
 </pre>
 
 
-(man page 2015/03/03)
+(man page 2023/02/17)

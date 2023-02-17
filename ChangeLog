@@ -1,4 +1,4 @@
-2020.XXX: 4.0
+2023.XXX: 4.0
 	- Update to libmseed 3, with support for miniSEED 3, URLs, etc.
 	- Filenames can now contain read range with end: file@start-end
 	- Added -H option to add HTTP headers

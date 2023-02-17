@@ -1,6 +1,6 @@
-.TH MSI 1 2015/03/03
+.TH MSI 1 2023/02/17
 .SH NAME
-Mini-SEED Inspector
+miniSEED Inspector
 
 .SH SYNOPSIS
 .nf
@@ -8,9 +8,9 @@ msi [options] file1 [file2 file3 ...]
 
 .fi
 .SH DESCRIPTION
-\fBmsi\fP is a general purpose Mini-SEED parser.  In addition to
-parsing and displaying the contents of Mini-SEED records, \fBmsi\fP
-will derive continuous trace information for Mini-SEED data.
+\fBmsi\fP is a general purpose miniSEED parser.  In addition to
+parsing and displaying the contents of miniSEED records, \fBmsi\fP
+will derive continuous trace information for miniSEED data.
 
 By default, \fBmsi\fP will output a single line of information to
 summarize each record parsed.  More verbose or different output can be
@@ -39,29 +39,28 @@ Print program usage and exit.
 Be more verbose.  This flag can be used multiple times ("-v -v" or
 "-vv") for more verbosity.
 
-.IP "-r \fIreclen\fP"
-Specify the input record length in bytes.  By default the
-record length of each input Mini-SEED record is automatically
-detected, this option forces the record length.
+.IP "-H \fIHeader\fP"
+Add custom header to URL-based reads.  Only avaialable when compiled
+with URL support.
 
-.IP "-e \fIencoding\fP"
-Specify the data encoding format.  These encoding values are the same
-as those specified in the SEED 1000 Blockette.
+.IP "-u \fIuser:pass\fP"
+Set \fIuser\fP and \fIpass\fP credentials for URL-based reads.  Only
+avaialable when compiled with URL support.
 
 .IP "-ts \fItime\fP"
-Limit processing to Mini-SEED records that contain or start after
+Limit processing to miniSEED records that contain or start after
 \fItime\fP.  The format of the \fItime\fP arguement
 is: 'YYYY[,DDD,HH,MM,SS,FFFFFF]' where valid delimiters are either
 commas (,), colons (:) or periods (.).
 
 .IP "-te \fItime\fP"
-Limit processing to Mini-SEED records that contain or end before
+Limit processing to miniSEED records that contain or end before
 \fItime\fP.  The format of the \fItime\fP arguement
 is: 'YYYY[,DDD,HH,MM,SS,FFFFFF]' where valid delimiters are either
 commas (,), colons (:) or periods (.).
 
 .IP "-M \fImatch\fP"
-Limit processing to Mini-SEED records that match the \fImatch\fP
+Limit processing to miniSEED records that match the \fImatch\fP
 regular expression.  For each input record a source name string
 composed of 'NET_STA_LOC_CHAN_QUAL' is created and compared to the
 regular expression.  If the match expression begins with an '@'
@@ -70,7 +69,7 @@ expressions to match, see the \fBMATCH OR REJECT LIST FILE\fR section
 below.
 
 .IP "-R \fIreject\fP"
-Limit processing to Mini-SEED records that do not match the
+Limit processing to miniSEED records that do not match the
 \fIreject\fP regular expression.  For each input record a source name
 string composed of 'NET_STA_LOC_CHAN_QUAL' is created and compared to
 the regular expression.  If the reject expression begins with an '@'
@@ -153,11 +152,12 @@ of seconds.
 Print a sorted SYNC format trace list after processing all input
 records and suppress record-by-record output.
 
-.IP "-Q         "
-Additionally group input data based on SEED data qualitiy flags.  By
-default data are grouped by network, station, location, channel and
-adjacent time windows, this option adds data quality to the grouping
-parameters.
+.IP "-P         "
+Additionally group input data by publication.  Note: for miniSEED
+version 2 records, SEED data qualitiy values are translated to
+publication versions. By default data are grouped by network, station,
+location, channel and adjacent time windows, this option adds
+publication version to the grouping parameters.
 
 .IP "-tf \fIformat\fP"
 Specify the time stamp format for trace and gap/overlap lists.  The
@@ -173,7 +173,7 @@ Decompress/unpack data in input records and write the binary samples
 to \fIbinfile\fP.
 
 .IP "-o \fIoutfile\fP"
-Write all processed Mini-SEED records to \fIoutfile\fP.
+Write all processed miniSEED records to \fIoutfile\fP.
 
 .SH "INPUT FILES"
 
@@ -201,7 +201,7 @@ data/day1.mseed
 data/day2.mseed
 data/day3.mseed
 .fi
-	
+
 .SH "MATCH OR REJECT LIST FILE"
 A list file used with either the \fB-M\fP or \fB-R\fP options contains
 a list of regular expressions (one on each line) that will be combined
@@ -234,5 +234,5 @@ Also, leap second indicators in the miniSEED headers will be ignored.
 .SH AUTHOR
 .nf
 Chad Trabant
-IRIS Data Management Center
+EarthScope Data Services
 .fi
