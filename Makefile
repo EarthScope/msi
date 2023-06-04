@@ -20,4 +20,4 @@ install:
 	@echo
 	@echo "No install method"
 	@echo "Copy the binary and documentation to desired location"
-	@echo%
+	@echo

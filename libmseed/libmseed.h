@@ -228,8 +228,13 @@ typedef int64_t nstime_t;
 
 /** @def NSTERROR
     @brief Error code for routines that normally return a high precision time.
-    The time value corresponds to '1902-1-1 00:00:00.00000000'. **/
+    The time value corresponds to '1902-01-01T00:00:00.000000000Z'. **/
 #define NSTERROR -2145916800000000000LL
+
+/** @def NSTUNSET
+    @brief Special nstime_t value meaning "unset".
+    The time value corresponds to '1902-01-01T00:00:00.000000001Z'. **/
+#define NSTUNSET -2145916799999999999LL
 
 /** @def MS_EPOCH2NSTIME
     @brief macro to convert Unix/POSIX epoch time to high precision epoch time */
@@ -309,9 +314,9 @@ typedef enum
 
 extern int ms_nstime2time (nstime_t nstime, uint16_t *year, uint16_t *yday,
                            uint8_t *hour, uint8_t *min, uint8_t *sec, uint32_t *nsec);
-extern char *ms_nstime2timestr (nstime_t nstime, char *timestr,
+extern char* ms_nstime2timestr (nstime_t nstime, char *timestr,
                                 ms_timeformat_t timeformat, ms_subseconds_t subsecond);
-DEPRECATED extern char *ms_nstime2timestrz (nstime_t nstime, char *timestr,
+DEPRECATED extern char* ms_nstime2timestrz (nstime_t nstime, char *timestr,
                                             ms_timeformat_t timeformat, ms_subseconds_t subsecond);
 extern nstime_t ms_time2nstime (int year, int yday, int hour, int min, int sec, uint32_t nsec);
 extern nstime_t ms_timestr2nstime (const char *timestr);
@@ -417,8 +422,8 @@ extern int ms_parse_raw2 (char *record, int maxreclen, int8_t details, int8_t sw
 
 /** @brief Data selection structure time window definition containers */
 typedef struct MS3SelectTime {
-  nstime_t starttime;                //!< Earliest data for matching channels, use ::NSTERROR for open
-  nstime_t endtime;                  //!< Latest data for matching channels, use ::NSTERROR for open
+  nstime_t starttime;                //!< Earliest data for matching channels, use ::NSTUNSET for open
+  nstime_t endtime;                  //!< Latest data for matching channels, use ::NSTUNSET for open
   struct MS3SelectTime *next;        //!< Pointer to next selection time, NULL if the last
 } MS3SelectTime;
 
@@ -430,10 +435,10 @@ typedef struct MS3Selections {
   uint8_t pubversion;                //!< Selected publication version, use 0 for any
 } MS3Selections;
 
-extern MS3Selections *ms3_matchselect (MS3Selections *selections, char *sid,
+extern MS3Selections* ms3_matchselect (MS3Selections *selections, char *sid,
                                        nstime_t starttime, nstime_t endtime,
                                        int pubversion, MS3SelectTime **ppselecttime);
-extern MS3Selections *msr3_matchselect (MS3Selections *selections, MS3Record *msr,
+extern MS3Selections* msr3_matchselect (MS3Selections *selections, MS3Record *msr,
                                         MS3SelectTime **ppselecttime);
 extern int ms3_addselect (MS3Selections **ppselections, char *sidpattern,
                           nstime_t starttime, nstime_t endtime, uint8_t pubversion);
@@ -504,7 +509,7 @@ typedef struct MS3RecordList
     A trace list container starts with an ::MS3TraceList, which
     contains one or more ::MS3TraceID entries, which each contain one
     or more ::MS3TraceSeg entries.  The ::MS3TraceID and ::MS3TraceSeg
-    entries are traversed as a simple linked list.
+    entries are easily traversed as linked structures.
 
     The overall structure is illustrated as:
       - MS3TraceList
@@ -523,6 +528,9 @@ typedef struct MS3RecordList
     \sa ms3_readtracelist_selection()
     \sa mstl3_writemseed()
     @{ */
+
+/** @brief Maximum skip list height for MSTraceIDs */
+#define MSTRACEID_SKIPLIST_HEIGHT 8
 
 /** @brief Container for a continuous trace segment, linkable */
 typedef struct MS3TraceSeg {
@@ -550,14 +558,15 @@ typedef struct MS3TraceID {
   uint32_t        numsegments;       //!< Number of segments for this ID
   struct MS3TraceSeg *first;         //!< Pointer to first of list of segments
   struct MS3TraceSeg *last;          //!< Pointer to last of list of segments
-  struct MS3TraceID *next;           //!< Pointer to next trace ID, NULL if the last
+  struct MS3TraceID *next[MSTRACEID_SKIPLIST_HEIGHT];   //!< Next trace ID at first pointer, NULL if the last
+  uint8_t         height;            //!< Height of skip list at \a next
 } MS3TraceID;
 
 /** @brief Container for a collection of continuous trace segment, linkable */
 typedef struct MS3TraceList {
-  uint32_t           numtraces;      //!< Number of traces in list
-  struct MS3TraceID *traces;         //!< Pointer to list of traces
-  struct MS3TraceID *last;           //!< Pointer to last modified trace in list
+  uint32_t           numtraceids;    //!< Number of trace IDs in list
+  struct MS3TraceID  traces;         //!< Head node of trace skip list, first entry at \a traces.next[0]
+  uint64_t           prngstate;      //!< INTERNAL: State for Pseudo RNG
 } MS3TraceList;
 
 /** @brief Callback functions that return time and sample rate tolerances
@@ -593,6 +602,7 @@ typedef struct MS3Tolerance
 
 extern MS3TraceList* mstl3_init (MS3TraceList *mstl);
 extern void          mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr);
+extern MS3TraceID*   mstl3_findID (MS3TraceList *mstl, const char *sid, uint8_t pubversion, MS3TraceID **prev);
 
 /** @def mstl3_addmsr
     @brief Add a ::MS3Record to a ::MS3TraceList @see mstl3_addmsr_recordptr() */
@@ -617,7 +627,7 @@ extern int64_t mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, i
                            void *handlerdata, int reclen, int8_t encoding,
                            int64_t *packedsamples, uint32_t flags, int8_t verbose, char *extra);
 extern void mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
-                                  int8_t details, int8_t gaps);
+                                  int8_t details, int8_t gaps, int8_t versions);
 extern void mstl3_printsynclist (MS3TraceList *mstl, char *dccid, ms_subseconds_t subseconds);
 extern void mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
                                 double *mingap, double *maxgap);
@@ -742,9 +752,9 @@ extern int libmseed_url_support (void);
     combination of the codes.
 
     @{ */
-extern int ms_sid2nslc (char *sid, char *net, char *sta, char *loc, char *chan);
+extern int ms_sid2nslc (const char *sid, char *net, char *sta, char *loc, char *chan);
 extern int ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
-                        char *net, char *sta, char *loc, char *chan);
+                        const char *net, const char *sta, const char *loc, const char *chan);
 extern int ms_seedchan2xchan (char *xchan, const char *seedchan);
 extern int ms_xchan2seedchan (char *seedchan, const char *xchan);
 extern int ms_strncpclean (char *dest, const char *source, int length);
@@ -760,13 +770,13 @@ extern int ms_strncpopen (char *dest, const char *source, int length);
     For a full description consult the format specification.
 
     The library functions supporting extra headers allow specific
-    header identification using dot notation.  In this notation each
-    path element is an object until the final element which is a
-    key-value pair.
+    header identification using JSON Pointer identification.  In this
+    notation each path element is an object until the final element
+    which is a key to specified header value.
 
     For example, a \a path specified as:
     \code
-    "objectA.objectB.header"
+    "/objectA/objectB/header"
     \endcode
 
     would correspond to the single JSON value in:
@@ -787,7 +797,7 @@ extern int ms_strncpopen (char *dest, const char *source, int length);
  * Actual values are optional, with special values indicating an unset
  * state.
  *
- * @see mseh_add_event_detection
+ * @see mseh_add_event_detection_r
  */
 typedef struct MSEHEventDetection
 {
@@ -798,11 +808,11 @@ typedef struct MSEHEventDetection
   double backgroundestimate; /**< Background estimate, 0.0 = not included */
   char wave[30]; /**< Detection wave (e.g. "DILATATION"), zero length = not included */
   char units[30]; /**< Units of amplitude and background estimate (e.g. "COUNTS"), zero length = not included */
-  nstime_t onsettime; /**< Onset time, NSTERROR = not included */
+  nstime_t onsettime; /**< Onset time, NSTUNSET = not included */
   uint8_t medsnr[6]; /**< Signal to noise ratio for Murdock event detection, all zeros = not included */
   int medlookback; /**< Murdock event detection lookback value, -1 = not included */
   int medpickalgorithm; /**< Murdock event detection pick algoritm, -1 = not included */
-  struct MSEHEventDetection *next; /**< Pointer to next detection, zero length if none */
+  struct MSEHEventDetection *next; /**< Pointer to next, NULL if none */
 } MSEHEventDetection;
 
 /**
@@ -816,8 +826,8 @@ typedef struct MSEHEventDetection
 typedef struct MSEHCalibration
 {
   char type[30]; /**< Calibration type  (e.g. "STEP", "SINE", "PSEUDORANDOM"), zero length = not included */
-  nstime_t begintime; /**< Begin time, NSTERROR = not included */
-  nstime_t endtime; /**< End time, NSTERROR = not included */
+  nstime_t begintime; /**< Begin time, NSTUNSET = not included */
+  nstime_t endtime; /**< End time, NSTUNSET = not included */
   int steps; /**< Number of step calibrations, -1 = not included */
   int firstpulsepositive; /**< Boolean, step cal. first pulse, -1 = not included */
   int alternatesign; /**< Boolean, step cal. alt. sign, -1 = not included */
@@ -834,7 +844,7 @@ typedef struct MSEHCalibration
   char coupling[30]; /**< Coupling, e.g. Resistive, Capacitive, zero length = not included */
   char rolloff[30]; /**< Rolloff of filters, zero length = not included */
   char noise[30]; /**< Noise for PR cals, e.g. White or Red, zero length = not included */
-  struct MSEHCalibration *next; /**< Pointer to next detection, zero length if none */
+  struct MSEHCalibration *next; /**< Pointer to next, NULL if none */
 } MSEHCalibration;
 
 /**
@@ -847,8 +857,8 @@ typedef struct MSEHCalibration
  */
 typedef struct MSEHTimingException
 {
+  nstime_t time; /**< Time of exception, NSTUNSET = not included */
   float vcocorrection; /**< VCO correction, from 0 to 100%, <0 = not included */
-  nstime_t time; /**< Time of exception, NSTERROR = not included */
   int usec; /**< [DEPRECATED] microsecond time offset, 0 = not included */
   int receptionquality; /**< Reception quality, 0 to 100% clock accurracy, <0 = not included */
   uint32_t count; /**< The count thereof, 0 = not included */
@@ -867,73 +877,112 @@ typedef struct MSEHTimingException
 typedef struct MSEHRecenter
 {
   char type[30]; /**< Recenter type  (e.g. "MASS", "GIMBAL"), zero length = not included */
-  nstime_t begintime; /**< Begin time, NSTERROR = not included */
-  nstime_t endtime; /**< Estimated end time, NSTERROR = not included */
+  nstime_t begintime; /**< Begin time, NSTUNSET = not included */
+  nstime_t endtime; /**< Estimated end time, NSTUNSET = not included */
   char trigger[30]; /**< Trigger, e.g. AUTOMATIC or MANUAL, zero length = not included */
 } MSEHRecenter;
+
+
+/**
+ * @brief Internal structure for holding parsed JSON extra headers.
+ * @see mseh_get_path_r()
+ * @see mseh_set_path_r()
+ */
+typedef struct LM_PARSED_JSON LM_PARSED_JSON;
 
 /** @def mseh_get
     @brief A simple wrapper to access any type of extra header */
 #define mseh_get(msr, path, valueptr, type, maxlength) \
-  mseh_get_path (msr, path, valueptr, type, maxlength)
+  mseh_get_path_r (msr, path, valueptr, type, maxlength, NULL)
 
 /** @def mseh_get_number
     @brief A simple wrapper to access a number type extra header */
 #define mseh_get_number(msr, path, valueptr)    \
-  mseh_get_path (msr, path, valueptr, 'n', 0)
+  mseh_get_path_r (msr, path, valueptr, 'n', 0, NULL)
+
+/** @def mseh_get_int64
+    @brief A simple wrapper to access a number type extra header */
+#define mseh_get_int64(msr, path, valueptr)    \
+  mseh_get_path_r (msr, path, valueptr, 'i', 0, NULL)
 
 /** @def mseh_get_string
     @brief A simple wrapper to access a string type extra header */
 #define mseh_get_string(msr, path, buffer, maxlength)   \
-  mseh_get_path (msr, path, buffer, 's', maxlength)
+  mseh_get_path_r (msr, path, buffer, 's', maxlength, NULL)
 
 /** @def mseh_get_boolean
     @brief A simple wrapper to access a boolean type extra header */
 #define mseh_get_boolean(msr, path, valueptr)   \
-  mseh_get_path (msr, path, valueptr, 'b', 0)
+  mseh_get_path_r (msr, path, valueptr, 'b', 0, NULL)
 
 /** @def mseh_exists
     @brief A simple wrapper to test existence of an extra header */
 #define mseh_exists(msr, path)                  \
-  (!mseh_get_path (msr, path, NULL, 0, 0))
+  (!mseh_get_path_r (msr, path, NULL, 0, 0, NULL))
 
-extern int mseh_get_path (MS3Record *msr, const char *path,
-                          void *value, char type, size_t maxlength);
+extern int mseh_get_path_r (MS3Record *msr, const char *path,
+                            void *value, char type, size_t maxlength,
+                            LM_PARSED_JSON **parsestate);
 
 /** @def mseh_set
     @brief A simple wrapper to set any type of extra header */
 #define mseh_set(msr, path, valueptr, type) \
-  mseh_set_path (msr, path, valueptr, type)
+  mseh_set_path_r (msr, path, valueptr, type, NULL)
 
 /** @def mseh_set_number
     @brief A simple wrapper to set a number type extra header */
 #define mseh_set_number(msr, path, valueptr) \
-  mseh_set_path (msr, path, valueptr, 'n')
+  mseh_set_path_r (msr, path, valueptr, 'n', NULL)
+
+/** @def mseh_set_int64
+    @brief A simple wrapper to set a number type extra header */
+#define mseh_set_int64(msr, path, valueptr) \
+  mseh_set_path_r (msr, path, valueptr, 'i', NULL)
 
 /** @def mseh_set_string
     @brief A simple wrapper to set a string type extra header */
 #define mseh_set_string(msr, path, valueptr) \
-  mseh_set_path (msr, path, valueptr, 's')
+  mseh_set_path_r (msr, path, valueptr, 's', NULL)
 
 /** @def mseh_set_boolean
     @brief A simple wrapper to set a boolean type extra header */
 #define mseh_set_boolean(msr, path, valueptr)   \
-  mseh_set_path (msr, path, valueptr, 'b')
+  mseh_set_path_r (msr, path, valueptr, 'b', NULL)
 
-extern int mseh_set_path (MS3Record *msr, const char *path,
-                          void *value, char type);
+extern int mseh_set_path_r (MS3Record *msr, const char *path,
+                            void *value, char type,
+                            LM_PARSED_JSON **parsestate);
 
-extern int mseh_add_event_detection (MS3Record *msr, const char *path,
-                                     MSEHEventDetection *eventdetection);
+#define mseh_add_event_detection(msr, path, eventdetection) \
+  mseh_add_event_detection_r (msr, path, eventdetection, NULL)
 
-extern int mseh_add_calibration (MS3Record *msr, const char *path,
-                                 MSEHCalibration *calibration);
+extern int mseh_add_event_detection_r (MS3Record *msr, const char *path,
+                                       MSEHEventDetection *eventdetection,
+                                       LM_PARSED_JSON **parsestate);
 
-extern int mseh_add_timing_exception (MS3Record *msr, const char *path,
-                                      MSEHTimingException *exception);
+#define mseh_add_calibration(msr, path, calibration) \
+  mseh_add_calibration_r (msr, path, calibration, NULL)
 
-extern int mseh_add_recenter (MS3Record *msr, const char *path,
-                              MSEHRecenter *recenter);
+extern int mseh_add_calibration_r (MS3Record *msr, const char *path,
+                                   MSEHCalibration *calibration,
+                                   LM_PARSED_JSON **parsestate);
+
+#define mseh_add_timing_exception(msr, path, exception) \
+  mseh_add_timing_exception_r (msr, path, exception, NULL)
+
+extern int mseh_add_timing_exception_r (MS3Record *msr, const char *path,
+                                        MSEHTimingException *exception,
+                                        LM_PARSED_JSON **parsestate);
+
+#define mseh_add_recenter(msr, path, recenter) \
+  mseh_add_recenter_r (msr, path, recenter, NULL)
+
+extern int mseh_add_recenter_r (MS3Record *msr, const char *path,
+                                MSEHRecenter *recenter,
+                                LM_PARSED_JSON **parsestate);
+
+extern int mseh_serialize (MS3Record *msr, LM_PARSED_JSON **parsestate);
+extern void mseh_free_parsestate (LM_PARSED_JSON **parsestate);
 
 extern int mseh_print (MS3Record *msr, int indent);
 /** @} */

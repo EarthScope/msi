@@ -42,7 +42,7 @@ static int8_t basicsum = 0; /* Controls printing of basic summary */
 static int8_t tracegapsum = 0; /* Controls printing of trace or gap list */
 static int8_t tracegaponly = 0; /* Controls printing of trace or gap list only */
 static int8_t tracegaps = 0; /* Controls printing of gaps with a trace list */
-static ms_timeformat_t timeformat = SEEDORDINAL; /* Time string format for trace or gap lists */
+static ms_timeformat_t timeformat = ISOMONTHDAY_Z; /* Time string format for trace or gap lists */
 static int8_t splitversion = 0; /* Control grouping of data publication versions */
 static int8_t skipnotdata = 1; /* Controls skipping of non-miniSEED data */
 static double mingap = 0; /* Minimum gap/overlap seconds when printing gap list */
@@ -371,7 +371,7 @@ main (int argc, char **argv)
   {
     if (tracegapsum == 1 || tracegaponly == 1)
     {
-      mstl3_printtracelist (mstl, timeformat, 1, tracegaps);
+      mstl3_printtracelist (mstl, timeformat, 1, tracegaps, 0);
     }
     if (tracegapsum == 2 || tracegaponly == 2)
     {
