@@ -66,7 +66,6 @@ double samprate_callback (MS3Record *msr) { return sampratetol; }
 struct filelink
 {
   char *filename;
-  uint64_t offset;
   struct filelink *next;
 };
 
@@ -79,6 +78,7 @@ main (int argc, char **argv)
   struct filelink *flp;
   MS3Record *msr = 0;
   MS3TraceList *mstl = 0;
+  MS3FileParam *msfp = NULL;
   FILE *bfp = 0;
   FILE *ofp = 0;
   int retcode = MS_NOERROR;
@@ -88,7 +88,6 @@ main (int argc, char **argv)
   int64_t totalrecs = 0;
   int64_t totalsamps = 0;
   int64_t totalfiles = 0;
-  int64_t filepos = 0;
 
   char stime[30];
 
@@ -149,21 +148,12 @@ main (int argc, char **argv)
   while (flp != 0)
   {
     if (verbose >= 2)
-    {
-      if (flp->offset)
-        ms_log (1, "Processing: %s (starting at byte %" PRId64 ")\n", flp->filename, flp->offset);
-      else
-        ms_log (1, "Processing: %s\n", flp->filename);
-    }
-
-    /* Set starting byte offset if supplied as negative file position */
-    filepos = -flp->offset;
+      ms_log (1, "Processing: %s\n", flp->filename);
 
     /* Loop over the input file */
     while (reccntdown != 0)
     {
-      if ((retcode = ms3_readmsr (&msr, flp->filename, &filepos, NULL,
-                                  flags, verbose)) != MS_NOERROR)
+      if ((retcode = ms3_readmsr_r (&msfp, &msr, flp->filename, flags, verbose)) != MS_NOERROR)
         break;
 
       /* Check if record matches start/end time criteria */
@@ -232,7 +222,7 @@ main (int argc, char **argv)
       if (!tracegaponly)
       {
         if (printoffset)
-          ms_log (0, "%-10" PRId64, filepos);
+          ms_log (0, "%-10" PRId64, (msfp->streampos - msr->reclen));
 
         if (printlatency)
           ms_log (0, "%-10.6g secs ", msr3_host_latency (msr));
@@ -346,12 +336,12 @@ main (int argc, char **argv)
     /* Print error if not EOF and not counting down records */
     if (retcode != MS_ENDOFFILE && reccntdown != 0)
     {
-      ms3_readmsr (&msr, NULL, NULL, NULL, 0, 0);
+      ms3_readmsr_r (&msfp, &msr, NULL, 0, 0);
       exit (1);
     }
 
     /* Make sure everything is cleaned up */
-    ms3_readmsr (&msr, NULL, NULL, NULL, 0, 0);
+    ms3_readmsr_r (&msfp, &msr, NULL, 0, 0);
 
     totalfiles++;
     flp = flp->next;
