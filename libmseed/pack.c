@@ -71,7 +71,7 @@ static uint32_t ms_timestr2btime (const char *timestr, uint8_t *btime, char *sid
  *
  * The following data encodings and expected @ref MS3Record.sampletype
  * are supported:
- *   - ::DE_ASCII (0), text (ASCII), expects type \c 'a'
+ *   - ::DE_TEXT (0), Text, expects type \c 't'
  *   - ::DE_INT16 (1), 16-bit integer, expects type \c 'i'
  *   - ::DE_INT32 (3), 32-bit integer, expects type \c 'i'
  *   - ::DE_FLOAT32 (4), 32-bit float (IEEE), expects type \c 'f'
@@ -229,8 +229,8 @@ msr3_pack_mseed3 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   /* Short cut: if there are no samples, record packing is complete */
   if (msr->numsamples <= 0)
   {
-    /* Set encoding to ASCII for consistency and to reduce expectations */
-    *pMS3FSDH_ENCODING(rawrec) = DE_ASCII;
+    /* Set encoding to text for consistency and to reduce expectations */
+    *pMS3FSDH_ENCODING(rawrec) = DE_TEXT;
 
     /* Calculate CRC (with CRC field set to 0) and set */
     memset (pMS3FSDH_CRC(rawrec), 0, sizeof(uint32_t));
@@ -594,6 +594,7 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   int8_t swapflag;
   int dataoffset = 0;
   int headerlen;
+  int content;
 
   int samplesize;
   int maxdatabytes;
@@ -661,8 +662,8 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
   /* Short cut: if there are no samples, record packing is complete */
   if (msr->numsamples <= 0)
   {
-    /* Set encoding to ASCII for consistency and to reduce expectations */
-    *pMS2B1000_ENCODING (rawrec + 48) = DE_ASCII;
+    /* Set encoding to text for consistency and to reduce expectations */
+    *pMS2B1000_ENCODING (rawrec + 48) = DE_TEXT;
 
     /* Set empty part of record to zeros */
     memset (rawrec + headerlen, 0, msr->reclen - headerlen);
@@ -765,6 +766,11 @@ msr3_pack_mseed2 (MS3Record *msr, void (*record_handler) (char *, int, void *),
 
     /* Update number of samples */
     *pMS2FSDH_NUMSAMPLES(rawrec) = HO2u (packsamples, swapflag);
+
+    /* Zero any space between encoded data and end of record */
+    content = dataoffset + datalength;
+    if (content < msr->reclen)
+      memset (rawrec + content, 0, msr->reclen - content);
 
     if (verbose >= 1)
       ms_log (0, "%s: Packed %d samples into %d byte record\n", msr->sid, packsamples, msr->reclen);
@@ -961,7 +967,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   /* Build fixed header */
   memcpy (pMS2FSDH_SEQNUM (record), "000000", 6);
 
-  if (yyjson_get_str_pointer (ehroot, "/FDSN/DataQuality", &header_string) &&
+  if (yyjson_ptr_get_str (ehroot, "/FDSN/DataQuality", &header_string) &&
       MS2_ISDATAINDICATOR (header_string[0]))
     *pMS2FSDH_DATAQUALITY (record) = header_string[0];
   else
@@ -990,12 +996,12 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   if (msr->flags & 0x01) /* Bit 0 */
     *pMS2FSDH_ACTFLAGS (record) |= 0x01;
 
-  if (yyjson_get_bool_pointer (ehroot, "/FDSN/Event/Begin", &header_boolean) && header_boolean) /* Bit 2 */
+  if (yyjson_ptr_get_bool (ehroot, "/FDSN/Event/Begin", &header_boolean) && header_boolean) /* Bit 2 */
     *pMS2FSDH_ACTFLAGS (record) |= 0x04;
-  if (yyjson_get_bool_pointer (ehroot, "/FDSN/Event/End", &header_boolean) && header_boolean) /* Bit 3 */
+  if (yyjson_ptr_get_bool (ehroot, "/FDSN/Event/End", &header_boolean) && header_boolean) /* Bit 3 */
     *pMS2FSDH_ACTFLAGS (record) |= 0x08;
 
-  if (yyjson_get_num_pointer (ehroot, "/FDSN/Time/LeapSecond", &header_number))
+  if (yyjson_ptr_get_num (ehroot, "/FDSN/Time/LeapSecond", &header_number))
   {
     if (header_number > 0) /* Bit 4 */
       *pMS2FSDH_ACTFLAGS (record) |= 0x10;
@@ -1003,44 +1009,44 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
       *pMS2FSDH_ACTFLAGS (record) |= 0x20;
   }
 
-  if (yyjson_get_bool_pointer (ehroot, "/FDSN/Event/InProgress", &header_boolean) && header_boolean) /* Bit 6 */
+  if (yyjson_ptr_get_bool (ehroot, "/FDSN/Event/InProgress", &header_boolean) && header_boolean) /* Bit 6 */
     *pMS2FSDH_ACTFLAGS (record) |= 0x40;
 
   /* Map I/O and clock bit flags */
   *pMS2FSDH_IOFLAGS (record) = 0;
-  if (yyjson_get_bool_pointer (ehroot, "/FDSN/Flags/StationVolumeParityError", &header_boolean) && header_boolean) /* Bit 0 */
+  if (yyjson_ptr_get_bool (ehroot, "/FDSN/Flags/StationVolumeParityError", &header_boolean) && header_boolean) /* Bit 0 */
     *pMS2FSDH_IOFLAGS (record) |= 0x01;
-  if (yyjson_get_bool_pointer (ehroot, "/FDSN/Flags/LongRecordRead", &header_boolean) && header_boolean) /* Bit 1 */
+  if (yyjson_ptr_get_bool (ehroot, "/FDSN/Flags/LongRecordRead", &header_boolean) && header_boolean) /* Bit 1 */
     *pMS2FSDH_IOFLAGS (record) |= 0x02;
-  if (yyjson_get_bool_pointer (ehroot, "/FDSN/Flags/ShortRecordRead", &header_boolean) && header_boolean) /* Bit 2 */
+  if (yyjson_ptr_get_bool (ehroot, "/FDSN/Flags/ShortRecordRead", &header_boolean) && header_boolean) /* Bit 2 */
     *pMS2FSDH_IOFLAGS (record) |= 0x04;
-  if (yyjson_get_bool_pointer (ehroot, "/FDSN/Flags/StartOfTimeSeries", &header_boolean) && header_boolean) /* Bit 3 */
+  if (yyjson_ptr_get_bool (ehroot, "/FDSN/Flags/StartOfTimeSeries", &header_boolean) && header_boolean) /* Bit 3 */
     *pMS2FSDH_IOFLAGS (record) |= 0x08;
-  if (yyjson_get_bool_pointer (ehroot, "/FDSN/Flags/EndOfTimeSeries", &header_boolean) && header_boolean) /* Bit 4 */
+  if (yyjson_ptr_get_bool (ehroot, "/FDSN/Flags/EndOfTimeSeries", &header_boolean) && header_boolean) /* Bit 4 */
     *pMS2FSDH_IOFLAGS (record) |= 0x10;
   if (msr->flags & 0x04) /* Bit 5 */
     *pMS2FSDH_IOFLAGS (record) |= 0x20;
 
   /* Map data quality bit flags */
   *pMS2FSDH_DQFLAGS (record) = 0;
-  if (yyjson_get_bool_pointer (ehroot, "/FDSN/Flags/AmplifierSaturation", &header_boolean) && header_boolean) /* Bit 0 */
+  if (yyjson_ptr_get_bool (ehroot, "/FDSN/Flags/AmplifierSaturation", &header_boolean) && header_boolean) /* Bit 0 */
     *pMS2FSDH_DQFLAGS (record) |= 0x01;
-  if (yyjson_get_bool_pointer (ehroot, "/FDSN/Flags/DigitizerClipping", &header_boolean) && header_boolean) /* Bit 1 */
+  if (yyjson_ptr_get_bool (ehroot, "/FDSN/Flags/DigitizerClipping", &header_boolean) && header_boolean) /* Bit 1 */
     *pMS2FSDH_DQFLAGS (record) |= 0x02;
-  if (yyjson_get_bool_pointer (ehroot, "/FDSN/Flags/Spikes", &header_boolean) && header_boolean) /* Bit 2 */
+  if (yyjson_ptr_get_bool (ehroot, "/FDSN/Flags/Spikes", &header_boolean) && header_boolean) /* Bit 2 */
     *pMS2FSDH_DQFLAGS (record) |= 0x04;
-  if (yyjson_get_bool_pointer (ehroot, "/FDSN/Flags/Glitches", &header_boolean) && header_boolean) /* Bit 3 */
+  if (yyjson_ptr_get_bool (ehroot, "/FDSN/Flags/Glitches", &header_boolean) && header_boolean) /* Bit 3 */
     *pMS2FSDH_DQFLAGS (record) |= 0x08;
-  if (yyjson_get_bool_pointer (ehroot, "/FDSN/Flags/MissingData", &header_boolean) && header_boolean) /* Bit 4 */
+  if (yyjson_ptr_get_bool (ehroot, "/FDSN/Flags/MissingData", &header_boolean) && header_boolean) /* Bit 4 */
     *pMS2FSDH_DQFLAGS (record) |= 0x10;
-  if (yyjson_get_bool_pointer (ehroot, "/FDSN/Flags/TelemetrySyncError", &header_boolean) && header_boolean) /* Bit 5 */
+  if (yyjson_ptr_get_bool (ehroot, "/FDSN/Flags/TelemetrySyncError", &header_boolean) && header_boolean) /* Bit 5 */
     *pMS2FSDH_DQFLAGS (record) |= 0x20;
-  if (yyjson_get_bool_pointer (ehroot, "/FDSN/Flags/FilterCharging", &header_boolean) && header_boolean) /* Bit 6 */
+  if (yyjson_ptr_get_bool (ehroot, "/FDSN/Flags/FilterCharging", &header_boolean) && header_boolean) /* Bit 6 */
     *pMS2FSDH_DQFLAGS (record) |= 0x40;
   if (msr->flags & 0x02) /* Bit 7 */
     *pMS2FSDH_DQFLAGS (record) |= 0x80;
 
-  if (yyjson_get_num_pointer (ehroot, "/FDSN/Time/Correction", &header_number))
+  if (yyjson_ptr_get_num (ehroot, "/FDSN/Time/Correction", &header_number))
   {
     *pMS2FSDH_TIMECORRECT (record) = HO4d (header_number * 10000, swapflag);
 
@@ -1073,7 +1079,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   written += 8;
 
   /* Add Blockette 1001 if microsecond offset or timing quality is present */
-  if (yyjson_get_num_pointer (ehroot, "/FDSN/Time/Quality", &header_number) || msec_offset)
+  if (yyjson_ptr_get_num (ehroot, "/FDSN/Time/Quality", &header_number) || msec_offset)
   {
     *next_blockette = HO2u ((uint16_t)written, swapflag);
     next_blockette = pMS2B1001_NEXT (record + written);
@@ -1082,7 +1088,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
     *pMS2B1001_TYPE (record + written) = HO2u (1001, swapflag);
     *pMS2B1001_NEXT (record + written) = 0;
 
-    if (yyjson_get_num_pointer (ehroot, "/FDSN/Time/Quality", &header_number))
+    if (yyjson_ptr_get_num (ehroot, "/FDSN/Time/Quality", &header_number))
       *pMS2B1001_TIMINGQUALITY (record + written) = (uint8_t) (header_number + 0.5);
     else
       *pMS2B1001_TIMINGQUALITY (record + written) = 0;
@@ -1111,7 +1117,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   }
 
   /* Add Blockette 500 for timing execeptions */
-  if ((eharr = yyjson_get_pointer (ehroot, "/FDSN/Time/Exception")) && yyjson_is_arr (eharr))
+  if ((eharr = yyjson_ptr_get (ehroot, "/FDSN/Time/Exception")) && yyjson_is_arr (eharr))
   {
     yyjson_arr_iter_init (eharr, &ehiter);
 
@@ -1137,10 +1143,10 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
       *pMS2B500_TYPE (record + written) = HO2u (500, swapflag);
       *pMS2B500_NEXT (record + written) = 0;
 
-      if ((ehval = yyjson_get_pointer (ehiterval, "/VCOCorrection")) && yyjson_is_num (ehval))
+      if ((ehval = yyjson_ptr_get (ehiterval, "/VCOCorrection")) && yyjson_is_num (ehval))
         *pMS2B500_VCOCORRECTION (record + written) = HO4f (yyjson_get_num (ehval), swapflag);
 
-      if ((ehval = yyjson_get_pointer (ehiterval, "/Time")) && yyjson_is_str (ehval))
+      if ((ehval = yyjson_ptr_get (ehiterval, "/Time")) && yyjson_is_str (ehval))
       {
         if (ms_timestr2btime (yyjson_get_str (ehval), (uint8_t *)pMS2B500_YEAR (record + written),
                               msr->sid, swapflag) == -1)
@@ -1153,19 +1159,19 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
 
       *pMS2B500_MICROSECOND (record + written) = msec_offset;
 
-      if ((ehval = yyjson_get_pointer (ehiterval, "/ReceptionQuality")) && yyjson_is_num (ehval))
+      if ((ehval = yyjson_ptr_get (ehiterval, "/ReceptionQuality")) && yyjson_is_num (ehval))
         *pMS2B500_RECEPTIONQUALITY (record + written) = (uint8_t)yyjson_get_num (ehval);
 
-      if ((ehval = yyjson_get_pointer (ehiterval, "/Count")) && yyjson_is_num (ehval))
+      if ((ehval = yyjson_ptr_get (ehiterval, "/Count")) && yyjson_is_num (ehval))
         *pMS2B500_EXCEPTIONCOUNT (record + written) = HO4d (yyjson_get_num (ehval), swapflag);
 
-      if ((ehval = yyjson_get_pointer (ehiterval, "/Type")) && yyjson_is_str (ehval))
+      if ((ehval = yyjson_ptr_get (ehiterval, "/Type")) && yyjson_is_str (ehval))
         ms_strncpopen (pMS2B500_EXCEPTIONTYPE (record + written), yyjson_get_str (ehval), 16);
 
-      if ((ehval = yyjson_get_pointer (ehiterval, "/FDSN/Clock/Model")) && yyjson_is_str (ehval))
+      if ((ehval = yyjson_ptr_get (ehiterval, "/FDSN/Clock/Model")) && yyjson_is_str (ehval))
         ms_strncpopen (pMS2B500_CLOCKMODEL (record + written), yyjson_get_str (ehval), 32);
 
-      if ((ehval = yyjson_get_pointer (ehiterval, "/ClockStatus")) && yyjson_is_str (ehval))
+      if ((ehval = yyjson_ptr_get (ehiterval, "/ClockStatus")) && yyjson_is_str (ehval))
         ms_strncpopen (pMS2B500_CLOCKSTATUS (record + written), yyjson_get_str (ehval), 128);
 
       written += blockette_length;
@@ -1173,7 +1179,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
   } /* End if /FDSN/Time/Exception */
 
   /* Add Blockette 200,201 for event detections */
-  if ((eharr = yyjson_get_pointer (ehroot, "/FDSN/Event/Detection")) && yyjson_is_arr (eharr))
+  if ((eharr = yyjson_ptr_get (ehroot, "/FDSN/Event/Detection")) && yyjson_is_arr (eharr))
   {
     yyjson_arr_iter_init (eharr, &ehiter);
 
@@ -1183,7 +1189,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
         continue;
 
       /* Determine which detection type: MURDOCK versus the generic type */
-      if ((ehval = yyjson_get_pointer (ehiterval, "/Type")) && yyjson_is_str (ehval) &&
+      if ((ehval = yyjson_ptr_get (ehiterval, "/Type")) && yyjson_is_str (ehval) &&
           strncasecmp (yyjson_get_str (ehval), "MURDOCK", 6) == 0)
       {
         blockette_type = 201;
@@ -1211,17 +1217,17 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
       *pMS2B200_TYPE (record + written) = HO2u (blockette_type, swapflag);
       *pMS2B200_NEXT (record + written) = 0;
 
-      if ((ehval = yyjson_get_pointer (ehiterval, "/SignalAmplitude")) && yyjson_is_num (ehval))
+      if ((ehval = yyjson_ptr_get (ehiterval, "/SignalAmplitude")) && yyjson_is_num (ehval))
         *pMS2B200_AMPLITUDE (record + written) = HO4f (yyjson_get_num (ehval), swapflag);
 
-      if ((ehval = yyjson_get_pointer (ehiterval, "/SignalPeriod")) && yyjson_is_num (ehval))
+      if ((ehval = yyjson_ptr_get (ehiterval, "/SignalPeriod")) && yyjson_is_num (ehval))
         *pMS2B200_PERIOD (record + written) = HO4f (yyjson_get_num (ehval), swapflag);
 
-      if ((ehval = yyjson_get_pointer (ehiterval, "/BackgroundEstimate")) && yyjson_is_num (ehval))
+      if ((ehval = yyjson_ptr_get (ehiterval, "/BackgroundEstimate")) && yyjson_is_num (ehval))
         *pMS2B200_BACKGROUNDEST (record + written) = HO4f (yyjson_get_num (ehval), swapflag);
 
       /* Determine which wave: DILATATION versus (assumed) COMPRESSION */
-      if ((ehval = yyjson_get_pointer (ehiterval, "/Wave")))
+      if ((ehval = yyjson_ptr_get (ehiterval, "/Wave")))
       {
         if (yyjson_is_str (ehval) && strncasecmp (yyjson_get_str (ehval), "DILATATION", 10) == 0)
           *pMS2B200_FLAGS (record + written) |= 0x01;
@@ -1232,11 +1238,11 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
       }
 
       if (blockette_type == 200 &&
-          (ehval = yyjson_get_pointer (ehiterval, "/Units")) && yyjson_is_str (ehval) &&
+          (ehval = yyjson_ptr_get (ehiterval, "/Units")) && yyjson_is_str (ehval) &&
           strncasecmp (yyjson_get_str (ehval), "COUNT", 5) != 0)
         *pMS2B200_FLAGS (record + written) |= 0x02;
 
-      if ((ehval = yyjson_get_pointer (ehiterval, "/OnsetTime")) && yyjson_is_str (ehval))
+      if ((ehval = yyjson_ptr_get (ehiterval, "/OnsetTime")) && yyjson_is_str (ehval))
       {
         if (ms_timestr2btime (yyjson_get_str (ehval), (uint8_t *)pMS2B200_YEAR (record + written),
                               msr->sid, swapflag) == -1)
@@ -1249,7 +1255,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
 
       if (blockette_type == 200)
       {
-        if ((ehval = yyjson_get_pointer (ehiterval, "/Detector")) && yyjson_is_str (ehval))
+        if ((ehval = yyjson_ptr_get (ehiterval, "/Detector")) && yyjson_is_str (ehval))
           ms_strncpopen (pMS2B200_DETECTOR (record + written), yyjson_get_str (ehval), 24);
       }
       else /* Blockette 201 */
@@ -1259,7 +1265,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
         yyjson_val *ehsubiterval;
         int idx = 0;
 
-        if ((ehsubarr = yyjson_get_pointer (ehiterval, "/MEDSNR")) && yyjson_is_arr (ehval))
+        if ((ehsubarr = yyjson_ptr_get (ehiterval, "/MEDSNR")) && yyjson_is_arr (ehval))
         {
           yyjson_arr_iter_init (ehsubarr, &ehsubiter);
 
@@ -1272,13 +1278,13 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
           }
         }
 
-        if ((ehval = yyjson_get_pointer (ehiterval, "/MEDLookback")) && yyjson_is_num (ehval))
+        if ((ehval = yyjson_ptr_get (ehiterval, "/MEDLookback")) && yyjson_is_num (ehval))
           *pMS2B201_LOOPBACK (record + written) = (uint8_t)yyjson_get_num (ehval);
 
-        if ((ehval = yyjson_get_pointer (ehiterval, "/MEDPickAlgorithm")) && yyjson_is_num (ehval))
+        if ((ehval = yyjson_ptr_get (ehiterval, "/MEDPickAlgorithm")) && yyjson_is_num (ehval))
           *pMS2B201_PICKALGORITHM (record + written) = (uint8_t)yyjson_get_num (ehval);
 
-        if ((ehval = yyjson_get_pointer (ehiterval, "/Detector")) && yyjson_is_str (ehval))
+        if ((ehval = yyjson_ptr_get (ehiterval, "/Detector")) && yyjson_is_str (ehval))
           ms_strncpopen (pMS2B201_DETECTOR (record + written), yyjson_get_str (ehval), 24);
       }
 
@@ -1288,7 +1294,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
 
   /* Add Blockette B300, 310, 320, 390, 395 for calibrations */
 
-  if ((eharr = yyjson_get_pointer (ehroot, "/FDSN/Calibration/Sequence")) && yyjson_is_arr (eharr))
+  if ((eharr = yyjson_ptr_get (ehroot, "/FDSN/Calibration/Sequence")) && yyjson_is_arr (eharr))
   {
     yyjson_arr_iter_init (eharr, &ehiter);
 
@@ -1300,7 +1306,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
       /* Determine which calibration type: STEP, SINE, PSEUDORANDOM, GENERIC */
       blockette_type   = 0;
       blockette_length = 0;
-      if ((ehval = yyjson_get_pointer (ehiterval, "/Type")) && yyjson_is_str (ehval))
+      if ((ehval = yyjson_ptr_get (ehiterval, "/Type")) && yyjson_is_str (ehval))
       {
         if (strncasecmp (yyjson_get_str (ehval), "STEP", 4) == 0)
         {
@@ -1323,7 +1329,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
           blockette_length = 28;
         }
       }
-      else if ((ehval = yyjson_get_pointer (ehiterval, "/EndTime")))
+      else if ((ehval = yyjson_ptr_get (ehiterval, "/EndTime")))
       {
         blockette_type = 395;
         blockette_length = 16;
@@ -1355,7 +1361,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
         *pMS2B300_TYPE (record + written) = HO2u (blockette_type, swapflag);
         *pMS2B300_NEXT (record + written) = 0;
 
-        if ((ehval = yyjson_get_pointer (ehiterval, "/BeginTime")) && yyjson_is_str (ehval))
+        if ((ehval = yyjson_ptr_get (ehiterval, "/BeginTime")) && yyjson_is_str (ehval))
         {
           if (ms_timestr2btime (yyjson_get_str (ehval), (uint8_t *)pMS2B300_YEAR (record + written),
                                 msr->sid, swapflag) == -1)
@@ -1368,53 +1374,53 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
 
         if (blockette_type == 300)
         {
-          if ((ehval = yyjson_get_pointer (ehiterval, "/Steps")) && yyjson_is_num (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/Steps")) && yyjson_is_num (ehval))
             *pMS2B300_NUMCALIBRATIONS (record + written) = (uint8_t)yyjson_get_num (ehval);
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/StepFirstPulsePositive")) && yyjson_get_bool (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/StepFirstPulsePositive")) && yyjson_get_bool (ehval))
             *pMS2B300_FLAGS (record + written) |= 0x01;
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/StepAlternateSign")) && yyjson_get_bool (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/StepAlternateSign")) && yyjson_get_bool (ehval))
             *pMS2B300_FLAGS (record + written) |= 0x02;
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/Trigger")) && yyjson_is_str (ehval) &&
+          if ((ehval = yyjson_ptr_get (ehiterval, "/Trigger")) && yyjson_is_str (ehval) &&
               strncasecmp (yyjson_get_str (ehval), "AUTOMATIC", 9) == 0)
             *pMS2B300_FLAGS (record + written) |= 0x04;
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/Continued")) && yyjson_get_bool (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/Continued")) && yyjson_get_bool (ehval))
             *pMS2B300_FLAGS (record + written) |= 0x08;
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/Duration")) && yyjson_is_num (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/Duration")) && yyjson_is_num (ehval))
             *pMS2B300_STEPDURATION (record + written) = HO4u (yyjson_get_num (ehval) * 10000, swapflag);
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/StepBetween")) && yyjson_is_num (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/StepBetween")) && yyjson_is_num (ehval))
             *pMS2B300_INTERVALDURATION (record + written) = HO4u (yyjson_get_num (ehval) * 10000, swapflag);
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/Amplitude")) && yyjson_is_num (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/Amplitude")) && yyjson_is_num (ehval))
             *pMS2B300_AMPLITUDE (record + written) = HO4f (yyjson_get_num (ehval), swapflag);
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/InputChannel")) && yyjson_is_str (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/InputChannel")) && yyjson_is_str (ehval))
             ms_strncpopen (pMS2B300_INPUTCHANNEL (record + written), yyjson_get_str (ehval), 3);
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/ReferenceAmplitude")) && yyjson_is_num (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/ReferenceAmplitude")) && yyjson_is_num (ehval))
             *pMS2B300_REFERENCEAMPLITUDE (record + written) = HO4u (yyjson_get_num (ehval), swapflag);
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/Coupling")) && yyjson_is_str (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/Coupling")) && yyjson_is_str (ehval))
             ms_strncpopen (pMS2B300_COUPLING (record + written), yyjson_get_str (ehval), 12);
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/Rolloff")) && yyjson_is_str (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/Rolloff")) && yyjson_is_str (ehval))
             ms_strncpopen (pMS2B300_ROLLOFF (record + written), yyjson_get_str (ehval), 12);
         }
         else if (blockette_type == 310)
         {
-          if ((ehval = yyjson_get_pointer (ehiterval, "/Trigger")) && yyjson_is_str (ehval) &&
+          if ((ehval = yyjson_ptr_get (ehiterval, "/Trigger")) && yyjson_is_str (ehval) &&
               strncasecmp (yyjson_get_str (ehval), "AUTOMATIC", 9) == 0)
             *pMS2B310_FLAGS (record + written) |= 0x04;
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/Continued")) && yyjson_get_bool (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/Continued")) && yyjson_get_bool (ehval))
             *pMS2B310_FLAGS (record + written) |= 0x08;
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/AmplitudeRange")) && yyjson_is_str (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/AmplitudeRange")) && yyjson_is_str (ehval))
           {
             if (strncasecmp (yyjson_get_str (ehval), "PEAKTOPEAK", 10) == 0)
               *pMS2B310_FLAGS (record + written) |= 0x10;
@@ -1424,77 +1430,77 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
               *pMS2B310_FLAGS (record + written) |= 0x40;
           }
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/Duration")) && yyjson_is_num (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/Duration")) && yyjson_is_num (ehval))
             *pMS2B310_DURATION (record + written) = HO4u (yyjson_get_num (ehval) * 10000, swapflag);
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/SinePeriod")) && yyjson_is_num (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/SinePeriod")) && yyjson_is_num (ehval))
             *pMS2B310_PERIOD (record + written) = HO4f (yyjson_get_num (ehval), swapflag);
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/Amplitude")) && yyjson_is_num (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/Amplitude")) && yyjson_is_num (ehval))
             *pMS2B310_AMPLITUDE (record + written) = HO4f (yyjson_get_num (ehval), swapflag);
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/InputChannel")) && yyjson_is_str (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/InputChannel")) && yyjson_is_str (ehval))
             ms_strncpopen (pMS2B310_INPUTCHANNEL (record + written), yyjson_get_str (ehval), 3);
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/ReferenceAmplitude")) && yyjson_is_num (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/ReferenceAmplitude")) && yyjson_is_num (ehval))
             *pMS2B310_REFERENCEAMPLITUDE (record + written) = HO4u (yyjson_get_num (ehval), swapflag);
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/Coupling")) && yyjson_is_str (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/Coupling")) && yyjson_is_str (ehval))
             ms_strncpopen (pMS2B320_COUPLING (record + written), yyjson_get_str (ehval), 12);
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/Rolloff")) && yyjson_is_str (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/Rolloff")) && yyjson_is_str (ehval))
             ms_strncpopen (pMS2B320_ROLLOFF (record + written), yyjson_get_str (ehval), 12);
         }
         else if (blockette_type == 320)
         {
-          if ((ehval = yyjson_get_pointer (ehiterval, "/Trigger")) && yyjson_is_str (ehval) &&
+          if ((ehval = yyjson_ptr_get (ehiterval, "/Trigger")) && yyjson_is_str (ehval) &&
               strncasecmp (yyjson_get_str (ehval), "AUTOMATIC", 9) == 0)
             *pMS2B320_FLAGS (record + written) |= 0x04;
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/Continued")) && yyjson_get_bool (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/Continued")) && yyjson_get_bool (ehval))
             *pMS2B320_FLAGS (record + written) |= 0x08;
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/AmplitudeRange")) && yyjson_is_str (ehval) &&
+          if ((ehval = yyjson_ptr_get (ehiterval, "/AmplitudeRange")) && yyjson_is_str (ehval) &&
               strncasecmp (yyjson_get_str (ehval), "RANDOM", 6) == 0)
             *pMS2B320_FLAGS (record + written) |= 0x10;
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/Duration")) && yyjson_is_num (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/Duration")) && yyjson_is_num (ehval))
             *pMS2B320_DURATION (record + written) = HO4u (yyjson_get_num (ehval) * 10000, swapflag);
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/Amplitude")) && yyjson_is_num (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/Amplitude")) && yyjson_is_num (ehval))
             *pMS2B320_PTPAMPLITUDE (record + written) = HO4f (yyjson_get_num (ehval), swapflag);
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/InputChannel")) && yyjson_is_str (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/InputChannel")) && yyjson_is_str (ehval))
             ms_strncpopen (pMS2B320_INPUTCHANNEL (record + written), yyjson_get_str (ehval), 3);
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/ReferenceAmplitude")) && yyjson_is_num (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/ReferenceAmplitude")) && yyjson_is_num (ehval))
             *pMS2B320_REFERENCEAMPLITUDE (record + written) = HO4u (yyjson_get_num (ehval), swapflag);
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/Coupling")) && yyjson_is_str (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/Coupling")) && yyjson_is_str (ehval))
             ms_strncpopen (pMS2B320_COUPLING (record + written), yyjson_get_str (ehval), 12);
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/Rolloff")) && yyjson_is_str (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/Rolloff")) && yyjson_is_str (ehval))
             ms_strncpopen (pMS2B320_ROLLOFF (record + written), yyjson_get_str (ehval), 12);
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/Noise")) && yyjson_is_str (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/Noise")) && yyjson_is_str (ehval))
             ms_strncpopen (pMS2B320_NOISETYPE (record + written), yyjson_get_str (ehval), 8);
         }
         else if (blockette_type == 390)
         {
-          if ((ehval = yyjson_get_pointer (ehiterval, "/Trigger")) && yyjson_is_str (ehval) &&
+          if ((ehval = yyjson_ptr_get (ehiterval, "/Trigger")) && yyjson_is_str (ehval) &&
               strncasecmp (yyjson_get_str (ehval), "AUTOMATIC", 9) == 0)
             *pMS2B390_FLAGS (record + written) |= 0x04;
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/Continued")) && yyjson_get_bool (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/Continued")) && yyjson_get_bool (ehval))
             *pMS2B390_FLAGS (record + written) |= 0x08;
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/Duration")) && yyjson_is_num (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/Duration")) && yyjson_is_num (ehval))
             *pMS2B390_DURATION (record + written) = HO4u (yyjson_get_num (ehval) * 10000, swapflag);
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/Amplitude")) && yyjson_is_num (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/Amplitude")) && yyjson_is_num (ehval))
             *pMS2B390_AMPLITUDE (record + written) = HO4f (yyjson_get_num (ehval), swapflag);
 
-          if ((ehval = yyjson_get_pointer (ehiterval, "/InputChannel")) && yyjson_is_str (ehval))
+          if ((ehval = yyjson_ptr_get (ehiterval, "/InputChannel")) && yyjson_is_str (ehval))
             ms_strncpopen (pMS2B390_INPUTCHANNEL (record + written), yyjson_get_str (ehval), 3);
         }
 
@@ -1502,7 +1508,7 @@ msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verb
       }
 
       /* Add Blockette 395 if EndTime is included */
-      if ((ehval = yyjson_get_pointer (ehiterval, "/EndTime")) && yyjson_is_str (ehval))
+      if ((ehval = yyjson_ptr_get (ehiterval, "/EndTime")) && yyjson_is_str (ehval))
       {
         blockette_type  = 395;
         blockette_length = 16;
@@ -1573,16 +1579,16 @@ msr_pack_data (void *dest, void *src, int maxsamples, int maxdatabytes,
   /* Decide if this is a format that we can encode */
   switch (encoding)
   {
-  case DE_ASCII:
-    if (sampletype != 'a')
+  case DE_TEXT:
+    if (sampletype != 't' && sampletype != 'a')
     {
-      ms_log (2, "%s: Sample type must be ascii (a) for ASCII text encoding not '%c'\n",
+      ms_log (2, "%s: Sample type must be text (t) for text encoding not '%c'\n",
               sid, sampletype);
       return -1;
     }
 
     if (verbose > 1)
-      ms_log (0, "%s: Packing ASCII data\n", sid);
+      ms_log (0, "%s: Packing text data\n", sid);
 
     nsamples = msr_encode_text ((char *)src, maxsamples, (char *)dest, maxdatabytes);
 

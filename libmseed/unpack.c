@@ -354,51 +354,51 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   if (*pMS2FSDH_ACTFLAGS (record) & 0x01) /* Bit 0 */
     msr->flags |= 0x01;
   if (*pMS2FSDH_ACTFLAGS (record) & 0x04) /* Bit 2 */
-    mseh_set_path_r (msr, "/FDSN/Event/Begin", &ione, 'b', &parsestate);
+    mseh_set_ptr_r (msr, "/FDSN/Event/Begin", &ione, 'b', &parsestate);
   if (*pMS2FSDH_ACTFLAGS (record) & 0x08) /* Bit 3 */
-    mseh_set_path_r (msr, "/FDSN/Event/End", &ione, 'b', &parsestate);
+    mseh_set_ptr_r (msr, "/FDSN/Event/End", &ione, 'b', &parsestate);
   if (*pMS2FSDH_ACTFLAGS (record) & 0x10) /* Bit 4 */
   {
     ival = 1;
-    mseh_set_path_r (msr, "/FDSN/Time/LeapSecond", &ival, 'i', &parsestate);
+    mseh_set_ptr_r (msr, "/FDSN/Time/LeapSecond", &ival, 'i', &parsestate);
   }
   if (*pMS2FSDH_ACTFLAGS (record) & 0x20) /* Bit 5 */
   {
     ival = -1;
-    mseh_set_path_r (msr, "/FDSN/Time/LeapSecond", &ival, 'i', &parsestate);
+    mseh_set_ptr_r (msr, "/FDSN/Time/LeapSecond", &ival, 'i', &parsestate);
   }
   if (*pMS2FSDH_ACTFLAGS (record) & 0x40) /* Bit 6 */
-    mseh_set_path_r (msr, "/FDSN/Event/InProgress", &ione, 'b', &parsestate);
+    mseh_set_ptr_r (msr, "/FDSN/Event/InProgress", &ione, 'b', &parsestate);
 
   /* Map I/O and clock flags */
   if (*pMS2FSDH_IOFLAGS (record) & 0x01) /* Bit 0 */
-    mseh_set_path_r (msr, "/FDSN/Flags/StationVolumeParityError", &ione, 'b', &parsestate);
+    mseh_set_ptr_r (msr, "/FDSN/Flags/StationVolumeParityError", &ione, 'b', &parsestate);
   if (*pMS2FSDH_IOFLAGS (record) & 0x02) /* Bit 1 */
-    mseh_set_path_r (msr, "/FDSN/Flags/LongRecordRead", &ione, 'b', &parsestate);
+    mseh_set_ptr_r (msr, "/FDSN/Flags/LongRecordRead", &ione, 'b', &parsestate);
   if (*pMS2FSDH_IOFLAGS (record) & 0x04) /* Bit 2 */
-    mseh_set_path_r (msr, "/FDSN/Flags/ShortRecordRead", &ione, 'b', &parsestate);
+    mseh_set_ptr_r (msr, "/FDSN/Flags/ShortRecordRead", &ione, 'b', &parsestate);
   if (*pMS2FSDH_IOFLAGS (record) & 0x08) /* Bit 3 */
-    mseh_set_path_r (msr, "/FDSN/Flags/StartOfTimeSeries", &ione, 'b', &parsestate);
+    mseh_set_ptr_r (msr, "/FDSN/Flags/StartOfTimeSeries", &ione, 'b', &parsestate);
   if (*pMS2FSDH_IOFLAGS (record) & 0x10) /* Bit 4 */
-    mseh_set_path_r (msr, "/FDSN/Flags/EndOfTimeSeries", &ione, 'b', &parsestate);
+    mseh_set_ptr_r (msr, "/FDSN/Flags/EndOfTimeSeries", &ione, 'b', &parsestate);
   if (*pMS2FSDH_IOFLAGS (record) & 0x20) /* Bit 5 */
     msr->flags |= 0x04;
 
   /* Map data quality flags */
   if (*pMS2FSDH_DQFLAGS (record) & 0x01) /* Bit 0 */
-    mseh_set_path_r (msr, "/FDSN/Flags/AmplifierSaturation", &ione, 'b', &parsestate);
+    mseh_set_ptr_r (msr, "/FDSN/Flags/AmplifierSaturation", &ione, 'b', &parsestate);
   if (*pMS2FSDH_DQFLAGS (record) & 0x02) /* Bit 1 */
-    mseh_set_path_r (msr, "/FDSN/Flags/DigitizerClipping", &ione, 'b', &parsestate);
+    mseh_set_ptr_r (msr, "/FDSN/Flags/DigitizerClipping", &ione, 'b', &parsestate);
   if (*pMS2FSDH_DQFLAGS (record) & 0x04) /* Bit 2 */
-    mseh_set_path_r (msr, "/FDSN/Flags/Spikes", &ione, 'b', &parsestate);
+    mseh_set_ptr_r (msr, "/FDSN/Flags/Spikes", &ione, 'b', &parsestate);
   if (*pMS2FSDH_DQFLAGS (record) & 0x08) /* Bit 3 */
-    mseh_set_path_r (msr, "/FDSN/Flags/Glitches", &ione, 'b', &parsestate);
+    mseh_set_ptr_r (msr, "/FDSN/Flags/Glitches", &ione, 'b', &parsestate);
   if (*pMS2FSDH_DQFLAGS (record) & 0x10) /* Bit 4 */
-    mseh_set_path_r (msr, "/FDSN/Flags/MissingData", &ione, 'b', &parsestate);
+    mseh_set_ptr_r (msr, "/FDSN/Flags/MissingData", &ione, 'b', &parsestate);
   if (*pMS2FSDH_DQFLAGS (record) & 0x20) /* Bit 5 */
-    mseh_set_path_r (msr, "/FDSN/Flags/TelemetrySyncError", &ione, 'b', &parsestate);
+    mseh_set_ptr_r (msr, "/FDSN/Flags/TelemetrySyncError", &ione, 'b', &parsestate);
   if (*pMS2FSDH_DQFLAGS (record) & 0x40) /* Bit 6 */
-    mseh_set_path_r (msr, "/FDSN/Flags/FilterCharging", &ione, 'b', &parsestate);
+    mseh_set_ptr_r (msr, "/FDSN/Flags/FilterCharging", &ione, 'b', &parsestate);
   if (*pMS2FSDH_DQFLAGS (record) & 0x80) /* Bit 7 */
     msr->flags |= 0x02;
 
@@ -406,7 +406,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
   if (dval != 0.0)
   {
     dval = dval / 10000.0;
-    mseh_set_path_r (msr, "/FDSN/Time/Correction", &dval, 'n', &parsestate);
+    mseh_set_ptr_r (msr, "/FDSN/Time/Correction", &dval, 'n', &parsestate);
   }
 
   /* Traverse the blockettes */
@@ -810,7 +810,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
 
       /* Clock model maps to a single value at /FDSN/Clock/Model */
       ms_strncpcleantail (sval, pMS2B500_CLOCKMODEL (record + blkt_offset), 32);
-      mseh_set_path_r (msr, "/FDSN/Clock/Model", sval, 's', &parsestate);
+      mseh_set_ptr_r (msr, "/FDSN/Clock/Model", sval, 's', &parsestate);
     }
 
     else if (blkt_type == 1000)
@@ -852,7 +852,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
       else
       {
         ival = *pMS2B1001_TIMINGQUALITY (record + blkt_offset);
-        mseh_set_path_r (msr, "/FDSN/Time/Quality", &ival, 'i', &parsestate);
+        mseh_set_ptr_r (msr, "/FDSN/Time/Quality", &ival, 'i', &parsestate);
       }
     }
 
@@ -999,9 +999,9 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
  * 2.x the raw record is expected to be located at the
  * ::MS3Record.record pointer.
  *
- * When the encoding is a fixed length per sample (text/ASCII,
- * integers or floats), calculate the data size based on the sample
- * count and use if less than size determined otherwise.
+ * When the encoding is a fixed length per sample (text, integers,
+ * or floats), calculate the data size based on the sample count and
+ * use if less than size determined otherwise.
  *
  * When the encoding is Steim1 or Steim2, search for 64-byte padding
  * frames (all zeros) at the end of the payload and remove from the
@@ -1047,13 +1047,13 @@ msr3_data_bounds (MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize)
 
   /* If a fixed sample length encoding, calculate size and use if less
    * than otherwise determined. */
-  if (msr->encoding == DE_ASCII ||
+  if (msr->encoding == DE_TEXT ||
       msr->encoding == DE_INT16 || msr->encoding == DE_INT32 ||
       msr->encoding == DE_FLOAT32 || msr->encoding == DE_FLOAT64)
   {
     switch (msr->encoding)
     {
-    case DE_ASCII:
+    case DE_TEXT:
       samplebytes = 1;
       break;
     case DE_INT16:
@@ -1099,7 +1099,7 @@ msr3_data_bounds (MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize)
  * The packed/encoded data is accessed in the record indicated by
  * ::MS3Record.record and the unpacked samples are placed in
  * ::MS3Record.datasamples.  The resulting data samples are either
- * text (ASCII) characters, 32-bit integers, 32-bit floats or 64-bit
+ * text characters, 32-bit integers, 32-bit floats or 64-bit
  * floats in host byte order.
  *
  * An internal buffer is allocated if the encoded data is not aligned
@@ -1309,9 +1309,9 @@ ms_decode_data (const void *input, size_t inputsize, uint8_t encoding,
   /* Decode data samples according to encoding */
   switch (encoding)
   {
-  case DE_ASCII:
+  case DE_TEXT:
     if (verbose > 1)
-      ms_log (0, "%s: Decoding ASCII data\n", (sid) ? sid : "");
+      ms_log (0, "%s: Decoding TEXT data\n", (sid) ? sid : "");
 
     nsamples = (int32_t)samplecount;
     if (nsamples > 0)

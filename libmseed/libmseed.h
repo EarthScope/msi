@@ -28,8 +28,8 @@
 extern "C" {
 #endif
 
-#define LIBMSEED_VERSION "3.0.13"    //!< Library version
-#define LIBMSEED_RELEASE "2023.029"  //!< Library release date
+#define LIBMSEED_VERSION "3.0.14"    //!< Library version
+#define LIBMSEED_RELEASE "2023.160"  //!< Library release date
 
 /** @defgroup io-functions File and URL I/O */
 /** @defgroup miniseed-record Record Handling */
@@ -331,7 +331,7 @@ extern int ms_md2doy (int year, int month, int mday, int *yday);
     @brief Data sample types used by the library.
 
     Sample types are represented using a single character as follows:
-    - \c 'a' - Text (ASCII) data samples
+    - \c 't' - Text data samples
     - \c 'i' - 32-bit integer data samples
     - \c 'f' - 32-bit float (IEEE) data samples
     - \c 'd' - 64-bit float (IEEE) data samples
@@ -564,7 +564,7 @@ typedef struct MS3TraceID {
 
 /** @brief Container for a collection of continuous trace segment, linkable */
 typedef struct MS3TraceList {
-  uint32_t           numtraceids;    //!< Number of trace IDs in list
+  uint32_t           numtraceids;    //!< Number of traces IDs in list
   struct MS3TraceID  traces;         //!< Head node of trace skip list, first entry at \a traces.next[0]
   uint64_t           prngstate;      //!< INTERNAL: State for Pseudo RNG
 } MS3TraceList;
@@ -599,6 +599,13 @@ typedef struct MS3Tolerance
   double (*time) (MS3Record *msr);     //!< Pointer to function that returns time tolerance
   double (*samprate) (MS3Record *msr); //!< Pointer to function that returns sample rate tolerance
 } MS3Tolerance;
+
+/** @def MS3Tolerance_INITIALIZER
+    @brief Initialializer for the tolerances ::MS3Tolerance */
+#define MS3Tolerance_INITIALIZER   \
+  {                                \
+    .time = NULL, .samprate = NULL \
+  }
 
 extern MS3TraceList* mstl3_init (MS3TraceList *mstl);
 extern void          mstl3_free (MS3TraceList **ppmstl, int8_t freeprvtptr);
@@ -653,7 +660,7 @@ extern void mstl3_printgaplist (MS3TraceList *mstl, ms_timeformat_t timeformat,
     - set the User-Agent header with @ref ms3_url_useragent()
     - set username and password for authentication with @ref ms3_url_userpassword()
     - set arbitrary headers with @ref ms3_url_addheader()
-    - disable SSL peer and host verficiation by setting **LIBMSEED_SSL_NOVERIFY** environment variable
+    - disable TLS/SSL peer and host verficiation by setting **LIBMSEED_SSL_NOVERIFY** environment variable
 
     Diagnostics: Setting environment variable **LIBMSEED_URL_DEBUG** enables
     detailed verbosity of URL protocol exchanges.
@@ -700,7 +707,7 @@ typedef struct MS3FileParam
   int64_t startoffset; //!< INPUT: Start position in input stream
   int64_t endoffset;   //!< INPUT: End position in input stream, 0 == unknown (e.g. pipe)
   int64_t streampos;   //!< OUTPUT: Read position of input stream
-  int64_t recordcount; //!< OUTPUT: Count of records read from this file so far
+  int64_t recordcount; //!< OUTPUT: Count of records read from this stream/file so far
 
   char *readbuffer;    //!< INTERNAL: Read buffer, allocated internally
   int readlength;      //!< INTERNAL: Length of data in read buffer
@@ -718,13 +725,11 @@ typedef struct MS3FileParam
     .readoffset = 0, .flags = 0, .input = LMIO_INITIALIZER        \
   }
 
-extern int ms3_readmsr (MS3Record **ppmsr, const char *mspath, int64_t *fpos, int8_t *last,
-                        uint32_t flags, int8_t verbose);
+extern int ms3_readmsr (MS3Record **ppmsr, const char *mspath, uint32_t flags, int8_t verbose);
 extern int ms3_readmsr_r (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath,
-                          int64_t *fpos, int8_t *last, uint32_t flags, int8_t verbose);
+                          uint32_t flags, int8_t verbose);
 extern int ms3_readmsr_selection (MS3FileParam **ppmsfp, MS3Record **ppmsr, const char *mspath,
-                                  int64_t *fpos, int8_t *last, uint32_t flags,
-                                  MS3Selections *selections, int8_t verbose);
+                                  uint32_t flags, MS3Selections *selections, int8_t verbose);
 extern int ms3_readtracelist (MS3TraceList **ppmstl, const char *mspath, MS3Tolerance *tolerance,
                               int8_t splitversion, uint32_t flags, int8_t verbose);
 extern int ms3_readtracelist_timewin (MS3TraceList **ppmstl, const char *mspath, MS3Tolerance *tolerance,
@@ -885,99 +890,87 @@ typedef struct MSEHRecenter
 
 /**
  * @brief Internal structure for holding parsed JSON extra headers.
- * @see mseh_get_path_r()
- * @see mseh_set_path_r()
+ * @see mseh_get_ptr_r()
+ * @see mseh_set_ptr_r()
  */
 typedef struct LM_PARSED_JSON LM_PARSED_JSON;
 
 /** @def mseh_get
     @brief A simple wrapper to access any type of extra header */
-#define mseh_get(msr, path, valueptr, type, maxlength) \
-  mseh_get_path_r (msr, path, valueptr, type, maxlength, NULL)
+#define mseh_get(msr, ptr, valueptr, type, maxlength) \
+  mseh_get_ptr_r (msr, ptr, valueptr, type, maxlength, NULL)
 
 /** @def mseh_get_number
     @brief A simple wrapper to access a number type extra header */
-#define mseh_get_number(msr, path, valueptr)    \
-  mseh_get_path_r (msr, path, valueptr, 'n', 0, NULL)
+#define mseh_get_number(msr, ptr, valueptr)    \
+  mseh_get_ptr_r (msr, ptr, valueptr, 'n', 0, NULL)
 
 /** @def mseh_get_int64
     @brief A simple wrapper to access a number type extra header */
-#define mseh_get_int64(msr, path, valueptr)    \
-  mseh_get_path_r (msr, path, valueptr, 'i', 0, NULL)
+#define mseh_get_int64(msr, ptr, valueptr)    \
+  mseh_get_ptr_r (msr, ptr, valueptr, 'i', 0, NULL)
 
 /** @def mseh_get_string
     @brief A simple wrapper to access a string type extra header */
-#define mseh_get_string(msr, path, buffer, maxlength)   \
-  mseh_get_path_r (msr, path, buffer, 's', maxlength, NULL)
+#define mseh_get_string(msr, ptr, buffer, maxlength)   \
+  mseh_get_ptr_r (msr, ptr, buffer, 's', maxlength, NULL)
 
 /** @def mseh_get_boolean
     @brief A simple wrapper to access a boolean type extra header */
-#define mseh_get_boolean(msr, path, valueptr)   \
-  mseh_get_path_r (msr, path, valueptr, 'b', 0, NULL)
+#define mseh_get_boolean(msr, ptr, valueptr)   \
+  mseh_get_ptr_r (msr, ptr, valueptr, 'b', 0, NULL)
 
 /** @def mseh_exists
     @brief A simple wrapper to test existence of an extra header */
-#define mseh_exists(msr, path)                  \
-  (!mseh_get_path_r (msr, path, NULL, 0, 0, NULL))
+#define mseh_exists(msr, ptr)                  \
+  (!mseh_get_ptr_r (msr, ptr, NULL, 0, 0, NULL))
 
-extern int mseh_get_path_r (MS3Record *msr, const char *path,
-                            void *value, char type, size_t maxlength,
-                            LM_PARSED_JSON **parsestate);
+extern int mseh_get_ptr_r (MS3Record *msr, const char *ptr,
+                           void *value, char type, size_t maxlength,
+                           LM_PARSED_JSON **parsestate);
 
 /** @def mseh_set
     @brief A simple wrapper to set any type of extra header */
-#define mseh_set(msr, path, valueptr, type) \
-  mseh_set_path_r (msr, path, valueptr, type, NULL)
+#define mseh_set(msr, ptr, valueptr, type) \
+  mseh_set_ptr_r (msr, ptr, valueptr, type, NULL)
 
 /** @def mseh_set_number
     @brief A simple wrapper to set a number type extra header */
-#define mseh_set_number(msr, path, valueptr) \
-  mseh_set_path_r (msr, path, valueptr, 'n', NULL)
+#define mseh_set_number(msr, ptr, valueptr) \
+  mseh_set_ptr_r (msr, ptr, valueptr, 'n', NULL)
 
 /** @def mseh_set_int64
     @brief A simple wrapper to set a number type extra header */
-#define mseh_set_int64(msr, path, valueptr) \
-  mseh_set_path_r (msr, path, valueptr, 'i', NULL)
+#define mseh_set_int64(msr, ptr, valueptr) \
+  mseh_set_ptr_r (msr, ptr, valueptr, 'i', NULL)
 
 /** @def mseh_set_string
     @brief A simple wrapper to set a string type extra header */
-#define mseh_set_string(msr, path, valueptr) \
-  mseh_set_path_r (msr, path, valueptr, 's', NULL)
+#define mseh_set_string(msr, ptr, valueptr) \
+  mseh_set_ptr_r (msr, ptr, valueptr, 's', NULL)
 
 /** @def mseh_set_boolean
     @brief A simple wrapper to set a boolean type extra header */
-#define mseh_set_boolean(msr, path, valueptr)   \
-  mseh_set_path_r (msr, path, valueptr, 'b', NULL)
+#define mseh_set_boolean(msr, ptr, valueptr)   \
+  mseh_set_ptr_r (msr, ptr, valueptr, 'b', NULL)
 
-extern int mseh_set_path_r (MS3Record *msr, const char *path,
-                            void *value, char type,
-                            LM_PARSED_JSON **parsestate);
+extern int mseh_set_ptr_r (MS3Record *msr, const char *ptr,
+                           void *value, char type,
+                           LM_PARSED_JSON **parsestate);
 
-#define mseh_add_event_detection(msr, path, eventdetection) \
-  mseh_add_event_detection_r (msr, path, eventdetection, NULL)
-
-extern int mseh_add_event_detection_r (MS3Record *msr, const char *path,
+extern int mseh_add_event_detection_r (MS3Record *msr, const char *ptr,
                                        MSEHEventDetection *eventdetection,
                                        LM_PARSED_JSON **parsestate);
 
-#define mseh_add_calibration(msr, path, calibration) \
-  mseh_add_calibration_r (msr, path, calibration, NULL)
-
-extern int mseh_add_calibration_r (MS3Record *msr, const char *path,
+extern int mseh_add_calibration_r (MS3Record *msr, const char *ptr,
                                    MSEHCalibration *calibration,
                                    LM_PARSED_JSON **parsestate);
 
-#define mseh_add_timing_exception(msr, path, exception) \
-  mseh_add_timing_exception_r (msr, path, exception, NULL)
-
-extern int mseh_add_timing_exception_r (MS3Record *msr, const char *path,
+extern int mseh_add_timing_exception_r (MS3Record *msr, const char *ptr,
                                         MSEHTimingException *exception,
                                         LM_PARSED_JSON **parsestate);
 
-#define mseh_add_recenter(msr, path, recenter) \
-  mseh_add_recenter_r (msr, path, recenter, NULL)
-
-extern int mseh_add_recenter_r (MS3Record *msr, const char *path,
+extern int mseh_add_recenter_r (MS3Record *msr, const char *ptr,
                                 MSEHRecenter *recenter,
                                 LM_PARSED_JSON **parsestate);
 
@@ -1351,6 +1344,8 @@ extern void *libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsi
 
 /** @} */
 
+#define DE_ASCII DE_TEXT //!< Mapping of legacy DE_ASCII to DE_TEXT
+
 /** @addtogroup encoding-values
     @brief Data encoding type defines
 
@@ -1359,7 +1354,7 @@ extern void *libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsi
     be used anywhere and encoding value is needed.
 
     @{ */
-#define DE_ASCII       0            //!< ASCII (text) encoding
+#define DE_TEXT        0            //!< Text encoding (UTF-8)
 #define DE_INT16       1            //!< 16-bit integer
 #define DE_INT32       3            //!< 32-bit integer
 #define DE_FLOAT32     4            //!< 32-bit float (IEEE)

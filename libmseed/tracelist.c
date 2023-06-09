@@ -1366,7 +1366,7 @@ mstl3_add_recordptr (MS3TraceSeg *seg, MS3Record *msr, nstime_t endtime, int8_t 
  * @brief Convert the data samples associated with an MS3TraceSeg to another
  * data type
  *
- * ASCII data samples cannot be converted, if supplied or requested an
+ * Text data samples cannot be converted, if supplied or requested an
  * error will be returned.
  *
  * When converting float & double sample types to integer type a
@@ -1413,9 +1413,9 @@ mstl3_convertsamples (MS3TraceSeg *seg, char type, int8_t truncate)
   if (seg->sampletype == type)
     return 0;
 
-  if (seg->sampletype == 'a' || type == 'a')
+  if (seg->sampletype == 't' || type == 't' || seg->sampletype == 'a' || type == 'a')
   {
-    ms_log (2, "Cannot convert ASCII samples to/from numeric type\n");
+    ms_log (2, "Cannot convert text samples to/from numeric type\n");
     return -1;
   }
 
@@ -1780,7 +1780,7 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
             break;
           }
 
-          if ((filelistptr->fileptr = fopen (recordptr->filename, "r")) == NULL)
+          if ((filelistptr->fileptr = fopen (recordptr->filename, "rb")) == NULL)
           {
             ms_log (2, "%s: Cannot open file (%s): %s\n", id->sid, recordptr->filename, strerror(errno));
 
@@ -1929,7 +1929,7 @@ mstl3_unpack_recordlist (MS3TraceID *id, MS3TraceSeg *seg, void *output,
  * record_handler() returns.
  *
  * The requested \a encoding value is currently only used for integer
- * data samples. The encoding is set automatially for text (ASCII) and
+ * data samples. The encoding is set automatially for text and
  * floating point data samples as there is only a single encoding for
  * them.  A value of \c -1 can be used to request the default.
  *
@@ -2037,8 +2037,8 @@ mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, int, void *),
       /* Set encoding for data types with only one encoding, otherwise requested */
       switch (seg->sampletype)
       {
-      case 'a':
-        msr->encoding = DE_ASCII;
+      case 't':
+        msr->encoding = DE_TEXT;
         break;
       case 'f':
         msr->encoding = DE_FLOAT32;
@@ -2157,7 +2157,7 @@ mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
   int tracecnt = 0;
   int segcnt = 0;
 
-  char versioned_sid[LM_SIDLEN] = {0};
+  char versioned_sid[LM_SIDLEN + 10] = {0};
   char *display_sid = NULL;
 
   if (!mstl)
@@ -2182,7 +2182,7 @@ mstl3_printtracelist (MS3TraceList *mstl, ms_timeformat_t timeformat,
     /* Generated versioned SID if requested */
     if (versions)
     {
-      snprintf (versioned_sid, LM_SIDLEN, "%s#%u", id->sid, id->pubversion);
+      snprintf (versioned_sid, sizeof(versioned_sid), "%s#%u", id->sid, id->pubversion);
       display_sid = versioned_sid;
     }
     else
