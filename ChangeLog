@@ -1,3 +1,11 @@
+2023.XXX: 4.0
+	- Update to libmseed 3, with support for miniSEED 3, URLs, etc.
+	- Filenames can now contain read range with end: file@start-end
+	- Added -H option to add HTTP headers
+	- Added -u option to take user:pass
+	- Remove -e (encoding) and -r (reclen) options
+	- Changed -Q to -P, -Q still supported but undocumented
+
 2017.283: 3.8
 	- Update libmseed to 2.19.5, with fix for leap second calculation.
 
@@ -24,7 +32,7 @@
 	truncation for SYNC output.
 
 2011.144: 3.4.1
-	- Update to libmseed 2.6.1 with fixes for more graceful handling of bad 
+	- Update to libmseed 2.6.1 with fixes for more graceful handling of bad
 	data and corner-case IRIS archive files.
 
 2011.057: 3.4
@@ -39,7 +47,7 @@
 
 2010.048: 3.3
 	- Update to libmseed 2.5, fix for sorting MSTraceSeg entries.
-	
+
 2010.026: 3.2
 	- Update libmseed to version 2.4.
 

@@ -4,60 +4,30 @@
 #   CC : Specify the C compiler to use
 #   CFLAGS : Specify compiler options to use
 
-# Options specific for GCC
-GCC = gcc
-GCCFLAGS = -O2 -Wall -I../libmseed
-
-# Required compiler parameters
-REQCFLAGS = -I../libmseed
-
 BIN = msi
 
-LDFLAGS = -L../libmseed
-LDLIBS = -lmseed
+SRCS = msi.c
+OBJS = $(SRCS:.c=.o)
 
-OBJS = $(BIN).o
+# Required compiler parameters
+EXTRACFLAGS = -I../libmseed
+EXTRALDFLAGS = -L../libmseed
+
+LDLIBS = -lmseed
 
 all: $(BIN)
 
 $(BIN): $(OBJS)
-	$(CC) $(CFLAGS) -o ../$@ $(OBJS) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(CFLAGS) -o ../$@ $(OBJS) $(EXTRALDFLAGS) $(LDLIBS) $(LDFLAGS)
 
 clean:
 	rm -f $(OBJS) ../$(BIN)
 
-cc:
-	@$(MAKE) "CC=$(CC)" "CFLAGS=$(CFLAGS)"
-
-gcc:
-	@$(MAKE) "CC=$(GCC)" "CFLAGS=$(GCCFLAGS)"
-
-gcc32:
-	@$(MAKE) "CC=$(GCC)" "CFLAGS=-m32 $(GCCFLAGS)"
-
-gcc64:
-	@$(MAKE) "CC=$(GCC)" "CFLAGS=-m64 $(GCCFLAGS)"
-
-static:
-	@$(MAKE) "CC=$(CC)" "CFLAGS=-static $(GCCFLAGS)"
-
-debug:
-	$(MAKE) "CFLAGS=-g $(CFLAGS)"
-
-gccdebug:
-	$(MAKE) "CC=$(GCC)" "CFLAGS=-g $(GCCFLAGS)"
-
-gcc32debug:
-	$(MAKE) "CC=$(GCC)" "CFLAGS=-g -m32 $(GCCFLAGS)"
-
-gcc64debug:
-	$(MAKE) "CC=$(GCC)" "CFLAGS=-g -m64 $(GCCFLAGS)"
-
 # Implicit rule for building object files
 %.o: %.c
-	$(CC) $(CFLAGS) $(REQCFLAGS) -c $<
+	$(CC) $(CFLAGS) $(EXTRACFLAGS) -c $<
 
 install:
 	@echo
-	@echo "No install target, copy the executable(s) yourself"
+	@echo "No install target, copy the executable and documentation as needed"
 	@echo
