@@ -44,35 +44,39 @@ msi [options] file1 [file2 file3 ...]
 
 <b>-H </b><i>Header</i>
 
-<p style="padding-left: 30px;">Add custom header to URL-based reads.  Only avaialable when compiled with URL support.</p>
+<p style="padding-left: 30px;">Add custom header to URL-based reads.  Only available when compiled with URL support.</p>
 
 <b>-u </b><i>user:pass</i>
 
-<p style="padding-left: 30px;">Set <i>user</i> and <i>pass</i> credentials for URL-based reads.  Only avaialable when compiled with URL support.</p>
+<p style="padding-left: 30px;">Set <i>user</i> and <i>pass</i> credentials for URL-based reads.  Only available when compiled with URL support.</p>
 
 <b>-ts </b><i>time</i>
 
-<p style="padding-left: 30px;">Limit processing to miniSEED records that contain or start after <i>time</i>.  The format of the <i>time</i> arguement is: 'YYYY[,DDD,HH,MM,SS,FFFFFF]' where valid delimiters are either commas (,), colons (:) or periods (.).</p>
+<p style="padding-left: 30px;">Limit processing to miniSEED records that contain or start after <i>time</i>.  The format of the <i>time</i> arguement is: 'YYYY[-MM-DDThh:mm:ss.ffff], or 'YYYY[,DDD,HH,MM,SS,FFFFFF]', or Unix/POSIX epoch seconds.</p>
 
 <b>-te </b><i>time</i>
 
-<p style="padding-left: 30px;">Limit processing to miniSEED records that contain or end before <i>time</i>.  The format of the <i>time</i> arguement is: 'YYYY[,DDD,HH,MM,SS,FFFFFF]' where valid delimiters are either commas (,), colons (:) or periods (.).</p>
+<p style="padding-left: 30px;">Limit processing to miniSEED records that contain or end before <i>time</i>.  The format of the <i>time</i> arguement is: 'YYYY[-MM-DDThh:mm:ss.ffff], or 'YYYY[,DDD,HH,MM,SS,FFFFFF]', or Unix/POSIX epoch seconds.</p>
 
 <b>-M </b><i>match</i>
 
-<p style="padding-left: 30px;">Limit processing to miniSEED records that match the <i>match</i> regular expression.  For each input record a source name string composed of 'NET_STA_LOC_CHAN_QUAL' is created and compared to the regular expression.  If the match expression begins with an '@' character it is assumed to indicate a file containing a list of expressions to match, see the \fBMATCH OR REJECT LIST FILE\fR section below.</p>
+<p style="padding-left: 30px;">Limit processing to miniSEED records that match the <i>match</i> regular expression.  This pattern is matched against the Source Identifier for each record, often following this pattern: 'FDSN:<network>_<station>_<location>_<band>_<source>_<subsource>'</p>
+
+<p style="padding-left: 30px;">If the match expression begins with an '@' character it is assumed to indicate a file containing a list of expressions to match, see the \fBMATCH OR REJECT LIST FILE\fR section below.</p>
 
 <b>-R </b><i>reject</i>
 
-<p style="padding-left: 30px;">Limit processing to miniSEED records that do not match the <i>reject</i> regular expression.  For each input record a source name string composed of 'NET_STA_LOC_CHAN_QUAL' is created and compared to the regular expression.  If the reject expression begins with an '@' character it is assumed to indicate a file containing a list of expressions to reject, see the \fBMATCH OR REJECT LIST FILE\fR section below.</p>
+<p style="padding-left: 30px;">Limit processing to miniSEED records that do not match the <i>reject</i> regular expression.  This pattern is matched against the Source Identifier for each record, often following this pattern: 'FDSN:<network>_<station>_<location>_<band>_<source>_<subsource>'</p>
+
+<p style="padding-left: 30px;">If the reject expression begins with an '@' character it is assumed to indicate a file containing a list of expressions to reject, see the \fBMATCH OR REJECT LIST FILE\fR section below.</p>
 
 <b>-n </b><i>count</i>
 
 <p style="padding-left: 30px;">Only process <i>count</i> input records.</p>
 
-<b>-y</b>
+<b>-snd</b>
 
-<p style="padding-left: 30px;">Do not skip non-SEED data records.  By default the program will quietly skip any data which cannot be identified as a SEED data record, allowing the program to work with full SEED volumes and skip bad data.  This option is useful to help identify bad data records.</p>
+<p style="padding-left: 30px;">Skip non-miniSEED records.  By default the program will stop when it encounters data that cannot be identified as a miniSEED record. This option can be useful with full SEED volumes or files with bad data.</p>
 
 <b>-p</b>
 
@@ -84,7 +88,7 @@ msi [options] file1 [file2 file3 ...]
 
 <b>-L</b>
 
-<p style="padding-left: 30px;">Include data latency when printing header details.  The latency is calcualed as the difference between the time of the last sample and the current time from the host computer.</p>
+<p style="padding-left: 30px;">Include data latency when printing header details.  The latency is calculated as the difference between the time of the last sample and the current time from the host computer.</p>
 
 <b>-s</b>
 
@@ -108,7 +112,7 @@ msi [options] file1 [file2 file3 ...]
 
 <b>-tg</b>
 
-<p style="padding-left: 30px;">Include gap estimates when approriate in trace listings.</p>
+<p style="padding-left: 30px;">Include gap estimates when approriate in trace listings and suppress record-by-record output, i.e. trace list only.</p>
 
 <b>-tt </b><i>secs</i>
 
@@ -146,8 +150,8 @@ msi [options] file1 [file2 file3 ...]
 
 <p style="padding-left: 30px;">Specify the time stamp format for trace and gap/overlap lists.  The <i>format</i> can be one of the following (default = 0):</p>
 <pre style="padding-left: 30px;">
-  0 = SEED time, e.g. "2005,068,00:00:01.000000"
-  1 = ISO time, e.g. "2005-03-09T00:00:01.000000"
+  0 = SEED day-of-year time, e.g. "2005,068,00:00:01.000000"
+  1 = ISO year-month-day time, e.g. "2005-03-09T00:00:01.000000"
   2 = Epoch seconds, e.g. "1110326401.000000"
 </pre>
 
@@ -161,7 +165,7 @@ msi [options] file1 [file2 file3 ...]
 
 ## <a id='input-files'>Input Files</a>
 
-<p >An input file name may be followed by an <b>@</b> charater followed by a byte offset.  In this case the program will interpret the byte offset as the starting offset into the file.  Useful for diagnosing specific records.  As an example an input file specified as <b>ANMO.mseed@8192</b> would result in the file <b>ANMO.mseed</b> being read starting at byte 8192.</p>
+<p >An input file name may be followed by an <b>@</b> charater followed by a byte range in the pattern <b>START[-END]</b>, where the END offset is optional.  As an example an input file specified as <b>ANMO.mseed@8192</b> would result in the file <b>ANMO.mseed</b> being read starting at byte 8192.  An optional end offset can be specified, e.g. <b>ANMO.mseed@8192-12288</b> would start reading at offset 8192 and stop after offset 12288.</p>
 
 ## <a id='input-list-file'>Input List File</a>
 
@@ -190,14 +194,16 @@ data/day3.mseed
 <p >The 'match.list' file might look like this:</p>
 
 <pre >
-IU_ANMO_.*
-IU_ADK_00_BHZ.*
-II_BFO_00_BHZ_Q
+FDSN:IU_ANMO_.*
+FDSN:IU_ADK_00_B_H_Z
+FDSN:II_BFO_00_B_H_Z
 </pre>
 
 ## <a id='leap-second-list-file'>Leap Second List File</a>
 
-<p >If the environment variable LIBMSEED_LEAPSECOND_FILE is set it is expected to indicate a file containing a list of leap seconds as published by NIST and IETF, usually available here: http://www.ietf.org/timezones/data/leap-seconds.list</p>
+<p >NOTE: A list of leap seconds is included in the program and no external list should be needed unless a leap second is added after year 2023.</p>
+
+<p >If the environment variable LIBMSEED_LEAPSECOND_FILE is set it is expected to indicate a file containing a list of leap seconds as published by NIST and IETF, usually available here: https://www.ietf.org/timezones/data/leap-seconds.list</p>
 
 <p >If present, the leap seconds listed in this file will be used to adjust the time coverage for records that contain a leap second. Also, leap second indicators in the miniSEED headers will be ignored.</p>
 
