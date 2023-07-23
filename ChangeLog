@@ -1,10 +1,18 @@
-2023.XXX: 4.0
+2023.204: 4.0
 	- Update to libmseed 3, with support for miniSEED 3, URLs, etc.
+	- The -M and -R matching and rejection regex patterns now match
+	Source Identifier of each record, often following this pattern:
+	`FDSN:<network>_<station>_<location>_<band>_<source>_<subsource>`.
+	- Replace the -y option with -snd and change the default to stop
+	processing if non-miniSEED is encountered.
 	- Filenames can now contain read range with end: file@start-end
 	- Added -H option to add HTTP headers
 	- Added -u option to take user:pass
 	- Remove -e (encoding) and -r (reclen) options
 	- Changed -Q to -P, -Q still supported but undocumented
+	- Default data date-time format is now YYYY-MM-DDThh:mm:ss.ffffff.
+	- Date-time format for -ts and -te options now autodetected, can be
+	YYYY-MM-DD, or YYYY-jjj, or epoch formats.
 
 2017.283: 3.8
 	- Update libmseed to 2.19.5, with fix for leap second calculation.
