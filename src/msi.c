@@ -29,7 +29,7 @@ static int addfile (char *filename);
 static int addlistfile (char *filename);
 static void usage (void);
 
-#define VERSION "4.0DEV"
+#define VERSION "4.0"
 #define PACKAGE "msi"
 
 static int8_t verbose = 0;
@@ -44,7 +44,7 @@ static int8_t tracegaponly = 0; /* Controls printing of trace or gap list only *
 static int8_t tracegaps = 0; /* Controls printing of gaps with a trace list */
 static ms_timeformat_t timeformat = ISOMONTHDAY_Z; /* Time string format for trace or gap lists */
 static int8_t splitversion = 0; /* Control grouping of data publication versions */
-static int8_t skipnotdata = 1; /* Controls skipping of non-miniSEED data */
+static int8_t skipnotdata = 0; /* Controls skipping of non-miniSEED data */
 static double mingap = 0; /* Minimum gap/overlap seconds when printing gap list */
 static double *mingapptr = NULL;
 static double maxgap = 0; /* Maximum gap/overlap seconds when printing gap list */
@@ -60,8 +60,8 @@ static regex_t *reject = 0; /* Compiled reject regex */
 static double timetol; /* Time tolerance for continuous traces */
 static double sampratetol; /* Sample rate tolerance for continuous traces */
 static MS3Tolerance tolerance = { .time = NULL, .samprate = NULL };
-double timetol_callback (MS3Record *msr) { return timetol; }
-double samprate_callback (MS3Record *msr) { return sampratetol; }
+double timetol_callback (const MS3Record *msr) { return timetol; }
+double samprate_callback (const MS3Record *msr) { return sampratetol; }
 
 struct filelink
 {
@@ -425,13 +425,13 @@ processparam (int argcount, char **argvec)
 #endif /* LIBMSEED_URL */
     else if (strcmp (argvec[optind], "-ts") == 0)
     {
-      starttime = ms_seedtimestr2nstime (getoptval (argcount, argvec, optind++));
+      starttime = ms_timestr2nstime (getoptval (argcount, argvec, optind++));
       if (starttime == NSTERROR)
         return -1;
     }
     else if (strcmp (argvec[optind], "-te") == 0)
     {
-      endtime = ms_seedtimestr2nstime (getoptval (argcount, argvec, optind++));
+      endtime = ms_timestr2nstime (getoptval (argcount, argvec, optind++));
       if (endtime == NSTERROR)
         return -1;
     }
@@ -447,9 +447,9 @@ processparam (int argcount, char **argvec)
     {
       reccntdown = strtol (getoptval (argcount, argvec, optind++), NULL, 10);
     }
-    else if (strcmp (argvec[optind], "-y") == 0)
+    else if (strcmp (argvec[optind], "-snd") == 0)
     {
-      skipnotdata = 0;
+      skipnotdata = 1;
     }
     else if (strncmp (argvec[optind], "-p", 2) == 0)
     {
@@ -978,7 +978,7 @@ usage (void)
            " -R reject    Limit to records not matching the specfied regular expression\n"
            "                Regular expressions are applied to: 'NET_STA_LOC_CHAN_QUAL'\n"
            " -n count     Only process count number of records\n"
-           " -y           Do not quietly skip non-SEED data\n"
+           " -snd         Skip non-miniSEED data\n"
            "\n"
            " ## Output options ##\n"
            " -p           Print details of header, multiple flags can be used\n"
