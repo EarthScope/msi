@@ -72,7 +72,7 @@ static nstime_t ms_btime2nstime (uint8_t *btime, int8_t swapflag);
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int64_t
-msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
+msr3_unpack_mseed3 (const char *record, int reclen, MS3Record **ppmsr,
                     uint32_t flags, int8_t verbose)
 {
   MS3Record *msr = NULL;
@@ -255,7 +255,7 @@ msr3_unpack_mseed3 (char *record, int reclen, MS3Record **ppmsr,
  * \ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int64_t
-msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
+msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
                     uint32_t flags, int8_t verbose)
 {
   int B1000offset = 0;
@@ -1019,7 +1019,7 @@ msr3_unpack_mseed2 (char *record, int reclen, MS3Record **ppmsr,
  * \ref MessageOnError - this function logs a message on error
  ************************************************************************/
 int
-msr3_data_bounds (MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize)
+msr3_data_bounds (const MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize)
 {
   uint8_t nullframe[64] = {0};
   uint8_t samplebytes = 0;
@@ -1272,7 +1272,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
 int64_t
 ms_decode_data (const void *input, size_t inputsize, uint8_t encoding,
                 int64_t samplecount, void *output, size_t outputsize,
-                char *sampletype, int8_t swapflag, char *sid, int8_t verbose)
+                char *sampletype, int8_t swapflag, const char *sid, int8_t verbose)
 {
   size_t decodedsize; /* byte size of decodeded samples */
   int32_t nsamples; /* number of samples unpacked */
@@ -1286,15 +1286,6 @@ ms_decode_data (const void *input, size_t inputsize, uint8_t encoding,
 
   if (samplecount <= 0)
     return 0;
-
-  /* Check for decode debugging environment variable */
-  if (libmseed_decodedebug < 0)
-  {
-    if (getenv ("DECODE_DEBUG"))
-      libmseed_decodedebug = 1;
-    else
-      libmseed_decodedebug = 0;
-  }
 
   if (ms_encoding_sizetype(encoding, &samplesize, sampletype))
     samplesize = 0;
@@ -1480,7 +1471,7 @@ ms_nomsamprate (int factor, int multiplier)
  * Returns a pointer to the resulting string or NULL on error.
  ***************************************************************************/
 char *
-ms2_recordsid (char *record, char *sid, int sidlen)
+ms2_recordsid (const char *record, char *sid, int sidlen)
 {
   char net[3] = {0};
   char sta[6] = {0};
