@@ -360,7 +360,7 @@ main (int argc, char **argv)
   {
     if (tracegapsum == 1 || tracegaponly == 1)
     {
-      mstl3_printtracelist (mstl, timeformat, 1, tracegaps, 0);
+      mstl3_printtracelist (mstl, timeformat, 1, tracegaps, splitversion);
     }
     if (tracegapsum == 2 || tracegaponly == 2)
     {
