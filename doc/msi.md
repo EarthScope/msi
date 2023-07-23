@@ -6,7 +6,6 @@
 1. [Options](#options)
 1. [Input Files](#input-files)
 1. [Input List File](#input-list-file)
-1. [Match Or Reject List File](#match-or-reject-list-file)
 1. [Leap Second List File](#leap-second-list-file)
 1. [Author](#author)
 
@@ -58,17 +57,13 @@ msi [options] file1 [file2 file3 ...]
 
 <p style="padding-left: 30px;">Limit processing to miniSEED records that contain or end before <i>time</i>.  The format of the <i>time</i> arguement is: 'YYYY[-MM-DDThh:mm:ss.ffff], or 'YYYY[,DDD,HH,MM,SS,FFFFFF]', or Unix/POSIX epoch seconds.</p>
 
-<b>-M </b><i>match</i>
+<b>-m </b><i>match</i>
 
-<p style="padding-left: 30px;">Limit processing to miniSEED records that match the <i>match</i> regular expression.  This pattern is matched against the Source Identifier for each record, often following this pattern: 'FDSN:<network>_<station>_<location>_<band>_<source>_<subsource>'</p>
+<p style="padding-left: 30px;">Limit processing to miniSEED records that contain the <i>match</i> pattern, which is applied to the Source Identifier for each record, often following this pattern: 'FDSN:<network>_<station>_<location>_<band>_<source>_<subsource>'</p>
 
-<p style="padding-left: 30px;">If the match expression begins with an '@' character it is assumed to indicate a file containing a list of expressions to match, see the \fBMATCH OR REJECT LIST FILE\fR section below.</p>
+<b>-r </b><i>reject</i>
 
-<b>-R </b><i>reject</i>
-
-<p style="padding-left: 30px;">Limit processing to miniSEED records that do not match the <i>reject</i> regular expression.  This pattern is matched against the Source Identifier for each record, often following this pattern: 'FDSN:<network>_<station>_<location>_<band>_<source>_<subsource>'</p>
-
-<p style="padding-left: 30px;">If the reject expression begins with an '@' character it is assumed to indicate a file containing a list of expressions to reject, see the \fBMATCH OR REJECT LIST FILE\fR section below.</p>
+<p style="padding-left: 30px;">Limit processing to miniSEED records that do _not_ contain the <i>reject</i> pattern, which is applied to the the Source Identifier for each record, often following this pattern: 'FDSN:<network>_<station>_<location>_<band>_<source>_<subsource>'</p>
 
 <b>-n </b><i>count</i>
 
@@ -183,22 +178,6 @@ data/day2.mseed
 data/day3.mseed
 </pre>
 
-## <a id='match-or-reject-list-file'>Match Or Reject List File</a>
-
-<p >A list file used with either the <b>-M</b> or <b>-R</b> options contains a list of regular expressions (one on each line) that will be combined into a single compound expression.  The initial '@' character indicating a list file is not considered part of the file name.  As an example, if the following command line option was used:</p>
-
-<pre >
-<b>-M @match.list</b>
-</pre>
-
-<p >The 'match.list' file might look like this:</p>
-
-<pre >
-FDSN:IU_ANMO_.*
-FDSN:IU_ADK_00_B_H_Z
-FDSN:II_BFO_00_B_H_Z
-</pre>
-
 ## <a id='leap-second-list-file'>Leap Second List File</a>
 
 <p >NOTE: A list of leap seconds is included in the program and no external list should be needed unless a leap second is added after year 2023.</p>
@@ -215,4 +194,4 @@ EarthScope Data Services
 </pre>
 
 
-(man page 2023/02/17)
+(man page 2023/07/23)

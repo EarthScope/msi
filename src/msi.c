@@ -13,7 +13,6 @@
 
 #include <ctype.h>
 #include <errno.h>
-#include <regex.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,10 +22,10 @@
 
 static int processparam (int argcount, char **argvec);
 static char *getoptval (int argcount, char **argvec, int argopt);
-static int readregexfile (char *regexfile, char **pppattern);
 static int lisnumber (char *number);
 static int addfile (char *filename);
 static int addlistfile (char *filename);
+static int my_globmatch (const char *string, const char *pattern);
 static void usage (void);
 
 #define VERSION "4.0"
@@ -50,12 +49,12 @@ static double *mingapptr = NULL;
 static double maxgap = 0; /* Maximum gap/overlap seconds when printing gap list */
 static double *maxgapptr = NULL;
 static int reccntdown = -1;
-static char *binfile = 0;
-static char *outfile = 0;
+static char *binfile = NULL;
+static char *outfile = NULL;
 static nstime_t starttime = NSTERROR; /* Limit to records containing or after starttime */
 static nstime_t endtime = NSTERROR; /* Limit to records containing or before endtime */
-static regex_t *match = 0; /* Compiled match regex */
-static regex_t *reject = 0; /* Compiled reject regex */
+static char *match = NULL; /* Glob match pattern */
+static char *reject = NULL; /* Glob reject pattern */
 
 static double timetol; /* Time tolerance for continuous traces */
 static double sampratetol; /* Sample rate tolerance for continuous traces */
@@ -184,10 +183,10 @@ main (int argc, char **argv)
 
       if (match || reject)
       {
-        /* Check if record is matched by the match regex */
+        /* Check if record is matched by the match pattern */
         if (match)
         {
-          if (regexec (match, msr->sid, 0, 0, 0) != 0)
+          if (my_globmatch (msr->sid, match) == 0)
           {
             if (verbose >= 3)
             {
@@ -198,10 +197,10 @@ main (int argc, char **argv)
           }
         }
 
-        /* Check if record is rejected by the reject regex */
+        /* Check if record is rejected by the reject pattern */
         if (reject)
         {
-          if (regexec (reject, msr->sid, 0, 0, 0) == 0)
+          if (my_globmatch (msr->sid, reject) != 0)
           {
             if (verbose >= 3)
             {
@@ -390,8 +389,8 @@ processparam (int argcount, char **argvec)
 {
   int optind;
   int timeformat_option = -1;
-  char *matchpattern = 0;
-  char *rejectpattern = 0;
+  char *match_pattern = NULL;
+  char *reject_pattern = NULL;
   char *tptr;
 
   /* Process all command line arguments */
@@ -435,13 +434,13 @@ processparam (int argcount, char **argvec)
       if (endtime == NSTERROR)
         return -1;
     }
-    else if (strcmp (argvec[optind], "-M") == 0)
+    else if (strcmp (argvec[optind], "-m") == 0)
     {
-      matchpattern = strdup (getoptval (argcount, argvec, optind++));
+      match_pattern = strdup (getoptval (argcount, argvec, optind++));
     }
-    else if (strcmp (argvec[optind], "-R") == 0)
+    else if (strcmp (argvec[optind], "-r") == 0)
     {
-      rejectpattern = strdup (getoptval (argcount, argvec, optind++));
+      reject_pattern = strdup (getoptval (argcount, argvec, optind++));
     }
     else if (strcmp (argvec[optind], "-n") == 0)
     {
@@ -604,67 +603,28 @@ processparam (int argcount, char **argvec)
     exit (1);
   }
 
-  /* Expand match pattern from a file if prefixed by '@' */
-  if (matchpattern)
+  /* Add wildcards to match pattern for logical "contains" */
+  if (match_pattern)
   {
-    if (*matchpattern == '@')
+    if ((match = malloc (strlen (match_pattern) + 3)) == NULL)
     {
-      tptr = strdup (matchpattern + 1); /* Skip the @ sign */
-      free (matchpattern);
-      matchpattern = 0;
-
-      if (readregexfile (tptr, &matchpattern) <= 0)
-      {
-        ms_log (2, "Cannot read match pattern regex file\n");
-        exit (1);
-      }
-
-      free (tptr);
+      ms_log (2, "Error allocating memory\n");
+      exit (1);
     }
+
+    snprintf (match, strlen (match_pattern) + 3, "*%s*", match_pattern);
   }
 
-  /* Expand reject pattern from a file if prefixed by '@' */
-  if (rejectpattern)
+  /* Add wildcards to reject pattern for logical "contains" */
+  if (reject_pattern)
   {
-    if (*rejectpattern == '@')
+    if ((reject = malloc (strlen (reject_pattern) + 3)) == NULL)
     {
-      tptr = strdup (rejectpattern + 1); /* Skip the @ sign */
-      free (rejectpattern);
-      rejectpattern = 0;
-
-      if (readregexfile (tptr, &rejectpattern) <= 0)
-      {
-        ms_log (2, "Cannot read reject pattern regex file\n");
-        exit (1);
-      }
-
-      free (tptr);
-    }
-  }
-
-  /* Compile match and reject patterns */
-  if (matchpattern)
-  {
-    match = (regex_t *)malloc (sizeof (regex_t));
-
-    if (regcomp (match, matchpattern, REG_EXTENDED) != 0)
-    {
-      ms_log (2, "Cannot compile match regex: '%s'\n", matchpattern);
+      ms_log (2, "Error allocating memory\n");
+      exit (1);
     }
 
-    free (matchpattern);
-  }
-
-  if (rejectpattern)
-  {
-    reject = (regex_t *)malloc (sizeof (regex_t));
-
-    if (regcomp (reject, rejectpattern, REG_EXTENDED) != 0)
-    {
-      ms_log (2, "Cannot compile reject regex: '%s'\n", rejectpattern);
-    }
-
-    free (rejectpattern);
+    snprintf (reject, strlen (reject_pattern) + 3, "*%s*", reject_pattern);
   }
 
   /* Add program name and version to User-Agent for URL-based requests */
@@ -718,105 +678,6 @@ getoptval (int argcount, char **argvec, int argopt)
   exit (1);
   return 0;
 } /* End of getoptval() */
-
-/***************************************************************************
- * readregexfile:
- *
- * Read a list of regular expressions from a file and combine them
- * into a single, compound expression which is returned in *pppattern.
- * The return buffer is reallocated as need to hold the growing
- * pattern.  When called *pppattern should not point to any associated
- * memory.
- *
- * Returns the number of regexes parsed from the file or -1 on error.
- ***************************************************************************/
-static int
-readregexfile (char *regexfile, char **pppattern)
-{
-  FILE *fp;
-  char line[1024];
-  char linepattern[1024];
-  int regexcnt = 0;
-  int lengthbase;
-  int lengthadd;
-
-  if (!regexfile)
-  {
-    ms_log (2, "readregexfile: regex file not supplied\n");
-    return -1;
-  }
-
-  if (!pppattern)
-  {
-    ms_log (2, "readregexfile: pattern string buffer not supplied\n");
-    return -1;
-  }
-
-  /* Open the regex list file */
-  if ((fp = fopen (regexfile, "rb")) == NULL)
-  {
-    ms_log (2, "Cannot open regex list file %s: %s\n",
-            regexfile, strerror (errno));
-    return -1;
-  }
-
-  if (verbose)
-    ms_log (1, "Reading regex list from %s\n", regexfile);
-
-  *pppattern = NULL;
-
-  while ((fgets (line, sizeof (line), fp)) != NULL)
-  {
-    /* Trim spaces and skip if empty lines */
-    if (sscanf (line, " %s ", linepattern) != 1)
-      continue;
-
-    /* Skip comment lines */
-    if (*linepattern == '#')
-      continue;
-
-    regexcnt++;
-
-    /* Add regex to compound regex */
-    if (*pppattern)
-    {
-      lengthbase = strlen (*pppattern);
-      lengthadd = strlen (linepattern) + 4; /* Length of addition plus 4 characters: |()\0 */
-
-      *pppattern = (char *)realloc (*pppattern, lengthbase + lengthadd);
-
-      if (*pppattern)
-      {
-        snprintf ((*pppattern) + lengthbase, lengthadd, "|(%s)", linepattern);
-      }
-      else
-      {
-        ms_log (2, "Cannot allocate memory for regex string\n");
-        return -1;
-      }
-    }
-    else
-    {
-      lengthadd = strlen (linepattern) + 3; /* Length of addition plus 3 characters: ()\0 */
-
-      *pppattern = (char *)malloc (lengthadd);
-
-      if (*pppattern)
-      {
-        snprintf (*pppattern, lengthadd, "(%s)", linepattern);
-      }
-      else
-      {
-        ms_log (2, "Cannot allocate memory for regex string\n");
-        return -1;
-      }
-    }
-  }
-
-  fclose (fp);
-
-  return regexcnt;
-} /* End of readregexfile() */
 
 /***************************************************************************
  * lisnumber:
@@ -951,6 +812,172 @@ addlistfile (char *filename)
   return filecount;
 } /* End of addlistfile() */
 
+/***********************************************************************
+ * robust glob pattern matcher
+ * ozan s. yigit/dec 1994
+ * public domain
+ *
+ * glob patterns:
+ *	*	matches zero or more characters
+ *	?	matches any single character
+ *	[set]	matches any character in the set
+ *	[^set]	matches any character NOT in the set
+ *		where a set is a group of characters or ranges. a range
+ *		is written as two characters seperated with a hyphen: a-z denotes
+ *		all characters between a to z inclusive.
+ *	[-set]	set matches a literal hypen and any character in the set
+ *	[]set]	matches a literal close bracket and any character in the set
+ *
+ *	char	matches itself except where char is '*' or '?' or '['
+ *	\char	matches char, including any pattern character
+ *
+ * examples:
+ *	a*c		ac abc abbc ...
+ *	a?c		acc abc aXc ...
+ *	a[a-z]c		aac abc acc ...
+ *	a[-a-z]c	a-c aac abc ...
+ *
+ * Revision 1.4  2004/12/26  12:38:00  ct
+ * Changed function name (amatch -> globmatch), variables and
+ * formatting for clarity.  Also add matching header globmatch.h.
+ *
+ * Revision 1.3  1995/09/14  23:24:23  oz
+ * removed boring test/main code.
+ *
+ * Revision 1.2  94/12/11  10:38:15  oz
+ * charset code fixed. it is now robust and interprets all
+ * variations of charset [i think] correctly, including [z-a] etc.
+ *
+ * Revision 1.1  94/12/08  12:45:23  oz
+ * Initial revision
+ ***********************************************************************/
+
+#define GLOBMATCH_TRUE 1
+#define GLOBMATCH_FALSE 0
+#define GLOBMATCH_NEGATE '^' /* std char set negation char */
+
+/***********************************************************************
+ * my_globmatch:
+ *
+ * Check if a string matches a globbing pattern.
+ *
+ * Return 0 if string does not match pattern and non-zero otherwise.
+ **********************************************************************/
+static int
+my_globmatch (const char *string, const char *pattern)
+{
+  int negate;
+  int match;
+  int c;
+
+  while (*pattern)
+  {
+    if (!*string && *pattern != '*')
+      return GLOBMATCH_FALSE;
+
+    switch (c = *pattern++)
+    {
+
+    case '*':
+      while (*pattern == '*')
+        pattern++;
+
+      if (!*pattern)
+        return GLOBMATCH_TRUE;
+
+      if (*pattern != '?' && *pattern != '[' && *pattern != '\\')
+        while (*string && *pattern != *string)
+          string++;
+
+      while (*string)
+      {
+        if (my_globmatch (string, pattern))
+          return GLOBMATCH_TRUE;
+        string++;
+      }
+      return GLOBMATCH_FALSE;
+
+    case '?':
+      if (*string)
+        break;
+      return GLOBMATCH_FALSE;
+
+      /* set specification is inclusive, that is [a-z] is a, z and
+       * everything in between. this means [z-a] may be interpreted
+       * as a set that contains z, a and nothing in between.
+       */
+    case '[':
+      if (*pattern != GLOBMATCH_NEGATE)
+        negate = GLOBMATCH_FALSE;
+      else
+      {
+        negate = GLOBMATCH_TRUE;
+        pattern++;
+      }
+
+      match = GLOBMATCH_FALSE;
+
+      while (!match && (c = *pattern++))
+      {
+        if (!*pattern)
+          return GLOBMATCH_FALSE;
+
+        if (*pattern == '-') /* c-c */
+        {
+          if (!*++pattern)
+            return GLOBMATCH_FALSE;
+          if (*pattern != ']')
+          {
+            if (*string == c || *string == *pattern ||
+                (*string > c && *string < *pattern))
+              match = GLOBMATCH_TRUE;
+          }
+          else
+          { /* c-] */
+            if (*string >= c)
+              match = GLOBMATCH_TRUE;
+            break;
+          }
+        }
+        else /* cc or c] */
+        {
+          if (c == *string)
+            match = GLOBMATCH_TRUE;
+          if (*pattern != ']')
+          {
+            if (*pattern == *string)
+              match = GLOBMATCH_TRUE;
+          }
+          else
+            break;
+        }
+      }
+
+      if (negate == match)
+        return GLOBMATCH_FALSE;
+
+      /* If there is a match, skip past the charset and continue on */
+      while (*pattern && *pattern != ']')
+        pattern++;
+      if (!*pattern++) /* oops! */
+        return GLOBMATCH_FALSE;
+      break;
+
+    case '\\':
+      if (*pattern)
+        c = *pattern++;
+    default:
+      if (c != *string)
+        return GLOBMATCH_FALSE;
+      break;
+    }
+
+    string++;
+  }
+
+  return !*string;
+} /* End of my_globmatch() */
+
 /***************************************************************************
  * usage():
  * Print the usage message.
@@ -974,9 +1001,9 @@ usage (void)
            " -ts time     Limit to records that start after time\n"
            " -te time     Limit to records that end before time\n"
            "                time format: 'YYYY[,DDD,HH,MM,SS,FFFFFF]' delimiters: [,:.]\n"
-           " -M match     Limit to records matching the specified regular expression\n"
-           " -R reject    Limit to records not matching the specfied regular expression\n"
-           "                Regular expressions are applied to: 'NET_STA_LOC_CHAN_QUAL'\n"
+           " -m match     Limit to records containing the specified pattern\n"
+           " -r reject    Limit to records not containing the specfied pattern\n"
+           "                Patterns are applied to: 'FDSN:NET_STA_LOC_BAND_SOURCE_SS'\n"
            " -n count     Only process count number of records\n"
            " -snd         Skip non-miniSEED data\n"
            "\n"

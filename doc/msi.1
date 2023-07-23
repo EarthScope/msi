@@ -1,4 +1,4 @@
-.TH MSI 1 2023/02/17
+.TH MSI 1 2023/07/23
 .SH NAME
 miniSEED Inspector
 
@@ -59,25 +59,17 @@ Limit processing to miniSEED records that contain or end before
 is: 'YYYY[-MM-DDThh:mm:ss.ffff], or 'YYYY[,DDD,HH,MM,SS,FFFFFF]',
 or Unix/POSIX epoch seconds.
 
-.IP "-M \fImatch\fP"
-Limit processing to miniSEED records that match the \fImatch\fP
-regular expression.  This pattern is matched against the
-Source Identifier for each record, often following this pattern:
+.IP "-m \fImatch\fP"
+Limit processing to miniSEED records that contain the \fImatch\fP
+pattern, which is applied to the Source Identifier for each record,
+often following this pattern:
 'FDSN:<network>_<station>_<location>_<band>_<source>_<subsource>'
 
-If the match expression begins with an '@' character it is assumed
-to indicate a file containing a list of expressions to match, see
-the \fBMATCH OR REJECT LIST FILE\fR section below.
-
-.IP "-R \fIreject\fP"
-Limit processing to miniSEED records that do not match the
-\fIreject\fP regular expression.  This pattern is matched against
-the Source Identifier for each record, often following this pattern:
+.IP "-r \fIreject\fP"
+Limit processing to miniSEED records that do _not_ contain the
+\fIreject\fP pattern, which is applied to the the Source Identifier
+for each record, often following this pattern:
 'FDSN:<network>_<station>_<location>_<band>_<source>_<subsource>'
-
-If the reject expression begins with an '@' character it is assumed
-to indicate a file containing a list of expressions to reject, see
-the \fBMATCH OR REJECT LIST FILE\fR section below.
 
 .IP "-n \fIcount\fP"
 Only process \fIcount\fP input records.
@@ -204,25 +196,6 @@ The 'files.list' file might look like this:
 data/day1.mseed
 data/day2.mseed
 data/day3.mseed
-.fi
-
-.SH "MATCH OR REJECT LIST FILE"
-A list file used with either the \fB-M\fP or \fB-R\fP options contains
-a list of regular expressions (one on each line) that will be combined
-into a single compound expression.  The initial '@' character
-indicating a list file is not considered part of the file name.  As an
-example, if the following command line option was used:
-
-.nf
-\fB-M @match.list\fP
-.fi
-
-The 'match.list' file might look like this:
-
-.nf
-FDSN:IU_ANMO_.*
-FDSN:IU_ADK_00_B_H_Z
-FDSN:II_BFO_00_B_H_Z
 .fi
 
 .SH LEAP SECOND LIST FILE

@@ -1,6 +1,7 @@
 2023.204: 4.0
 	- Update to libmseed 3, with support for miniSEED 3, URLs, etc.
-	- The -M and -R matching and rejection regex patterns now match
+	- Remove the -M and -R options.
+	- Add -m and -r options to match and reject patterns against the
 	Source Identifier of each record, often following this pattern:
 	`FDSN:<network>_<station>_<location>_<band>_<source>_<subsource>`.
 	- Replace the -y option with -snd and change the default to stop
