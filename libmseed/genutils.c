@@ -3,7 +3,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2023 Chad Trabant, EarthScope Data Services
+ * Copyright (c) 2024 Chad Trabant, EarthScope Data Services
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,7 +76,7 @@ libmseed_memory_prealloc (void *ptr, size_t size, size_t *currentsize)
 #define NTPPOSIXEPOCHDELTA 2208988800LL
 #define NTPEPOCH2NSTIME(X) (MS_EPOCH2NSTIME (X - NTPPOSIXEPOCHDELTA))
 
-/* Embedded leap second list */
+/* Embedded leap second list, good through: 28 December 2023 */
 static LeapSecond embedded_leapsecondlist[] = {
     {.leapsecond = NTPEPOCH2NSTIME (2272060800), .TAIdelta = 10, .next = &embedded_leapsecondlist[1]},
     {.leapsecond = NTPEPOCH2NSTIME (2287785600), .TAIdelta = 11, .next = &embedded_leapsecondlist[2]},
@@ -190,7 +190,7 @@ ms_sid2nslc (const char *sid, char *net, char *sta, char *loc, char *chan)
 
   if (!sid)
   {
-    ms_log (2, "Required argument not defined: 'sid'\n");
+    ms_log (2, "%s(): Required input not defined: 'sid'\n", __func__);
     return -1;
   }
 
@@ -288,9 +288,9 @@ ms_sid2nslc (const char *sid, char *net, char *sta, char *loc, char *chan)
  * station, location and channel codes with the form:
  *  \c FDSN:NET_STA_LOC_CHAN, where \c CHAN="BAND_SOURCE_POSITION"
  *
- * Memory for the source identifier must already be allocated.  If a
- * specific component is NULL it will be empty in the resulting
- * identifier.
+ * Memory for the source identifier must already be allocated.
+ *
+ * If the \a loc value is NULL it will be empty in the resulting Source ID.
  *
  * The \a chan value will be converted to extended channel format if
  * it appears to be in SEED channel form.  Meaning, if the \a chan is
@@ -318,15 +318,15 @@ ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
   char xchan[6] = {0};
   int needed = 0;
 
-  if (!sid)
+  if (!sid || !net || !sta || !chan)
   {
-    ms_log (2, "Required argument not defined: 'sid'\n");
+    ms_log (2, "%s(): Required input not defined: sid,net,sta,chan\n", __func__);
     return -1;
   }
 
-  if (sidlen < 13)
+  if (sidlen < 16)
   {
-    ms_log (2, "Length of destination SID buffer must be at least 13 bytes\n");
+    ms_log (2, "Length of destination SID buffer must be at least 16 bytes\n");
     return -1;
   }
 
@@ -337,38 +337,33 @@ ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
   *sptr++ = ':';
   needed  = 5;
 
-  if (net)
+  /* Network code */
+  while (*net)
   {
-    while (*net)
-    {
-      if ((sptr - sid) < sidlen)
-        *sptr++ = *net;
-
-      net++;
-      needed++;
-    }
+    if ((sptr - sid) < sidlen)
+      *sptr++ = *net;
+    net++;
+    needed++;
   }
 
   if ((sptr - sid) < sidlen)
     *sptr++ = '_';
   needed++;
 
-  if (sta)
+  /* Station code */
+  while (*sta)
   {
-    while (*sta)
-    {
-      if ((sptr - sid) < sidlen)
-        *sptr++ = *sta;
-
-      sta++;
-      needed++;
-    }
+    if ((sptr - sid) < sidlen)
+      *sptr++ = *sta;
+    sta++;
+    needed++;
   }
 
   if ((sptr - sid) < sidlen)
     *sptr++ = '_';
   needed++;
 
+  /* Location code, may be empty */
   if (loc)
   {
     while (*loc)
@@ -385,32 +380,34 @@ ms_nslc2sid (char *sid, int sidlen, uint16_t flags,
     *sptr++ = '_';
   needed++;
 
-  if (chan)
+  /* Map SEED channel to extended channel if possible, otherwise direct copy */
+  if (!ms_seedchan2xchan (xchan, chan))
   {
-    /* Map SEED channel to extended channel if possible, otherwise direct copy */
-    if (!ms_seedchan2xchan (xchan, chan))
-    {
-      chan = xchan;
-    }
-
-    while (*chan)
-    {
-      if ((sptr - sid) < sidlen)
-        *sptr++ = *chan;
-
-      chan++;
-      needed++;
-    }
+    chan = xchan;
   }
 
+  /* Channel code */
+  while (*chan)
+  {
+    if ((sptr - sid) < sidlen)
+      *sptr++ = *chan;
+    chan++;
+    needed++;
+  }
+
+  /* Terminate: at the end of the ID or end of the buffer */
   if ((sptr - sid) < sidlen)
     *sptr = '\0';
   else
     *--sptr = '\0';
 
-  if (needed >= sidlen)
+  /* A byte is needed for the terminator */
+  needed++;
+
+  if (needed > sidlen)
   {
-    ms_log (2, "Provided SID destination (%d bytes) is not big enough for the needed %d bytes\n", sidlen, needed);
+    ms_log (2, "Provided SID destination (%d bytes) is not big enough for the needed %d bytes\n",
+            sidlen, needed);
     return -1;
   }
 
@@ -747,7 +744,7 @@ ms_doy2md (int year, int yday, int *month, int *mday)
 
   if (!month || !mday)
   {
-    ms_log (2, "Required argument not defined: 'month' or 'mday'\n");
+    ms_log (2, "%s(): Required input not defined: 'month' or 'mday'\n", __func__);
     return -1;
   }
 
@@ -801,7 +798,7 @@ ms_md2doy (int year, int month, int mday, int *yday)
 
   if (!yday)
   {
-    ms_log (2, "Required argument not defined: 'yday'\n");
+    ms_log (2, "%s(): Required input not defined: 'yday'\n", __func__);
     return -1;
   }
 
@@ -941,7 +938,7 @@ ms_nstime2timestr (nstime_t nstime, char *timestr,
 
   if (!timestr)
   {
-    ms_log (2, "Required argument not defined: 'timestr'\n");
+    ms_log (2, "%s(): Required input not defined: 'timestr'\n", __func__);
     return NULL;
   }
 
@@ -1294,7 +1291,7 @@ ms_timestr2nstime (const char *timestr)
 
   if (!timestr)
   {
-    ms_log (2, "Required argument not defined: 'timestr'\n");
+    ms_log (2, "%s(): Required input not defined: 'timestr'\n", __func__);
     return NSTERROR;
   }
 
@@ -1446,7 +1443,7 @@ ms_mdtimestr2nstime (const char *timestr)
 
   if (!timestr)
   {
-    ms_log (2, "Required argument not defined: 'timestr'\n");
+    ms_log (2, "%s(): Required input not defined: 'timestr'\n", __func__);
     return NSTERROR;
   }
 
@@ -1552,7 +1549,7 @@ ms_seedtimestr2nstime (const char *seedtimestr)
 
   if (!seedtimestr)
   {
-    ms_log (2, "Required argument not defined: 'seedtimestr'\n");
+    ms_log (2, "%s(): Required input not defined: 'seedtimestr'\n", __func__);
     return NSTERROR;
   }
 
@@ -1736,9 +1733,9 @@ ms_readleapseconds (const char *envvarname)
  *
  * Leap seconds are loaded into the library's global leapsecond list.
  *
- * The file is expected to be standard IETF leap second list format.
- * The list is usually available from:
- * https://www.ietf.org/timezones/data/leap-seconds.list
+ * The file is expected to be in NTP leap second list format. Some locations
+ * where this file can be obtained are indicated in RFC 8633 section 3.7:
+ * https://www.rfc-editor.org/rfc/rfc8633.html#section-3.7
  *
  * @param[in] filename File containing leap second list
  *
@@ -1763,7 +1760,7 @@ ms_readleapsecondfile (const char *filename)
 
   if (!filename)
   {
-    ms_log (2, "Required argument not defined: 'filename'\n");
+    ms_log (2, "%s(): Required input not defined: 'filename'\n", __func__);
     return -1;
   }
 

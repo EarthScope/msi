@@ -17,7 +17,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (C) 2023:
+ * Copyright (C) 2024:
  * @author Chad Trabant, EarthScope Data Services
  ***************************************************************************/
 
@@ -28,8 +28,8 @@
 extern "C" {
 #endif
 
-#define LIBMSEED_VERSION "3.0.16"    //!< Library version
-#define LIBMSEED_RELEASE "2023.204"  //!< Library release date
+#define LIBMSEED_VERSION "3.0.18"    //!< Library version
+#define LIBMSEED_RELEASE "2024.006"  //!< Library release date
 
 /** @defgroup io-functions File and URL I/O */
 /** @defgroup miniseed-record Record Handling */
@@ -114,6 +114,7 @@ extern "C" {
     #define strncasecmp _strnicmp
     #define strtoull _strtoui64
     #define fileno _fileno
+    #define fdopen _fdopen
   #endif
 
   /* Extras needed for MinGW */
@@ -132,7 +133,8 @@ extern "C" {
 #endif
 
 #define MINRECLEN 40       //!< Minimum miniSEED record length supported
-#define MAXRECLEN 131172   //!< Maximum miniSEED record length supported
+#define MAXRECLEN 10485760 //!< Maximum miniSEED record length supported (10MiB)
+#define MAXRECLENv2 131172 //!< Maximum v2 miniSEED record length supported (131+ KiB or 2^17)
 
 #define LM_SIDLEN 64       //!< Length of source ID string
 
@@ -337,6 +339,16 @@ extern int ms_md2doy (int year, int month, int mday, int *yday);
     - \c 'd' - 64-bit float (IEEE) data samples
 */
 
+/** @def MS_PACK_DEFAULT_RECLEN
+    @brief Default record length to use when ::MS3Record.reclen == -1
+ */
+#define MS_PACK_DEFAULT_RECLEN 4096
+
+/** @def MS_PACK_DEFAULT_ENCODING
+    @brief Default data encoding to use when ::MS3Record.encoding == -1
+ */
+#define MS_PACK_DEFAULT_ENCODING DE_STEIM2
+
 /** @addtogroup miniseed-record
     @brief Definitions and functions related to individual miniSEED records
     @{ */
@@ -358,29 +370,29 @@ typedef struct MS3Record {
   int64_t         samplecnt;         //!< Number of samples in record
   uint32_t        crc;               //!< CRC of entire record
   uint16_t        extralength;       //!< Length of extra headers in bytes
-  uint16_t        datalength;        //!< Length of data payload in bytes
+  uint32_t        datalength;        //!< Length of data payload in bytes
   char           *extra;             //!< Pointer to extra headers
 
   /* Data sample fields */
   void           *datasamples;       //!< Data samples, \a numsamples of type \a sampletype
   size_t          datasize;          //!< Size of datasamples buffer in bytes
   int64_t         numsamples;        //!< Number of data samples in datasamples
-  char            sampletype;        //!< Sample type code: a, i, f, d @ref sample-types
+  char            sampletype;        //!< Sample type code: t, i, f, d @ref sample-types
 } MS3Record;
 
 extern int msr3_parse (const char *record, uint64_t recbuflen, MS3Record **ppmsr,
                        uint32_t flags, int8_t verbose);
 
-extern int msr3_pack (MS3Record *msr,
+extern int msr3_pack (const MS3Record *msr,
                       void (*record_handler) (char *, int, void *),
                       void *handlerdata, int64_t *packedsamples,
                       uint32_t flags, int8_t verbose);
 
-extern int msr3_repack_mseed3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose);
+extern int msr3_repack_mseed3 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose);
 
-extern int msr3_pack_header3 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose);
+extern int msr3_pack_header3 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose);
 
-extern int msr3_pack_header2 (MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose);
+extern int msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_t verbose);
 
 extern int64_t msr3_unpack_data (MS3Record *msr, int8_t verbose);
 
@@ -619,10 +631,10 @@ extern MS3TraceID*   mstl3_findID (MS3TraceList *mstl, const char *sid, uint8_t 
 extern MS3TraceSeg*  mstl3_addmsr_recordptr (MS3TraceList *mstl, const MS3Record *msr, MS3RecordPtr **pprecptr,
                                              int8_t splitversion, int8_t autoheal, uint32_t flags,
                                              const MS3Tolerance *tolerance);
-extern int64_t       mstl3_readbuffer (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
+extern int64_t       mstl3_readbuffer (MS3TraceList **ppmstl, const char *buffer, uint64_t bufferlength,
                                        int8_t splitversion, uint32_t flags,
                                        const MS3Tolerance *tolerance, int8_t verbose);
-extern int64_t       mstl3_readbuffer_selection (MS3TraceList **ppmstl, char *buffer, uint64_t bufferlength,
+extern int64_t       mstl3_readbuffer_selection (MS3TraceList **ppmstl, const char *buffer, uint64_t bufferlength,
                                                  int8_t splitversion, uint32_t flags,
                                                  const MS3Tolerance *tolerance, const MS3Selections *selections,
                                                  int8_t verbose);
@@ -635,7 +647,7 @@ extern int64_t mstl3_pack (MS3TraceList *mstl, void (*record_handler) (char *, i
                            int64_t *packedsamples, uint32_t flags, int8_t verbose, char *extra);
 extern void mstl3_printtracelist (const MS3TraceList *mstl, ms_timeformat_t timeformat,
                                   int8_t details, int8_t gaps, int8_t versions);
-extern void mstl3_printsynclist (const MS3TraceList *mstl, char *dccid, ms_subseconds_t subseconds);
+extern void mstl3_printsynclist (const MS3TraceList *mstl, const char *dccid, ms_subseconds_t subseconds);
 extern void mstl3_printgaplist (const MS3TraceList *mstl, ms_timeformat_t timeformat,
                                 double *mingap, double *maxgap);
 /** @} */
@@ -680,7 +692,8 @@ typedef struct LMIO
   {
     LMIO_NULL = 0,   //!< IO handle type is undefined
     LMIO_FILE = 1,   //!< IO handle is FILE-type
-    LMIO_URL  = 2    //!< IO handle is URL-type
+    LMIO_URL  = 2,   //!< IO handle is URL-type
+    LMIO_FD   = 3    //!< IO handle is a provided file descriptor
   } type;            //!< IO handle type
   void *handle;      //!< Primary IO handle, either file or URL
   void *handle2;     //!< Secondary IO handle for URL
@@ -746,6 +759,7 @@ extern int64_t msr3_writemseed (MS3Record *msr, const char *mspath, int8_t overw
 extern int64_t mstl3_writemseed (MS3TraceList *mst, const char *mspath, int8_t overwrite,
                                  int maxreclen, int8_t encoding, uint32_t flags, int8_t verbose);
 extern int libmseed_url_support (void);
+extern MS3FileParam *ms3_mstl_init_fd (int fd);
 /** @} */
 
 /** @addtogroup string-functions
@@ -976,6 +990,7 @@ extern int mseh_add_recenter_r (MS3Record *msr, const char *ptr,
 
 extern int mseh_serialize (MS3Record *msr, LM_PARSED_JSON **parsestate);
 extern void mseh_free_parsestate (LM_PARSED_JSON **parsestate);
+extern int mseh_replace (MS3Record *msr, char *jsonstring);
 
 extern int mseh_print (const MS3Record *msr, int indent);
 /** @} */
@@ -1184,6 +1199,10 @@ extern int ms_rlog_free (MSLogParam *logp);
 
 /** @addtogroup leapsecond
     @brief Utilities for handling leap seconds
+
+    @note The library contains an embedded list of leap seconds through
+    year 2023.  These functions are only needed if leap seconds are added
+    in 2024 and beyond.
 
     The library contains functionality to load a list of leap seconds
     into a global list, which is then used to determine when leap

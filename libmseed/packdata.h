@@ -4,7 +4,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2023 Chad Trabant, EarthScope Data Services
+ * Copyright (c) 2024 Chad Trabant, EarthScope Data Services
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,10 +45,10 @@ extern int msr_encode_float32 (float *input, int samplecount, float *output,
 extern int msr_encode_float64 (double *input, int samplecount, double *output,
                                int outputlength, int swapflag);
 extern int msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
-                              int outputlength, int32_t diff0, uint16_t *byteswritten,
+                              int outputlength, int32_t diff0, uint32_t *byteswritten,
                               int swapflag);
 extern int msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
-                              int outputlength, int32_t diff0, uint16_t *byteswritten,
+                              int outputlength, int32_t diff0, uint32_t *byteswritten,
                               const char *sid, int swapflag);
 
 #ifdef __cplusplus

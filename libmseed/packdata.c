@@ -4,7 +4,7 @@
  *
  * This file is part of the miniSEED Library.
  *
- * Copyright (c) 2023 Chad Trabant, EarthScope Data Services
+ * Copyright (c) 2024 Chad Trabant, EarthScope Data Services
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -223,7 +223,7 @@ msr_encode_float64 (double *input, int samplecount, double *output,
  ************************************************************************/
 int
 msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
-                   int outputlength, int32_t diff0, uint16_t *byteswritten,
+                   int outputlength, int32_t diff0, uint32_t *byteswritten,
                    int swapflag)
 {
   int32_t *frameptr;   /* Frame pointer in output */
@@ -251,7 +251,8 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
 
   if (!input || !output || outputlength <= 0)
   {
-    ms_log (2, "Required argument not defined: 'input', 'output' or 'outputlength' <= 0\n");
+    ms_log (2, "%s(): Required input not defined: 'input', 'output' or 'outputlength' <= 0\n",
+            __func__);
     return -1;
   }
 
@@ -422,7 +423,7 @@ msr_encode_steim1 (int32_t *input, int samplecount, int32_t *output,
  ************************************************************************/
 int
 msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
-                   int outputlength, int32_t diff0, uint16_t *byteswritten,
+                   int outputlength, int32_t diff0, uint32_t *byteswritten,
                    const char *sid, int swapflag)
 {
   uint32_t *frameptr;  /* Frame pointer in output */
@@ -450,7 +451,8 @@ msr_encode_steim2 (int32_t *input, int samplecount, int32_t *output,
 
   if (!input || !output || outputlength <= 0)
   {
-    ms_log (2, "Required argument not defined: 'input', 'output' or 'outputlength' <= 0\n");
+    ms_log (2, "%s(): Required input not defined: 'input', 'output' or 'outputlength' <= 0\n",
+            __func__);
     return -1;
   }
 
