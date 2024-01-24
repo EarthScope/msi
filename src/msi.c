@@ -28,7 +28,7 @@ static int addlistfile (char *filename);
 static int my_globmatch (const char *string, const char *pattern);
 static void usage (void);
 
-#define VERSION "4.1"
+#define VERSION "4.2"
 #define PACKAGE "msi"
 
 static int8_t verbose = 0;
