@@ -932,7 +932,8 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
   }
 
   /* Parse identifier codes from full identifier */
-  if (ms_sid2nslc (msr->sid, network, station, location, channel))
+  if (ms_sid2nslc_n (msr->sid, network, sizeof (network), station, sizeof (station),
+                     location, sizeof (location), channel, sizeof (channel)))
   {
     ms_log (2, "%s: Cannot parse SEED identifier codes from full identifier\n", msr->sid);
     return -1;
@@ -986,7 +987,25 @@ msr3_pack_header2 (const MS3Record *msr, char *record, uint32_t recbuflen, int8_
   }
 
   /* Build fixed header */
-  memcpy (pMS2FSDH_SEQNUM (record), "000000", 6);
+
+  /* Use sequence number from extra headers if present */
+  if (yyjson_ptr_get_uint (ehroot, "/FDSN/Sequence", &header_uint))
+  {
+    if (header_uint <= 999999)
+    {
+      char seqnum[7];
+      snprintf (seqnum, sizeof (seqnum), "%06" PRIu64, header_uint);
+      memcpy (pMS2FSDH_SEQNUM (record), seqnum, 6);
+    }
+    else
+    {
+      memcpy (pMS2FSDH_SEQNUM (record), "999999", 6);
+    }
+  }
+  else
+  {
+    memcpy (pMS2FSDH_SEQNUM (record), "000000", 6);
+  }
 
   /* Use DataQuality indicator in extra headers if present */
   if (yyjson_ptr_get_str (ehroot, "/FDSN/DataQuality", &header_string) &&
