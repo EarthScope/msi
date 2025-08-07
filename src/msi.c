@@ -59,8 +59,8 @@ static char *reject = NULL; /* Glob reject pattern */
 static double timetol; /* Time tolerance for continuous traces */
 static double sampratetol; /* Sample rate tolerance for continuous traces */
 static MS3Tolerance tolerance = { .time = NULL, .samprate = NULL };
-double timetol_callback (const MS3Record *msr) { return timetol; }
-double samprate_callback (const MS3Record *msr) { return sampratetol; }
+double timetol_callback (const MS3Record *msr) { (void)msr; return timetol; }
+double samprate_callback (const MS3Record *msr) { (void)msr; return sampratetol; }
 
 struct filelink
 {
