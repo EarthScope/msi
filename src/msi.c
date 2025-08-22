@@ -28,7 +28,7 @@ static int addlistfile (char *filename);
 static int my_globmatch (const char *string, const char *pattern);
 static void usage (void);
 
-#define VERSION "4.2.3"
+#define VERSION "4.2.4"
 #define PACKAGE "msi"
 
 static int8_t verbose = 0;
@@ -164,7 +164,7 @@ main (int argc, char **argv)
         {
           if (verbose >= 3)
           {
-            ms_nstime2timestr (msr->starttime, stime, timeformat, NANO);
+            ms_nstime2timestr_n (msr->starttime, stime, sizeof (stime), timeformat, NANO);
             ms_log (1, "Skipping (starttime) %s, %s\n", msr->sid, stime);
           }
           continue;
@@ -174,7 +174,7 @@ main (int argc, char **argv)
         {
           if (verbose >= 3)
           {
-            ms_nstime2timestr (msr->starttime, stime, timeformat, NANO);
+            ms_nstime2timestr_n (msr->starttime, stime, sizeof (stime), timeformat, NANO);
             ms_log (1, "Skipping (starttime) %s, %s\n", msr->sid, stime);
           }
           continue;
@@ -190,7 +190,7 @@ main (int argc, char **argv)
           {
             if (verbose >= 3)
             {
-              ms_nstime2timestr (msr->starttime, stime, timeformat, NANO);
+              ms_nstime2timestr_n (msr->starttime, stime, sizeof (stime), timeformat, NANO);
               ms_log (1, "Skipping (match) %s, %s\n", msr->sid, stime);
             }
             continue;
@@ -204,7 +204,7 @@ main (int argc, char **argv)
           {
             if (verbose >= 3)
             {
-              ms_nstime2timestr (msr->starttime, stime, timeformat, NANO);
+              ms_nstime2timestr_n (msr->starttime, stime, sizeof (stime), timeformat, NANO);
               ms_log (1, "Skipping (reject) %s, %s\n", msr->sid, stime);
             }
             continue;
