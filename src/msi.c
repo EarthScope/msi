@@ -221,7 +221,7 @@ main (int argc, char **argv)
       if (!tracegaponly)
       {
         if (printoffset)
-          ms_log (0, "%-10" PRId64, (msfp->streampos - msr->reclen));
+          ms_log (0, "%-14" PRId64, (msfp->streampos - msr->reclen));
 
         if (printlatency)
           ms_log (0, "%-10.6g secs ", msr3_host_latency (msr));
