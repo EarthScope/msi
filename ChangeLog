@@ -1,4 +1,8 @@
 2026.211:
+	- Move the basic summary (-s) output to after the trace listing.
+	- Fix mislabeled "Skipping (endtime)" message.
+	- Print the read error message before exiting when a file cannot
+	be read (previously exited silently).
 	- Update libmseed to v3.5.3.
 
 2025.234: 4.2.4
