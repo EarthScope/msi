@@ -347,10 +347,11 @@ main (int argc, char **argv)
     flp = flp->next;
   } /* End of looping over file list */
 
-  if (binfile)
+  /* Close output files, leaving stdout open for any remaining output */
+  if (binfile && bfp != stdout)
     fclose (bfp);
 
-  if (outfile)
+  if (outfile && ofp != stdout)
     fclose (ofp);
 
   if (tracegapsum || tracegaponly)

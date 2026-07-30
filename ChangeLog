@@ -1,4 +1,6 @@
 2026.211:
+	- Do not close stdout when writing output to it, which silently
+	discarded the trace listing, gap listing and basic summary.
 	- Move the basic summary (-s) output to after the trace listing.
 	- Fix mislabeled "Skipping (endtime)" message.
 	- Print the read error message before exiting when a file cannot
