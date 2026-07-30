@@ -1,3 +1,14 @@
+# Build environment can be configured with the following
+# variables, set in the environment or on the command line,
+# e.g. make CFLAGS="-g -Wall":
+#   CC : Specify the C compiler to use
+#   CFLAGS : Specify compiler options to use (default: -O2)
+#   LDFLAGS : Specify linker options to use
+#   WITHOUTURL : Set to any value to disable URL support via libcurl
+
+# Recommended default optimization level (overridable on command line)
+CFLAGS ?= -O2
+
 # Automatically configure URL support if libcurl is present
 # Test for curl-config command and add build options if found
 # Prefer /usr/bin/curl-config over any other curl-config
@@ -11,18 +22,22 @@ endif
 
 ifneq (,$(CURL_CONFIG))
   export LM_CURL_VERSION=$(shell $(CURL_CONFIG) --version)
-  export CFLAGS:=$(CFLAGS) -DLIBMSEED_URL
-  export LDFLAGS:=$(LDFLAGS) $(shell $(CURL_CONFIG) --libs)
+  EXTRA_CFLAGS := -DLIBMSEED_URL
+  EXTRA_LDFLAGS := $(shell $(CURL_CONFIG) --libs)
   $(info Configured with $(LM_CURL_VERSION))
 endif
 
-.PHONY: all clean
-all clean: libmseed
-	$(MAKE) -C src $@
+# Variables passed to sub-makes
+SUBMAKE_ARGS = CFLAGS="$(CFLAGS) $(EXTRA_CFLAGS)" LDFLAGS="$(LDFLAGS) $(EXTRA_LDFLAGS)"
 
-.PHONY: libmseed
-libmseed:
-	$(MAKE) -C $@ $(MAKECMDGOALS)
+.PHONY: all clean
+all clean:
+	$(MAKE) -C libmseed $@ $(SUBMAKE_ARGS)
+	$(MAKE) -C src $@ $(SUBMAKE_ARGS)
+
+.PHONY: test
+test: all
+	@test/run-tests.py
 
 .PHONY: install
 install:
