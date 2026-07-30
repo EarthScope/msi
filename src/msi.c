@@ -345,6 +345,10 @@ main (int argc, char **argv)
 
     totalfiles++;
     flp = flp->next;
+
+    /* Stop if the record count limit has been reached */
+    if (reccntdown == 0)
+      break;
   } /* End of looping over file list */
 
   /* Close output files, leaving stdout open for any remaining output */

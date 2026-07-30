@@ -1,6 +1,8 @@
 2026.211:
 	- Do not close stdout when writing output to it, which silently
 	discarded the trace listing, gap listing and basic summary.
+	- Stop processing files once the record limit (-n) is reached, the
+	basic summary was counting files never opened.
 	- Allow '-b -' to write binary samples to stdout, the value was
 	rejected during option parsing.
 	- Move the basic summary (-s) output to after the trace listing.
