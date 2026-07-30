@@ -353,10 +353,6 @@ main (int argc, char **argv)
   if (outfile)
     fclose (ofp);
 
-  if (basicsum)
-    ms_log (0, "Files: %" PRId64 ", Records: %" PRId64 ", Samples: %" PRId64 "\n",
-            totalfiles, totalrecs, totalsamps);
-
   if (tracegapsum || tracegaponly)
   {
     if (tracegapsum == 1 || tracegaponly == 1)
@@ -372,6 +368,10 @@ main (int argc, char **argv)
       mstl3_printsynclist (mstl, NULL, 1);
     }
   }
+
+  if (basicsum)
+    ms_log (0, "Files: %" PRId64 ", Records: %" PRId64 ", Samples: %" PRId64 "\n",
+            totalfiles, totalrecs, totalsamps);
 
   if (mstl)
     mstl3_free (&mstl, 0);
