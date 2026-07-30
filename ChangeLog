@@ -1,3 +1,6 @@
+2026.211:
+	- Update libmseed to v3.5.3.
+
 2025.234: 4.2.4
 	- Update libmseed to v3.1.7.  Fix for invalid time stamps in v2
   record blockettes and reduced precision in extra header floats.

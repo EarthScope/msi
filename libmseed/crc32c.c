@@ -1,9 +1,9 @@
 /***************************************************************************
- * CRC-32C calculation routines, clean and simple.  Orignal file was named
+ * CRC-32C calculation routines, clean and simple.  Original file was named
  * 'crc_sw.c' and found at: https://github.com/awslabs/aws-checksums
  *
  * All copyrights and license notifications have been retained.
- * Unecessary routines have been removed for use in this code base.
+ * Unnecessary routines have been removed for use in this code base.
  ***************************************************************************/
 
 /*
@@ -328,7 +328,7 @@ static inline uint32_t s_crc_generic_align(
     size_t leading = (4 - input_alignment) & 0x3;
 
     /* Determine what's left without the leading input bytes (might be negative)*/
-    size_t remaining = *length - leading;
+    int remaining = *length - (int)leading;
 
     /* Process unaligned leading input bytes one at a time*/
     if (leading && remaining > 0) {

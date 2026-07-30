@@ -38,8 +38,7 @@
 static nstime_t ms_btime2nstime (uint8_t *btime, int8_t swapflag);
 
 /* Test POINTER for alignment with BYTE_COUNT sized quantities */
-#define is_aligned(POINTER, BYTE_COUNT) \
-  (((uintptr_t) (const void *)(POINTER)) % (BYTE_COUNT) == 0)
+#define is_aligned(POINTER, BYTE_COUNT) (((uintptr_t)(const void *)(POINTER)) % (BYTE_COUNT) == 0)
 
 /***************************************************************************
  * Unpack a miniSEED 3.x data record and populate a MS3Record struct.
@@ -68,15 +67,17 @@ static nstime_t ms_btime2nstime (uint8_t *btime, int8_t swapflag);
  * success, otherwise returns a libmseed error code (listed in
  * libmseed.h).
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int64_t
-msr3_unpack_mseed3 (const char *record, int reclen, MS3Record **ppmsr,
-                    uint32_t flags, int8_t verbose)
+msr3_unpack_mseed3 (const char *record, int reclen, MS3Record **ppmsr, uint32_t flags,
+                    int8_t verbose)
 {
   MS3Record *msr = NULL;
   uint32_t calculated_crc;
   uint32_t header_crc;
+  uint32_t datalength = 0;
+  uint16_t extralength = 0;
   uint8_t sidlength = 0;
   int8_t swapflag;
   int bigendianhost = ms_bigendianhost ();
@@ -115,28 +116,55 @@ msr3_unpack_mseed3 (const char *record, int reclen, MS3Record **ppmsr,
 
   sidlength = *pMS3FSDH_SIDLENGTH (record);
 
+  memcpy (&extralength, pMS3FSDH_EXTRALENGTH (record), sizeof (uint16_t));
+  extralength = HO2u (extralength, swapflag);
+
+  memcpy (&datalength, pMS3FSDH_DATALENGTH (record), sizeof (uint32_t));
+  datalength = HO4u (datalength, swapflag);
+
+  memcpy (&header_crc, pMS3FSDH_CRC (record), sizeof (uint32_t));
+  header_crc = HO4u (header_crc, swapflag);
+
   /* Record SID length must be at most one less than maximum size to leave a byte for termination */
   if (sidlength >= sizeof (msr->sid))
   {
-    ms_log (2, "%.*s: Source identifier is longer (%d) than supported (%d)\n",
-            sidlength, pMS3FSDH_SID (record), sidlength, (int)sizeof (msr->sid) - 1);
+    ms_log (2, "%.*s: Source identifier is longer (%d) than supported (%d)\n", sidlength,
+            pMS3FSDH_SID (record), sidlength, (int)sizeof (msr->sid) - 1);
     return MS_GENERROR;
   }
 
   /* Validate the CRC */
   if (flags & MSF_VALIDATECRC)
   {
-    /* Save header CRC, set value to 0, calculate CRC, restore CRC */
-    header_crc = HO4u (*pMS3FSDH_CRC (record), swapflag);
-    memset (pMS3FSDH_CRC(record), 0, sizeof(uint32_t));
-    calculated_crc = ms_crc32c ((const uint8_t*)record, reclen, 0);
-    *pMS3FSDH_CRC(record) = HO4u (header_crc, swapflag);
+    static const uint32_t crc_zeros = 0;
+
+    /* Calculate CRC with zeros in the 4-byte CRC field starting at byte 28 */
+    calculated_crc = ms_crc32c ((const uint8_t *)record, 28, 0);
+    calculated_crc = ms_crc32c ((const uint8_t *)&crc_zeros, sizeof (crc_zeros), calculated_crc);
+    calculated_crc = ms_crc32c ((const uint8_t *)record + 32, reclen - 32, calculated_crc);
 
     if (header_crc != calculated_crc)
     {
-      ms_log (2, "%.*s: CRC is invalid, miniSEED record may be corrupt, header: 0x%X calculated: 0x%X\n",
-              sidlength, pMS3FSDH_SID (record), header_crc, calculated_crc);
+      ms_log (
+          2,
+          "%.*s: CRC is invalid, miniSEED record may be corrupt, header: 0x%X calculated: 0x%X\n",
+          sidlength, pMS3FSDH_SID (record), header_crc, calculated_crc);
       return MS_INVALIDCRC;
+    }
+  }
+
+  /* Verify header-indicated lengths fit within the provided record */
+  {
+    uint64_t headerlength = (uint64_t)MS3FSDH_LENGTH + sidlength + extralength;
+    uint64_t expectedlength = headerlength + datalength;
+
+    if (headerlength > (uint64_t)reclen || expectedlength > (uint64_t)reclen)
+    {
+      ms_log (2,
+              "%.*s: Record length (%d) shorter than header lengths (header %" PRIu64
+              ", total %" PRIu64 ")\n",
+              sidlength, pMS3FSDH_SID (record), reclen, headerlength, expectedlength);
+      return MS_OUTOFRANGE;
     }
   }
 
@@ -162,14 +190,12 @@ msr3_unpack_mseed3 (const char *record, int reclen, MS3Record **ppmsr,
   memcpy (&nanoseconds, pMS3FSDH_NSEC (record), sizeof (uint32_t));
   msr->starttime = ms_time2nstime (HO2u (*pMS3FSDH_YEAR (record), msr->swapflag),
                                    HO2u (*pMS3FSDH_DAY (record), msr->swapflag),
-                                   *pMS3FSDH_HOUR (record),
-                                   *pMS3FSDH_MIN (record),
-                                   *pMS3FSDH_SEC (record),
-                                   HO4u (nanoseconds, msr->swapflag));
+                                   *pMS3FSDH_HOUR (record), *pMS3FSDH_MIN (record),
+                                   *pMS3FSDH_SEC (record), HO4u (nanoseconds, msr->swapflag));
   if (msr->starttime == NSTERROR)
   {
-    ms_log (2, "%.*s: Cannot convert start time to internal time representation\n",
-            sidlength, pMS3FSDH_SID (record));
+    ms_log (2, "%.*s: Cannot convert start time to internal time representation\n", sidlength,
+            pMS3FSDH_SID (record));
     return MS_GENERROR;
   }
 
@@ -179,18 +205,22 @@ msr3_unpack_mseed3 (const char *record, int reclen, MS3Record **ppmsr,
   memcpy (&samprate, pMS3FSDH_SAMPLERATE (record), sizeof (double));
   msr->samprate = HO8f (samprate, msr->swapflag);
 
+  if (msr->samprate != 0.0 && !isnormal (msr->samprate))
+  {
+    ms_log (2, "%.*s: Invalid sample rate: %g\n", sidlength, pMS3FSDH_SID (record), msr->samprate);
+    return MS_GENERROR;
+  }
+
   uint32_t numsamples;
   memcpy (&numsamples, pMS3FSDH_NUMSAMPLES (record), sizeof (uint32_t));
   msr->samplecnt = HO4u (numsamples, msr->swapflag);
 
-  uint32_t crc;
-  memcpy (&crc, pMS3FSDH_CRC (record), sizeof (uint32_t));
-  msr->crc = HO4u (crc, msr->swapflag);
+  msr->crc = header_crc;
 
   msr->pubversion = *pMS3FSDH_PUBVERSION (record);
 
   /* Copy extra headers into a NULL-terminated string */
-  msr->extralength = HO2u (*pMS3FSDH_EXTRALENGTH (record), msr->swapflag);
+  msr->extralength = extralength;
   if (msr->extralength)
   {
     if ((msr->extra = (char *)libmseed_memory.malloc (msr->extralength + 1)) == NULL)
@@ -203,16 +233,14 @@ msr3_unpack_mseed3 (const char *record, int reclen, MS3Record **ppmsr,
     msr->extra[msr->extralength] = '\0';
   }
 
-  uint32_t datalength;
-  memcpy (&datalength, pMS3FSDH_DATALENGTH (record), sizeof (uint32_t));
-  msr->datalength = HO4u (datalength, msr->swapflag);
+  msr->datalength = datalength;
 
   /* Determine data payload byte swapping.
      Steim encodings are big endian.
      All other encodings are little endian, matching the header. */
   if (msr->encoding == DE_STEIM1 || msr->encoding == DE_STEIM2)
   {
-    if (! bigendianhost)
+    if (!bigendianhost)
       msr->swapflag |= MSSWAP_PAYLOAD;
   }
   else if (msr->swapflag & MSSWAP_HEADER)
@@ -266,11 +294,11 @@ msr3_unpack_mseed3 (const char *record, int reclen, MS3Record **ppmsr,
  * success, otherwise returns a libmseed error code (listed in
  * libmseed.h).
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 int64_t
-msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
-                    uint32_t flags, int8_t verbose)
+msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr, uint32_t flags,
+                    int8_t verbose)
 {
   int B1000offset = 0;
   int B1001offset = 0;
@@ -426,10 +454,16 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
   /* Traverse the blockettes */
   blkt_offset = HO2u (*pMS2FSDH_BLOCKETTEOFFSET (record), msr->swapflag);
 
-  while ((blkt_offset != 0) &&
-         (blkt_offset < reclen) &&
-         (blkt_offset < MAXRECLEN))
+  while ((blkt_offset != 0) && ((blkt_offset + 4) <= reclen) && (blkt_offset < MAXRECLEN))
   {
+    /* Reject an offset within the fixed section of the header */
+    if (blkt_offset < MS2FSDH_LENGTH)
+    {
+      ms_log (2, "%s: Blockette offset (%d) is within the fixed header, impossible\n", msr->sid,
+              blkt_offset);
+      goto error_return;
+    }
+
     /* Every blockette has a similar 4 byte header: type and next */
     memcpy (&blkt_type, record + blkt_offset, 2);
     memcpy (&next_blkt, record + blkt_offset + 2, 2);
@@ -440,39 +474,68 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
       ms_gswap2 (&next_blkt);
     }
 
+    /* Blockette 2000 stores its length in a 2-byte field at offset 4, which
+     * must be within the record buffer before ms2_blktlen() reads it */
+    if (blkt_type == 2000 && (blkt_offset + 6) > reclen)
+    {
+      ms_log (2, "%s: Blockette 2000 length field extends beyond record size, truncated?\n",
+              msr->sid);
+      goto error_return;
+    }
+
     /* Get blockette length */
     blkt_length = ms2_blktlen (blkt_type, record + blkt_offset, msr->swapflag);
 
     if (blkt_length == 0)
     {
       ms_log (2, "%s: Unknown blockette length for type %d\n", msr->sid, blkt_type);
-      break;
+
+      /* A terminated blockette chain with unknown blockette stops here */
+      if (next_blkt == 0)
+        break;
+
+      /* Skip via next offset only when it advances and stays in-bounds */
+      if (next_blkt > blkt_offset && next_blkt >= MS2FSDH_LENGTH && next_blkt <= reclen)
+      {
+        blkt_offset = next_blkt;
+        blkt_count++;
+        continue;
+      }
+
+      goto error_return;
     }
 
     /* Make sure blockette is contained within the msrecord buffer */
     if ((blkt_offset + blkt_length) > reclen)
     {
       ms_log (2, "%s: Blockette %d extends beyond record size, truncated?\n", msr->sid, blkt_type);
-      break;
+      goto error_return;
     }
 
     blkt_end = blkt_offset + blkt_length;
 
     if (blkt_type == 100)
     {
-      msr->samprate = HO4f (*pMS2B100_SAMPRATE (record + blkt_offset), msr->swapflag);
+      float b100rate = HO4f (*pMS2B100_SAMPRATE (record + blkt_offset), msr->swapflag);
+
+      if (b100rate < 0.0 || (b100rate != 0.0 && !isnormal (b100rate)))
+        ms_log (1, "%s: Ignoring invalid Blockette 100 sample rate: %g\n", msr->sid, b100rate);
+      else
+        msr->samprate = b100rate;
     }
 
     /* Blockette 200, generic event detection */
     else if (blkt_type == 200)
     {
-      memset (&eventdetection, 0, sizeof(eventdetection));
+      memset (&eventdetection, 0, sizeof (eventdetection));
 
       strncpy (eventdetection.type, "GENERIC", sizeof (eventdetection.type));
       ms_strncpcleantail (eventdetection.detector, pMS2B200_DETECTOR (record + blkt_offset), 24);
-      eventdetection.signalamplitude = HO4f (*pMS2B200_AMPLITUDE (record + blkt_offset), msr->swapflag);
+      eventdetection.signalamplitude =
+          HO4f (*pMS2B200_AMPLITUDE (record + blkt_offset), msr->swapflag);
       eventdetection.signalperiod = HO4f (*pMS2B200_PERIOD (record + blkt_offset), msr->swapflag);
-      eventdetection.backgroundestimate = HO4f (*pMS2B200_BACKGROUNDEST (record + blkt_offset), msr->swapflag);
+      eventdetection.backgroundestimate =
+          HO4f (*pMS2B200_BACKGROUNDEST (record + blkt_offset), msr->swapflag);
 
       /* If bit 2 is set, set compression wave according to bit 0 */
       if (*pMS2B200_FLAGS (record + blkt_offset) & 0x04)
@@ -490,7 +553,8 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
       else
         strncpy (eventdetection.units, "COUNTS", sizeof (eventdetection.units));
 
-      eventdetection.onsettime = ms_btime2nstime ((uint8_t*)pMS2B200_YEAR (record + blkt_offset), msr->swapflag);
+      eventdetection.onsettime =
+          ms_btime2nstime ((uint8_t *)pMS2B200_YEAR (record + blkt_offset), msr->swapflag);
 
       memset (eventdetection.medsnr, 0, 6);
       eventdetection.medlookback = -1;
@@ -500,20 +564,22 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
       if (mseh_add_event_detection_r (msr, NULL, &eventdetection, &parsestate))
       {
         ms_log (2, "%s: Problem mapping Blockette 200 to extra headers\n", msr->sid);
-        return MS_GENERROR;
+        goto error_return;
       }
     }
 
     /* Blockette 201, Murdock event detection */
     else if (blkt_type == 201)
     {
-      memset (&eventdetection, 0, sizeof(eventdetection));
+      memset (&eventdetection, 0, sizeof (eventdetection));
 
       strncpy (eventdetection.type, "MURDOCK", sizeof (eventdetection.type));
       ms_strncpcleantail (eventdetection.detector, pMS2B201_DETECTOR (record + blkt_offset), 24);
-      eventdetection.signalamplitude = HO4f (*pMS2B201_AMPLITUDE (record + blkt_offset), msr->swapflag);
+      eventdetection.signalamplitude =
+          HO4f (*pMS2B201_AMPLITUDE (record + blkt_offset), msr->swapflag);
       eventdetection.signalperiod = HO4f (*pMS2B201_PERIOD (record + blkt_offset), msr->swapflag);
-      eventdetection.backgroundestimate = HO4f (*pMS2B201_BACKGROUNDEST (record + blkt_offset), msr->swapflag);
+      eventdetection.backgroundestimate =
+          HO4f (*pMS2B201_BACKGROUNDEST (record + blkt_offset), msr->swapflag);
 
       /* If bit 0 is set, dilatation wave otherwise compression */
       if (*pMS2B201_FLAGS (record + blkt_offset) & 0x01)
@@ -521,7 +587,8 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
       else
         strncpy (eventdetection.wave, "COMPRESSION", sizeof (eventdetection.wave));
 
-      eventdetection.onsettime = ms_btime2nstime ((uint8_t*)pMS2B201_YEAR (record + blkt_offset), msr->swapflag);
+      eventdetection.onsettime =
+          ms_btime2nstime ((uint8_t *)pMS2B201_YEAR (record + blkt_offset), msr->swapflag);
 
       memcpy (eventdetection.medsnr, pMS2B201_MEDSNR (record + blkt_offset), 6);
       eventdetection.medlookback = *pMS2B201_LOOPBACK (record + blkt_offset);
@@ -531,18 +598,19 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
       if (mseh_add_event_detection_r (msr, NULL, &eventdetection, &parsestate))
       {
         ms_log (2, "%s: Problem mapping Blockette 201 to extra headers\n", msr->sid);
-        return MS_GENERROR;
+        goto error_return;
       }
     }
 
     /* Blockette 300, step calibration */
     else if (blkt_type == 300)
     {
-      memset (&calibration, 0, sizeof(calibration));
+      memset (&calibration, 0, sizeof (calibration));
 
       strncpy (calibration.type, "STEP", sizeof (calibration.type));
 
-      calibration.begintime = ms_btime2nstime ((uint8_t*)pMS2B300_YEAR (record + blkt_offset), msr->swapflag);
+      calibration.begintime =
+          ms_btime2nstime ((uint8_t *)pMS2B300_YEAR (record + blkt_offset), msr->swapflag);
 
       calibration.endtime = NSTUNSET;
       calibration.steps = *pMS2B300_NUMCALIBRATIONS (record + blkt_offset);
@@ -568,14 +636,19 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
       if (*pMS2B300_FLAGS (record + blkt_offset) & 0x08)
         calibration.continued = 1;
 
-      calibration.duration = (double)(HO4u (*pMS2B300_STEPDURATION (record + blkt_offset), msr->swapflag) / 10000.0);
-      calibration.stepbetween = (double)(HO4u (*pMS2B300_INTERVALDURATION (record + blkt_offset), msr->swapflag) / 10000.0);
+      calibration.duration =
+          (double)(HO4u (*pMS2B300_STEPDURATION (record + blkt_offset), msr->swapflag) / 10000.0);
+      calibration.stepbetween =
+          (double)(HO4u (*pMS2B300_INTERVALDURATION (record + blkt_offset), msr->swapflag) /
+                   10000.0);
       calibration.amplitude = HO4f (*pMS2B300_AMPLITUDE (record + blkt_offset), msr->swapflag);
-      ms_strncpcleantail (calibration.inputchannel, pMS2B300_INPUTCHANNEL (record + blkt_offset), 3);
+      ms_strncpcleantail (calibration.inputchannel, pMS2B300_INPUTCHANNEL (record + blkt_offset),
+                          3);
       calibration.inputunits[0] = '\0';
       calibration.amplituderange[0] = '\0';
       calibration.sineperiod = 0.0;
-      calibration.refamplitude = (double)(HO4u (*pMS2B300_REFERENCEAMPLITUDE (record + blkt_offset), msr->swapflag));
+      calibration.refamplitude =
+          (double)(HO4u (*pMS2B300_REFERENCEAMPLITUDE (record + blkt_offset), msr->swapflag));
       ms_strncpcleantail (calibration.coupling, pMS2B300_COUPLING (record + blkt_offset), 12);
       ms_strncpcleantail (calibration.rolloff, pMS2B300_ROLLOFF (record + blkt_offset), 12);
       calibration.noise[0] = '\0';
@@ -584,18 +657,19 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
       if (mseh_add_calibration_r (msr, NULL, &calibration, &parsestate))
       {
         ms_log (2, "%s: Problem mapping Blockette 300 to extra headers\n", msr->sid);
-        return MS_GENERROR;
+        goto error_return;
       }
     }
 
     /* Blockette 310, sine calibration */
     else if (blkt_type == 310)
     {
-      memset (&calibration, 0, sizeof(calibration));
+      memset (&calibration, 0, sizeof (calibration));
 
       strncpy (calibration.type, "SINE", sizeof (calibration.type));
 
-      calibration.begintime = ms_btime2nstime ((uint8_t*)pMS2B310_YEAR (record + blkt_offset), msr->swapflag);
+      calibration.begintime =
+          ms_btime2nstime ((uint8_t *)pMS2B310_YEAR (record + blkt_offset), msr->swapflag);
 
       calibration.endtime = NSTUNSET;
       calibration.steps = -1;
@@ -624,11 +698,14 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
       else if (*pMS2B310_FLAGS (record + blkt_offset) & 0x40)
         strncpy (calibration.amplituderange, "RMS", sizeof (calibration.amplituderange));
 
-      calibration.duration = (double)(HO4u (*pMS2B310_DURATION (record + blkt_offset), msr->swapflag) / 10000.0);
+      calibration.duration =
+          (double)(HO4u (*pMS2B310_DURATION (record + blkt_offset), msr->swapflag) / 10000.0);
       calibration.sineperiod = HO4f (*pMS2B310_PERIOD (record + blkt_offset), msr->swapflag);
       calibration.amplitude = HO4f (*pMS2B310_AMPLITUDE (record + blkt_offset), msr->swapflag);
-      ms_strncpcleantail (calibration.inputchannel, pMS2B310_INPUTCHANNEL (record + blkt_offset), 3);
-      calibration.refamplitude = (double)(HO4u (*pMS2B310_REFERENCEAMPLITUDE (record + blkt_offset), msr->swapflag));
+      ms_strncpcleantail (calibration.inputchannel, pMS2B310_INPUTCHANNEL (record + blkt_offset),
+                          3);
+      calibration.refamplitude =
+          (double)(HO4u (*pMS2B310_REFERENCEAMPLITUDE (record + blkt_offset), msr->swapflag));
       calibration.stepbetween = 0.0;
       calibration.inputunits[0] = '\0';
       ms_strncpcleantail (calibration.coupling, pMS2B310_COUPLING (record + blkt_offset), 12);
@@ -639,18 +716,19 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
       if (mseh_add_calibration_r (msr, NULL, &calibration, &parsestate))
       {
         ms_log (2, "%s: Problem mapping Blockette 310 to extra headers\n", msr->sid);
-        return MS_GENERROR;
+        goto error_return;
       }
     }
 
     /* Blockette 320, pseudo-random calibration */
     else if (blkt_type == 320)
     {
-      memset (&calibration, 0, sizeof(calibration));
+      memset (&calibration, 0, sizeof (calibration));
 
       strncpy (calibration.type, "PSEUDORANDOM", sizeof (calibration.type));
 
-      calibration.begintime = ms_btime2nstime ((uint8_t*)pMS2B320_YEAR (record + blkt_offset), msr->swapflag);
+      calibration.begintime =
+          ms_btime2nstime ((uint8_t *)pMS2B320_YEAR (record + blkt_offset), msr->swapflag);
 
       calibration.endtime = NSTUNSET;
       calibration.steps = -1;
@@ -673,10 +751,13 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
       if (*pMS2B320_FLAGS (record + blkt_offset) & 0x10)
         strncpy (calibration.amplituderange, "RANDOM", sizeof (calibration.amplituderange));
 
-      calibration.duration = (double)(HO4u (*pMS2B320_DURATION (record + blkt_offset), msr->swapflag) / 10000.0);
+      calibration.duration =
+          (double)(HO4u (*pMS2B320_DURATION (record + blkt_offset), msr->swapflag) / 10000.0);
       calibration.amplitude = HO4f (*pMS2B320_PTPAMPLITUDE (record + blkt_offset), msr->swapflag);
-      ms_strncpcleantail (calibration.inputchannel, pMS2B320_INPUTCHANNEL (record + blkt_offset), 3);
-      calibration.refamplitude = (double)(HO4u (*pMS2B320_REFERENCEAMPLITUDE (record + blkt_offset), msr->swapflag));
+      ms_strncpcleantail (calibration.inputchannel, pMS2B320_INPUTCHANNEL (record + blkt_offset),
+                          3);
+      calibration.refamplitude =
+          (double)(HO4u (*pMS2B320_REFERENCEAMPLITUDE (record + blkt_offset), msr->swapflag));
       calibration.sineperiod = 0.0;
       calibration.stepbetween = 0.0;
       calibration.inputunits[0] = '\0';
@@ -688,18 +769,19 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
       if (mseh_add_calibration_r (msr, NULL, &calibration, &parsestate))
       {
         ms_log (2, "%s: Problem mapping Blockette 320 to extra headers\n", msr->sid);
-        return MS_GENERROR;
+        goto error_return;
       }
     }
 
     /* Blockette 390, generic calibration */
     else if (blkt_type == 390)
     {
-      memset (&calibration, 0, sizeof(calibration));
+      memset (&calibration, 0, sizeof (calibration));
 
       strncpy (calibration.type, "GENERIC", sizeof (calibration.type));
 
-      calibration.begintime = ms_btime2nstime ((uint8_t*)pMS2B390_YEAR (record + blkt_offset), msr->swapflag);
+      calibration.begintime =
+          ms_btime2nstime ((uint8_t *)pMS2B390_YEAR (record + blkt_offset), msr->swapflag);
 
       calibration.endtime = NSTUNSET;
       calibration.steps = -1;
@@ -718,9 +800,11 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
         calibration.continued = 1;
 
       calibration.amplituderange[0] = '\0';
-      calibration.duration = (double)(HO4u (*pMS2B390_DURATION (record + blkt_offset), msr->swapflag) / 10000.0);
+      calibration.duration =
+          (double)(HO4u (*pMS2B390_DURATION (record + blkt_offset), msr->swapflag) / 10000.0);
       calibration.amplitude = HO4f (*pMS2B390_AMPLITUDE (record + blkt_offset), msr->swapflag);
-      ms_strncpcleantail (calibration.inputchannel, pMS2B390_INPUTCHANNEL (record + blkt_offset), 3);
+      ms_strncpcleantail (calibration.inputchannel, pMS2B390_INPUTCHANNEL (record + blkt_offset),
+                          3);
       calibration.refamplitude = 0.0;
       calibration.sineperiod = 0.0;
       calibration.stepbetween = 0.0;
@@ -733,20 +817,21 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
       if (mseh_add_calibration_r (msr, NULL, &calibration, &parsestate))
       {
         ms_log (2, "%s: Problem mapping Blockette 390 to extra headers\n", msr->sid);
-        return MS_GENERROR;
+        goto error_return;
       }
     }
 
     /* Blockette 395, calibration abort */
     else if (blkt_type == 395)
     {
-      memset (&calibration, 0, sizeof(calibration));
+      memset (&calibration, 0, sizeof (calibration));
 
       strncpy (calibration.type, "ABORT", sizeof (calibration.type));
 
       calibration.begintime = NSTUNSET;
 
-      calibration.endtime = ms_btime2nstime ((uint8_t*)pMS2B395_YEAR (record + blkt_offset), msr->swapflag);
+      calibration.endtime =
+          ms_btime2nstime ((uint8_t *)pMS2B395_YEAR (record + blkt_offset), msr->swapflag);
 
       calibration.steps = -1;
       calibration.firstpulsepositive = -1;
@@ -769,7 +854,7 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
       if (mseh_add_calibration_r (msr, NULL, &calibration, &parsestate))
       {
         ms_log (2, "%s: Problem mapping Blockette 395 to extra headers\n", msr->sid);
-        return MS_GENERROR;
+        goto error_return;
       }
     }
 
@@ -788,27 +873,33 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
     /* Blockette 500, timing blockette */
     else if (blkt_type == 500)
     {
-      memset (&exception, 0, sizeof(exception));
+      memset (&exception, 0, sizeof (exception));
 
-      exception.vcocorrection = HO4f (*pMS2B500_VCOCORRECTION (record + blkt_offset), msr->swapflag);
+      exception.vcocorrection =
+          HO4f (*pMS2B500_VCOCORRECTION (record + blkt_offset), msr->swapflag);
 
-      exception.time = ms_btime2nstime ((uint8_t*)pMS2B500_YEAR (record + blkt_offset), msr->swapflag);
+      exception.time =
+          ms_btime2nstime ((uint8_t *)pMS2B500_YEAR (record + blkt_offset), msr->swapflag);
 
-      /* Apply microsecond precision if non-zero */
-      if (*pMS2B500_MICROSECOND (record + blkt_offset) != 0)
+      /* Apply microsecond precision if non-zero, only to a valid decoded time */
+      if (*pMS2B500_MICROSECOND (record + blkt_offset) != 0 && exception.time != NSTUNSET &&
+          exception.time != NSTERROR)
       {
-        exception.time += (nstime_t)*pMS2B500_MICROSECOND (record + blkt_offset) * (NSTMODULUS / 1000000);
+        exception.time +=
+            (nstime_t)*pMS2B500_MICROSECOND (record + blkt_offset) * (NSTMODULUS / 1000000);
       }
 
       exception.receptionquality = *pMS2B500_RECEPTIONQUALITY (record + blkt_offset);
       exception.count = HO4u (*pMS2B500_EXCEPTIONCOUNT (record + blkt_offset), msr->swapflag);
-      ms_strncpcleantail (exception.type, pMS2B500_EXCEPTIONTYPE (record + blkt_offset), 16);
-      ms_strncpcleantail (exception.clockstatus, pMS2B500_CLOCKSTATUS (record + blkt_offset), 128);
+      ms_strncpopen (exception.type, pMS2B500_EXCEPTIONTYPE (record + blkt_offset),
+                     (int)sizeof (exception.type));
+      ms_strncpopen (exception.clockstatus, pMS2B500_CLOCKSTATUS (record + blkt_offset),
+                     (int)sizeof (exception.clockstatus));
 
       if (mseh_add_timing_exception_r (msr, NULL, &exception, &parsestate))
       {
         ms_log (2, "%s: Problem mapping Blockette 500 to extra headers\n", msr->sid);
-        return MS_GENERROR;
+        goto error_return;
       }
 
       /* Clock model maps to a single value at /FDSN/Clock/Model */
@@ -820,14 +911,33 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
     {
       B1000offset = blkt_offset;
 
-      /* Calculate record length in bytes as 2^(B1000->reclen) */
-      msr->reclen = (uint32_t)1 << *pMS2B1000_RECLEN (record + blkt_offset);
+      /* Calculate record length in bytes as 2^(B1000->reclen).  Reject an
+       * out-of-range exponent (which would be an undefined shift, and far
+       * exceeds MAXRECLEN) and keep the validated record length set above. */
+      if (*pMS2B1000_RECLEN (record + blkt_offset) < 31)
+      {
+        uint32_t b1000reclen = (uint32_t)1 << *pMS2B1000_RECLEN (record + blkt_offset);
+
+        /* Reject a record length larger than the supplied buffer, as the
+         * record cannot be fully contained whether unpacking or not. */
+        if (b1000reclen > (uint32_t)reclen)
+        {
+          ms_log (2, "%s: Record length in Blockette 1000 (%u) exceeds the buffer length (%d)\n",
+                  msr->sid, b1000reclen, reclen);
+          goto error_return;
+        }
+
+        msr->reclen = b1000reclen;
+      }
+      else if (verbose)
+        ms_log (1, "%s: Ignoring invalid record length exponent in Blockette 1000 (%u)\n", msr->sid,
+                *pMS2B1000_RECLEN (record + blkt_offset));
 
       /* Compare against the specified length */
       if (msr->reclen != reclen && verbose)
       {
-        ms_log (1, "%s: Record length in Blockette 1000 (%d) != specified length (%d)\n",
-                msr->sid, msr->reclen, reclen);
+        ms_log (1, "%s: Record length in Blockette 1000 (%d) != specified length (%d)\n", msr->sid,
+                msr->reclen, reclen);
       }
 
       msr->encoding = *pMS2B1000_ENCODING (record + blkt_offset);
@@ -838,15 +948,15 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
       B1001offset = blkt_offset;
 
       /* Optimization: if no other extra headers yet, directly print this common value */
-      if (parsestate == NULL)
+      if (parsestate == NULL && msr->extra == NULL)
       {
-        length = snprintf (sval, sizeof(sval), "{\"FDSN\":{\"Time\":{\"Quality\":%d}}}",
+        length = snprintf (sval, sizeof (sval), "{\"FDSN\":{\"Time\":{\"Quality\":%d}}}",
                            *pMS2B1001_TIMINGQUALITY (record + blkt_offset));
 
         if (!(msr->extra = (char *)libmseed_memory.malloc (length + 1)))
         {
           ms_log (2, "%s: Cannot allocate memory for extra headers\n", msr->sid);
-          return MS_GENERROR;
+          goto error_return;
         }
         memcpy (msr->extra, sval, length + 1);
 
@@ -873,7 +983,8 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
     /* Check that the next blockette offset is beyond the current blockette */
     if (next_blkt && next_blkt < (blkt_offset + blkt_length))
     {
-      ms_log (2, "%s: Offset to next blockette (%d) is within current blockette ending at byte %d\n",
+      ms_log (2,
+              "%s: Offset to next blockette (%d) is within current blockette ending at byte %d\n",
               msr->sid, next_blkt, (blkt_offset + blkt_length));
 
       blkt_offset = 0;
@@ -908,24 +1019,27 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
   }
 
   /* Check that the data offset is after the blockette chain */
-  if (blkt_end &&
-      HO2u (*pMS2FSDH_NUMSAMPLES (record), msr->swapflag) &&
+  if (blkt_end && HO2u (*pMS2FSDH_NUMSAMPLES (record), msr->swapflag) &&
       HO2u (*pMS2FSDH_DATAOFFSET (record), msr->swapflag) < blkt_end)
   {
-    ms_log (1, "%s: Warning: Data offset in fixed header (%d) is within the blockette chain ending at %d\n",
+    ms_log (1,
+            "%s: Warning: Data offset in fixed header (%d) is within the blockette chain ending at "
+            "%d\n",
             msr->sid, HO2u (*pMS2FSDH_DATAOFFSET (record), msr->swapflag), blkt_end);
   }
 
   /* Check that the blockette count matches the number parsed */
   if (*pMS2FSDH_NUMBLOCKETTES (record) != blkt_count)
   {
-    ms_log (1, "%s: Warning: Number of blockettes in fixed header (%d) does not match the number parsed (%d)\n",
+    ms_log (1,
+            "%s: Warning: Number of blockettes in fixed header (%d) does not match the number "
+            "parsed (%d)\n",
             msr->sid, *pMS2FSDH_NUMBLOCKETTES (record), blkt_count);
   }
 
-  /* Calculate start time */
-  msr->starttime = ms_btime2nstime ((uint8_t*)pMS2FSDH_YEAR (record), msr->swapflag);
-  if (msr->starttime == NSTERROR)
+  /* Calculate start time, rejecting an unset (year 0) or invalid time */
+  msr->starttime = ms_btime2nstime ((uint8_t *)pMS2FSDH_YEAR (record), msr->swapflag);
+  if (msr->starttime == NSTERROR || msr->starttime == NSTUNSET)
   {
     ms_log (2, "%s: Cannot convert start time to internal time stamp\n", msr->sid);
     return MS_GENERROR;
@@ -936,18 +1050,22 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
   if (HO4d (*pMS2FSDH_TIMECORRECT (record), msr->swapflag) != 0 &&
       !(*pMS2FSDH_ACTFLAGS (record) & 0x02))
   {
-    msr->starttime += (nstime_t)HO4d (*pMS2FSDH_TIMECORRECT (record), msr->swapflag) * (NSTMODULUS / 10000);
+    msr->starttime +=
+        (nstime_t)HO4d (*pMS2FSDH_TIMECORRECT (record), msr->swapflag) * (NSTMODULUS / 10000);
   }
 
   /* Apply microsecond precision if Blockette 1001 is present */
   if (B1001offset)
   {
-    msr->starttime += (nstime_t)*pMS2B1001_MICROSECOND (record + B1001offset) * (NSTMODULUS / 1000000);
+    msr->starttime +=
+        (nstime_t)*pMS2B1001_MICROSECOND (record + B1001offset) * (NSTMODULUS / 1000000);
   }
 
   msr->datalength = HO2u (*pMS2FSDH_DATAOFFSET (record), msr->swapflag);
-  if (msr->datalength > 0)
+  if (msr->datalength > 0 && msr->datalength < (uint32_t)msr->reclen)
     msr->datalength = msr->reclen - msr->datalength;
+  else
+    msr->datalength = 0;
 
   /* Determine byte order of the data and set the swapflag as needed;
      if no Blkt1000, assume the order is the same as the header */
@@ -991,9 +1109,14 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
   }
 
   return MS_NOERROR;
+
+error_return:
+  if (parsestate)
+    mseh_free_parsestate (&parsestate);
+  return MS_GENERROR;
 } /* End of msr3_unpack_mseed2() */
 
-/*******************************************************************/ /**
+/** ************************************************************************
  * @brief Determine the data payload bounds for a MS3Record
  *
  * Bounds are the starting offset in record and size.  For miniSEED
@@ -1014,8 +1137,8 @@ msr3_unpack_mseed2 (const char *record, int reclen, MS3Record **ppmsr,
  *
  * @return 0 on success or negative library error code.
  *
- * \ref MessageOnError - this function logs a message on error
- ************************************************************************/
+ * @ref MessageOnError - this function logs a message on error
+ ***************************************************************************/
 int
 msr3_data_bounds (const MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize)
 {
@@ -1025,7 +1148,8 @@ msr3_data_bounds (const MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize
 
   if (!msr || !msr->record || !dataoffset || !datasize)
   {
-    ms_log (2, "%s(): Required input not defined: 'msr', 'msr->record', 'dataoffset' or 'datasize'\n",
+    ms_log (2,
+            "%s(): Required input not defined: 'msr', 'msr->record', 'dataoffset' or 'datasize'\n",
             __func__);
     return MS_GENERROR;
   }
@@ -1033,12 +1157,21 @@ msr3_data_bounds (const MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize
   /* Determine offset to data */
   if (msr->formatversion == 3)
   {
-    *dataoffset = MS3FSDH_LENGTH + (uint32_t)strlen (msr->sid) + msr->extralength;
+    *dataoffset = MS3FSDH_LENGTH + *pMS3FSDH_SIDLENGTH (msr->record) + msr->extralength;
     *datasize = msr->datalength;
   }
   else if (msr->formatversion == 2)
   {
     *dataoffset = HO2u (*pMS2FSDH_DATAOFFSET (msr->record), msr->swapflag & MSSWAP_HEADER);
+
+    /* Validate data offset is within the record to avoid unsigned underflow */
+    if (*dataoffset >= (uint32_t)msr->reclen)
+    {
+      ms_log (2, "%s: Data offset (%u) is beyond record length (%d)\n", msr->sid, *dataoffset,
+              msr->reclen);
+      return MS_GENERROR;
+    }
+
     *datasize = msr->reclen - *dataoffset;
   }
   else
@@ -1049,8 +1182,7 @@ msr3_data_bounds (const MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize
 
   /* If a fixed sample length encoding, calculate size and use if less
    * than otherwise determined. */
-  if (msr->encoding == DE_TEXT ||
-      msr->encoding == DE_INT16 || msr->encoding == DE_INT32 ||
+  if (msr->encoding == DE_TEXT || msr->encoding == DE_INT16 || msr->encoding == DE_INT32 ||
       msr->encoding == DE_FLOAT32 || msr->encoding == DE_FLOAT64)
   {
     switch (msr->encoding)
@@ -1070,19 +1202,25 @@ msr3_data_bounds (const MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize
       break;
     }
 
-    rawsize = msr->samplecnt * samplebytes;
+    /* Limit datasize to the bytes the sample count would occupy when smaller and
+     * guard against a negative samplecnt and compute without overflow.
+     * The product is only relevant when it could be below *datasize (a
+     * uint32), which the divide-based test below guarantees. */
+    if (msr->samplecnt >= 0 && (uint64_t)msr->samplecnt <= (uint64_t)*datasize / samplebytes)
+    {
+      rawsize = (uint64_t)msr->samplecnt * samplebytes;
 
-    if (rawsize < *datasize)
-      *datasize = (uint16_t)rawsize;
+      if (rawsize < *datasize)
+        *datasize = (uint32_t)rawsize;
+    }
   }
 
   /* If datasize is a multiple of 64-bytes and a Steim encoding, test for
    * trailing, zeroed (empty) frames and subtract them from the size. */
-  if (*datasize % 64 == 0 &&
-      (msr->encoding == DE_STEIM1 || msr->encoding == DE_STEIM2))
+  if (*datasize % 64 == 0 && (msr->encoding == DE_STEIM1 || msr->encoding == DE_STEIM2))
   {
     while (*datasize > 0 &&
-           memcmp (msr->record + (*datasize - 64), nullframe, 64) == 0)
+           memcmp (msr->record + *dataoffset + (*datasize - 64), nullframe, 64) == 0)
     {
       *datasize -= 64;
     }
@@ -1091,7 +1229,7 @@ msr3_data_bounds (const MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize
   return 0;
 } /* End of msr3_data_bounds() */
 
-/*******************************************************************/ /**
+/** ************************************************************************
  * @brief Unpack data samples for a ::MS3Record
  *
  * This routine can be used to unpack the data samples for a
@@ -1113,14 +1251,14 @@ msr3_data_bounds (const MS3Record *msr, uint32_t *dataoffset, uint32_t *datasize
  *
  * @return number of samples unpacked or negative libmseed error code.
  *
- * \ref MessageOnError - this function logs a message on error
- ************************************************************************/
+ * @ref MessageOnError - this function logs a message on error
+ ***************************************************************************/
 int64_t
 msr3_unpack_data (MS3Record *msr, int8_t verbose)
 {
-  uint32_t datasize; /* length of data payload in bytes */
-  int64_t nsamples; /* number of samples unpacked */
-  size_t unpacksize; /* byte size of unpacked samples */
+  uint32_t datasize;      /* length of data payload in bytes */
+  int64_t nsamples;       /* number of samples unpacked */
+  size_t unpacksize;      /* byte size of unpacked samples */
   uint8_t samplesize = 0; /* size of the data samples in bytes */
   uint32_t dataoffset = 0;
   const char *encoded = NULL;
@@ -1170,7 +1308,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
     return MS_GENERROR;
   }
 
-  /* Fallback encoding for when encoding is unknown */
+  /* Fallback encoding for when encoding is unknown (legacy bare SEED data records) */
   if (msr->encoding < 0)
   {
     if (verbose > 2)
@@ -1179,7 +1317,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
     msr->encoding = DE_STEIM1;
   }
 
-  if (ms_encoding_sizetype((uint8_t)msr->encoding, &samplesize, NULL))
+  if (ms_encoding_sizetype ((uint8_t)msr->encoding, &samplesize, NULL))
   {
     ms_log (2, "%s: Cannot determine sample size for encoding: %u\n", msr->sid, msr->encoding);
     return MS_GENERROR;
@@ -1190,7 +1328,7 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
   /* Copy encoded data to aligned/malloc'd buffer if not aligned for sample size */
   if (samplesize && !is_aligned (encoded, samplesize))
   {
-    if ((encoded_allocated = (char *) libmseed_memory.malloc (datasize)) == NULL)
+    if ((encoded_allocated = (char *)libmseed_memory.malloc (datasize)) == NULL)
     {
       ms_log (2, "Cannot allocate memory for encoded data\n");
       return MS_GENERROR;
@@ -1206,26 +1344,33 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
   /* (Re)Allocate space for the unpacked data */
   if (unpacksize > 0)
   {
+    void *resized;
+
     if (libmseed_prealloc_block_size)
     {
-      size_t current_size  = msr->datasize;
-      msr->datasamples = libmseed_memory_prealloc (msr->datasamples, unpacksize, &current_size);
-      msr->datasize = current_size;
+      size_t current_size = msr->datasize;
+      resized = libmseed_memory_prealloc (msr->datasamples, unpacksize, &current_size);
+
+      if (resized != NULL)
+        msr->datasize = current_size;
     }
     else
     {
-      msr->datasamples = libmseed_memory.realloc (msr->datasamples, unpacksize);
-      msr->datasize = unpacksize;
+      resized = libmseed_memory.realloc (msr->datasamples, unpacksize);
+
+      if (resized != NULL)
+        msr->datasize = unpacksize;
     }
 
-    if (msr->datasamples == NULL)
+    if (resized == NULL)
     {
       ms_log (2, "%s: Cannot (re)allocate memory\n", msr->sid);
-      msr->datasize = 0;
       if (encoded_allocated)
         libmseed_memory.free (encoded_allocated);
       return MS_GENERROR;
     }
+
+    msr->datasamples = resized;
   }
   else
   {
@@ -1252,15 +1397,15 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
   return nsamples;
 } /* End of msr3_unpack_data() */
 
-/*******************************************************************/ /**
+/** ************************************************************************
  * @brief Decode data samples to a supplied buffer
  *
  * @param[in] input Encoded data
- * @param[in] inputsize Size of \a input buffer in bytes
+ * @param[in] inputsize Size of @p input buffer in bytes
  * @param[in] encoding Data encoding
  * @param[in] samplecount Number of samples to decode
  * @param[out] output Decoded data
- * @param[in] outputsize Size of \a output buffer in bytes
+ * @param[in] outputsize Size of @p output buffer in bytes
  * @param[out] sampletype Pointer to (single character) sample type of decoded data
  * @param[in] swapflag Flag indicating if encoded data needs swapping
  * @param[in] sid Source identifier to include in diagnostic/error messages
@@ -1268,28 +1413,28 @@ msr3_unpack_data (MS3Record *msr, int8_t verbose)
  *
  * @return number of samples decoded or negative libmseed error code.
  *
- * \ref MessageOnError - this function logs a message on error
- ************************************************************************/
+ * @ref MessageOnError - this function logs a message on error
+ ***************************************************************************/
 int64_t
-ms_decode_data (const void *input, uint64_t inputsize, uint8_t encoding,
-                uint64_t samplecount, void *output, uint64_t outputsize,
-                char *sampletype, int8_t swapflag, const char *sid, int8_t verbose)
+ms_decode_data (const void *input, uint64_t inputsize, uint8_t encoding, uint64_t samplecount,
+                void *output, uint64_t outputsize, char *sampletype, int8_t swapflag,
+                const char *sid, int8_t verbose)
 {
-  uint64_t decodedsize; /* byte size of decodeded samples */
-  int64_t nsamples; /* number of samples unpacked */
-  uint8_t samplesize = 0; /* size of the data samples in bytes */
+  uint64_t decodedsize;         /* byte size of decodeded samples */
+  int64_t nsamples;             /* number of samples unpacked */
+  uint8_t samplesize = 0;       /* size of the decoded data samples in bytes */
+  uint8_t inputsamplebytes = 0; /* size of an encoded input sample in bytes */
 
   if (!input || !output || !sampletype)
   {
-    ms_log (2, "%s(): Required input not defined: 'input', 'output' or 'sampletype'\n",
-            __func__);
+    ms_log (2, "%s(): Required input not defined: 'input', 'output' or 'sampletype'\n", __func__);
     return MS_GENERROR;
   }
 
   if (samplecount == 0)
     return 0;
 
-  if (ms_encoding_sizetype(encoding, &samplesize, sampletype))
+  if (ms_encoding_sizetype (encoding, &samplesize, sampletype))
     samplesize = 0;
 
   /* Calculate buffer size needed for unpacked samples */
@@ -1297,8 +1442,54 @@ ms_decode_data (const void *input, uint64_t inputsize, uint8_t encoding,
 
   if (decodedsize > outputsize)
   {
-    ms_log (2, "%s: Output buffer (%"PRIu64" bytes) is not large enought for decoded data (%"PRIu64" bytes)\n",
+    ms_log (2,
+            "%s: Output buffer (%" PRIu64 " bytes) is not large enought for decoded data (%" PRIu64
+            " bytes)\n",
             (sid) ? sid : "", decodedsize, outputsize);
+    return MS_GENERROR;
+  }
+
+  /* For encodings with a fixed number of input bytes per sample, verify that
+   * the input buffer is large enough to hold 'samplecount' encoded samples.
+   * This guards against a header that claims more samples than the encoded
+   * payload contains, which would otherwise over-read the input buffer.
+   * The Steim encodings perform their own input-length bounding (via the
+   * 'inputsize' argument) and so use an input sample size of zero here. */
+  switch (encoding)
+  {
+  case DE_TEXT:
+    inputsamplebytes = 1;
+    break;
+  case DE_INT16:
+  case DE_GEOSCOPE163:
+  case DE_GEOSCOPE164:
+  case DE_CDSN:
+  case DE_SRO:
+  case DE_DWWSSN:
+    inputsamplebytes = 2;
+    break;
+  case DE_GEOSCOPE24:
+    inputsamplebytes = 3;
+    break;
+  case DE_INT32:
+  case DE_FLOAT32:
+    inputsamplebytes = 4;
+    break;
+  case DE_FLOAT64:
+    inputsamplebytes = 8;
+    break;
+  default:
+    inputsamplebytes = 0;
+    break;
+  }
+
+  /* Compare without overflow: samplecount * inputsamplebytes > inputsize */
+  if (inputsamplebytes && (inputsize / inputsamplebytes) < samplecount)
+  {
+    ms_log (2,
+            "%s: Input buffer (%" PRIu64 " bytes) is not large enough for %" PRIu64
+            " samples of encoding %u\n",
+            (sid) ? sid : "", inputsize, samplecount, encoding);
     return MS_GENERROR;
   }
 
@@ -1324,40 +1515,40 @@ ms_decode_data (const void *input, uint64_t inputsize, uint8_t encoding,
     if (verbose > 1)
       ms_log (0, "%s: Decoding INT16 data samples\n", (sid) ? sid : "");
 
-    nsamples = msr_decode_int16 ((int16_t *)input, samplecount,
-                                 (int32_t *)output, decodedsize, swapflag);
+    nsamples =
+        msr_decode_int16 ((int16_t *)input, samplecount, (int32_t *)output, decodedsize, swapflag);
     break;
 
   case DE_INT32:
     if (verbose > 1)
       ms_log (0, "%s: Decoding INT32 data samples\n", (sid) ? sid : "");
 
-    nsamples = msr_decode_int32 ((int32_t *)input, samplecount,
-                                 (int32_t *)output, decodedsize, swapflag);
+    nsamples =
+        msr_decode_int32 ((int32_t *)input, samplecount, (int32_t *)output, decodedsize, swapflag);
     break;
 
   case DE_FLOAT32:
     if (verbose > 1)
       ms_log (0, "%s: Decoding FLOAT32 data samples\n", (sid) ? sid : "");
 
-    nsamples = msr_decode_float32 ((float *)input, samplecount,
-                                   (float *)output, decodedsize, swapflag);
+    nsamples =
+        msr_decode_float32 ((float *)input, samplecount, (float *)output, decodedsize, swapflag);
     break;
 
   case DE_FLOAT64:
     if (verbose > 1)
       ms_log (0, "%s: Decoding FLOAT64 data samples\n", (sid) ? sid : "");
 
-    nsamples = msr_decode_float64 ((double *)input, samplecount,
-                                   (double *)output, decodedsize, swapflag);
+    nsamples =
+        msr_decode_float64 ((double *)input, samplecount, (double *)output, decodedsize, swapflag);
     break;
 
   case DE_STEIM1:
     if (verbose > 1)
       ms_log (0, "%s: Decoding Steim1 data frames\n", (sid) ? sid : "");
 
-    nsamples = msr_decode_steim1 ((int32_t *)input, inputsize, samplecount,
-                                  (int32_t *)output, decodedsize, (sid) ? sid : "", swapflag);
+    nsamples = msr_decode_steim1 ((int32_t *)input, inputsize, samplecount, (int32_t *)output,
+                                  decodedsize, (sid) ? sid : "", swapflag);
 
     if (nsamples < 0)
     {
@@ -1371,8 +1562,8 @@ ms_decode_data (const void *input, uint64_t inputsize, uint8_t encoding,
     if (verbose > 1)
       ms_log (0, "%s: Decoding Steim2 data frames\n", (sid) ? sid : "");
 
-    nsamples = msr_decode_steim2 ((int32_t *)input, inputsize, samplecount,
-                                  (int32_t *)output, decodedsize, (sid) ? sid : "", swapflag);
+    nsamples = msr_decode_steim2 ((int32_t *)input, inputsize, samplecount, (int32_t *)output,
+                                  decodedsize, (sid) ? sid : "", swapflag);
 
     if (nsamples < 0)
     {
@@ -1390,42 +1581,44 @@ ms_decode_data (const void *input, uint64_t inputsize, uint8_t encoding,
       if (encoding == DE_GEOSCOPE24)
         ms_log (0, "%s: Decoding GEOSCOPE 24bit integer data samples\n", (sid) ? sid : "");
       if (encoding == DE_GEOSCOPE163)
-        ms_log (0, "%s: Decoding GEOSCOPE 16bit gain ranged/3bit exponent data samples\n", (sid) ? sid : "");
+        ms_log (0, "%s: Decoding GEOSCOPE 16bit gain ranged/3bit exponent data samples\n",
+                (sid) ? sid : "");
       if (encoding == DE_GEOSCOPE164)
-        ms_log (0, "%s: Decoding GEOSCOPE 16bit gain ranged/4bit exponent data samples\n", (sid) ? sid : "");
+        ms_log (0, "%s: Decoding GEOSCOPE 16bit gain ranged/4bit exponent data samples\n",
+                (sid) ? sid : "");
     }
 
-    nsamples = msr_decode_geoscope ((char *)input, samplecount, (float *)output,
-                                    decodedsize, encoding, (sid) ? sid : "", swapflag);
+    nsamples = msr_decode_geoscope ((char *)input, samplecount, (float *)output, decodedsize,
+                                    encoding, (sid) ? sid : "", swapflag);
     break;
 
   case DE_CDSN:
     if (verbose > 1)
       ms_log (0, "%s: Decoding CDSN encoded data samples\n", (sid) ? sid : "");
 
-    nsamples = msr_decode_cdsn ((int16_t *)input, samplecount, (int32_t *)output,
-                                decodedsize, swapflag);
+    nsamples =
+        msr_decode_cdsn ((int16_t *)input, samplecount, (int32_t *)output, decodedsize, swapflag);
     break;
 
   case DE_SRO:
     if (verbose > 1)
       ms_log (0, "%s: Decoding SRO encoded data samples\n", (sid) ? sid : "");
 
-    nsamples = msr_decode_sro ((int16_t *)input, samplecount, (int32_t *)output,
-                               decodedsize, (sid) ? sid : "", swapflag);
+    nsamples = msr_decode_sro ((int16_t *)input, samplecount, (int32_t *)output, decodedsize,
+                               (sid) ? sid : "", swapflag);
     break;
 
   case DE_DWWSSN:
     if (verbose > 1)
       ms_log (0, "%s: Decoding DWWSSN encoded data samples\n", (sid) ? sid : "");
 
-    nsamples = msr_decode_dwwssn ((int16_t *)input, samplecount, (int32_t *)output,
-                                  decodedsize, swapflag);
+    nsamples =
+        msr_decode_dwwssn ((int16_t *)input, samplecount, (int32_t *)output, decodedsize, swapflag);
     break;
 
   default:
-    ms_log (2, "%s: Unsupported encoding format %d (%s)\n",
-            (sid) ? sid : "", encoding, (char *)ms_encodingstr (encoding));
+    ms_log (2, "%s: Unsupported encoding format %d (%s)\n", (sid) ? sid : "", encoding,
+            (char *)ms_encodingstr (encoding));
 
     nsamples = MS_UNKNOWNFORMAT;
     break;
@@ -1433,8 +1626,8 @@ ms_decode_data (const void *input, uint64_t inputsize, uint8_t encoding,
 
   if (nsamples >= 0 && (uint64_t)nsamples != samplecount)
   {
-    ms_log (2, "%s: only decoded %" PRId64 " samples of %" PRIu64 " expected\n",
-            (sid) ? sid : "", nsamples, samplecount);
+    ms_log (2, "%s: only decoded %" PRId64 " samples of %" PRIu64 " expected\n", (sid) ? sid : "",
+            nsamples, samplecount);
     return MS_GENERROR;
   }
 
@@ -1538,6 +1731,9 @@ ms2_blktdesc (uint16_t blkttype)
   case 400:
     return "Beam";
     break;
+  case 405:
+    return "Beam Delay";
+    break;
   case 500:
     return "Timing";
     break;
@@ -1573,19 +1769,19 @@ ms2_blktlen (uint16_t blkttype, const char *blkt, int8_t swapflag)
     blktlen = 12;
     break;
   case 200: /* Generic Event Detection */
-    blktlen = 28;
+    blktlen = 52;
     break;
   case 201: /* Murdock Event Detection */
-    blktlen = 36;
+    blktlen = 60;
     break;
   case 300: /* Step Calibration */
-    blktlen = 32;
+    blktlen = 60;
     break;
   case 310: /* Sine Calibration */
-    blktlen = 32;
+    blktlen = 60;
     break;
   case 320: /* Pseudo-random Calibration */
-    blktlen = 28;
+    blktlen = 64;
     break;
   case 390: /* Generic Calibration */
     blktlen = 28;
@@ -1596,8 +1792,11 @@ ms2_blktlen (uint16_t blkttype, const char *blkt, int8_t swapflag)
   case 400: /* Beam */
     blktlen = 16;
     break;
+  case 405: /* Beam Delay */
+    blktlen = 6;
+    break;
   case 500: /* Timing */
-    blktlen = 8;
+    blktlen = 200;
     break;
   case 1000: /* Data Only SEED */
     blktlen = 8;
@@ -1637,7 +1836,7 @@ ms2_blktlen (uint16_t blkttype, const char *blkt, int8_t swapflag)
  *
  * Return nstime_t value on success, NSTUNSET when year is 0, and NSTERROR on error.
  *
- * \ref MessageOnError - this function logs a message on error
+ * @ref MessageOnError - this function logs a message on error
  ***************************************************************************/
 static inline nstime_t
 ms_btime2nstime (uint8_t *btime, int8_t swapflag)
@@ -1649,7 +1848,7 @@ ms_btime2nstime (uint8_t *btime, int8_t swapflag)
     return NSTERROR;
   }
 
-  year = HO2u (*((uint16_t*)(btime)), swapflag);
+  year = HO2u (*((uint16_t *)(btime)), swapflag);
 
   /* Special case, if year 0 return unset value */
   if (year == 0)
@@ -1657,10 +1856,7 @@ ms_btime2nstime (uint8_t *btime, int8_t swapflag)
     return NSTUNSET;
   }
 
-  return ms_time2nstime (year,
-                         HO2u (*((uint16_t *)(btime + 2)), swapflag),
-                         *(btime + 4),
-                         *(btime + 5),
-                         *(btime + 6),
-                         (uint32_t)HO2u (*(uint16_t *)(btime + 8), swapflag) * (NSTMODULUS / 10000));
+  return ms_time2nstime (
+      year, HO2u (*((uint16_t *)(btime + 2)), swapflag), *(btime + 4), *(btime + 5), *(btime + 6),
+      (uint32_t)HO2u (*(uint16_t *)(btime + 8), swapflag) * (NSTMODULUS / 10000));
 } /* End of ms_btime2nstime() */

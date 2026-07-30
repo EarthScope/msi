@@ -146,7 +146,7 @@ TEST(CRC, CRC32C) {
        tv->insize != 0;
        tv++, count++)
   {
-    result = ms_crc32c (tv->input, tv->insize, 0);
+    result = ms_crc32c (tv->input, (int)tv->insize, 0);
 
     CHECK (result == tv->expected, "CRC-32C test vector failure");
   }
