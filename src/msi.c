@@ -662,8 +662,9 @@ getoptval (int argcount, char **argvec, int argopt)
     return 0;
   }
 
-  /* Special case of '-o -' usage */
-  if ((argopt + 1) < argcount && strcmp (argvec[argopt], "-o") == 0)
+  /* Special cases of '-o -' and '-b -' usage */
+  if ((argopt + 1) < argcount &&
+      (strcmp (argvec[argopt], "-o") == 0 || strcmp (argvec[argopt], "-b") == 0))
     if (strcmp (argvec[argopt + 1], "-") == 0)
       return argvec[argopt + 1];
 
