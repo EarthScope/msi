@@ -88,7 +88,7 @@ main (int argc, char **argv)
   int64_t totalsamps = 0;
   int64_t totalfiles = 0;
 
-  char stime[30];
+  char stime[40];
 
   /* Set default error message prefix */
   ms_loginit (NULL, NULL, NULL, "ERROR: ");
@@ -175,7 +175,7 @@ main (int argc, char **argv)
           if (verbose >= 3)
           {
             ms_nstime2timestr_n (msr->starttime, stime, sizeof (stime), timeformat, NANO);
-            ms_log (1, "Skipping (starttime) %s, %s\n", msr->sid, stime);
+            ms_log (1, "Skipping (endtime) %s, %s\n", msr->sid, stime);
           }
           continue;
         }
@@ -238,7 +238,7 @@ main (int argc, char **argv)
       }
 
       if (tracegapsum || tracegaponly)
-        mstl3_addmsr (mstl, msr, splitversion, flags, 1, &tolerance);
+        mstl3_addmsr (mstl, msr, splitversion, 1, 0, &tolerance);
 
       if (dataflag)
       {
@@ -335,6 +335,7 @@ main (int argc, char **argv)
     /* Print error if not EOF and not counting down records */
     if (retcode != MS_ENDOFFILE && reccntdown != 0)
     {
+      ms_log (2, "Cannot read %s: %s\n", flp->filename, ms_errorstr (retcode));
       ms3_readmsr_r (&msfp, &msr, NULL, 0, 0);
       exit (1);
     }
