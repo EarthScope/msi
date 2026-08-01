@@ -1,6 +1,7 @@
 2026.211:
 	- Do not close stdout when writing output to it, which silently
 	discarded the trace listing, gap listing and basic summary.
+	- Widen sample count locals in the data printing code to int64_t.
 	- Skip sample printing for an unrecognized sample type instead of
 	printing a blank line per sample row after the error message.
 	- Check for allocation failure when duplicating the -m and -r

@@ -245,12 +245,12 @@ main (int argc, char **argv)
       if (dataflag)
       {
         /* Parse the record (again) and unpack the data */
-        int unpacked = msr3_unpack_data (msr, verbose);
+        int64_t unpacked = msr3_unpack_data (msr, verbose);
 
         if (unpacked > 0 && printdata && !tracegaponly)
         {
           int line, col, cnt, samplesize;
-          int lines = (msr->numsamples / 6) + 1;
+          int64_t lines = (msr->numsamples / 6) + 1;
           void *sptr;
 
           if ((samplesize = ms_samplesize (msr->sampletype)) == 0)
@@ -260,7 +260,7 @@ main (int argc, char **argv)
           else if (msr->sampletype == 't')
           {
             char *textdata = (char *)msr->datasamples;
-            int length = msr->numsamples;
+            int64_t length = msr->numsamples;
 
             ms_log (0, "Text Data:\n");
 
@@ -275,7 +275,7 @@ main (int argc, char **argv)
             /* Print any remaining ASCII and add a newline */
             if (length > 0)
             {
-              ms_log (0, "%.*s\n", length, textdata);
+              ms_log (0, "%.*s\n", (int)length, textdata);
             }
             else
             {
