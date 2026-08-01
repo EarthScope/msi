@@ -879,7 +879,10 @@ addlistfile (char *filename)
       ms_log (1, "Adding '%s' from list file\n", filelistent);
 
     if (addfile (filelistent))
+    {
+      fclose (fp);
       return -1;
+    }
 
     filecount++;
   }
