@@ -1,4 +1,4 @@
-2026.213:
+2026.213: 4.3.0
 	- Allow -m and -r to be given multiple times, a record is kept if
 	it matches any -m pattern and rejected if it matches any -r pattern.
 	- Move the basic summary (-s) output to after the trace listing.

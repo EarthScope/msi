@@ -32,7 +32,7 @@ static int addreject (const char *pattern);
 static int my_globmatch (const char *string, const char *pattern);
 static void usage (void);
 
-#define VERSION "4.2.4"
+#define VERSION "4.3.0"
 #define PACKAGE "msi"
 
 static int8_t verbose = 0;
