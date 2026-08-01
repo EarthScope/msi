@@ -1,6 +1,9 @@
 2026.211:
 	- Do not close stdout when writing output to it, which silently
 	discarded the trace listing, gap listing and basic summary.
+	- Reject non-numeric values given to -n, -tf, -tt, -rt, -gmin and
+	-gmax instead of silently treating them as zero, and allow -gmin
+	and -gmax to accept negative decimal values.
 	- Stop processing files once the record limit (-n) is reached, the
 	basic summary was counting files never opened.
 	- Allow '-b -' to write binary samples to stdout, the value was

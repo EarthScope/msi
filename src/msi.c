@@ -22,6 +22,8 @@
 
 static int processparam (int argcount, char **argvec);
 static char *getoptval (int argcount, char **argvec, int argopt);
+static long getoptint (int argcount, char **argvec, int argopt);
+static double getoptdouble (int argcount, char **argvec, int argopt);
 static int lisnumber (char *number);
 static int addfile (char *filename);
 static int addlistfile (char *filename);
@@ -450,7 +452,7 @@ processparam (int argcount, char **argvec)
     }
     else if (strcmp (argvec[optind], "-n") == 0)
     {
-      reccntdown = strtol (getoptval (argcount, argvec, optind++), NULL, 10);
+      reccntdown = getoptint (argcount, argvec, optind++);
     }
     else if (strcmp (argvec[optind], "-snd") == 0)
     {
@@ -502,12 +504,12 @@ processparam (int argcount, char **argvec)
     }
     else if (strcmp (argvec[optind], "-tt") == 0)
     {
-      timetol = strtod (getoptval (argcount, argvec, optind++), NULL);
+      timetol = getoptdouble (argcount, argvec, optind++);
       tolerance.time = timetol_callback;
     }
     else if (strcmp (argvec[optind], "-rt") == 0)
     {
-      sampratetol = strtod (getoptval (argcount, argvec, optind++), NULL);
+      sampratetol = getoptdouble (argcount, argvec, optind++);
       tolerance.samprate = samprate_callback;
     }
     else if (strcmp (argvec[optind], "-g") == 0)
@@ -524,12 +526,12 @@ processparam (int argcount, char **argvec)
     }
     else if (strcmp (argvec[optind], "-gmin") == 0)
     {
-      mingap = strtod (getoptval (argcount, argvec, optind++), NULL);
+      mingap = getoptdouble (argcount, argvec, optind++);
       mingapptr = &mingap;
     }
     else if (strcmp (argvec[optind], "-gmax") == 0)
     {
-      maxgap = strtod (getoptval (argcount, argvec, optind++), NULL);
+      maxgap = getoptdouble (argcount, argvec, optind++);
       maxgapptr = &maxgap;
     }
     else if (strcmp (argvec[optind], "-Q") == 0 ||
@@ -539,7 +541,7 @@ processparam (int argcount, char **argvec)
     }
     else if (strcmp (argvec[optind], "-tf") == 0)
     {
-      timeformat_option = strtol (getoptval (argcount, argvec, optind++), NULL, 10);
+      timeformat_option = getoptint (argcount, argvec, optind++);
     }
     else if (strcmp (argvec[optind], "-b") == 0)
     {
@@ -687,9 +689,62 @@ getoptval (int argcount, char **argvec, int argopt)
 } /* End of getoptval() */
 
 /***************************************************************************
+ * getoptint:
+ * Return the integer value of a command line option, as returned by
+ * getoptval(), requiring the entire value to be a valid integer.
+ *
+ * Returns value on success and exits with error message on failure
+ ***************************************************************************/
+static long
+getoptint (int argcount, char **argvec, int argopt)
+{
+  char *value = getoptval (argcount, argvec, argopt);
+  char *endptr = NULL;
+  long lvalue;
+
+  errno = 0;
+  lvalue = strtol (value, &endptr, 10);
+
+  if (errno || endptr == value || *endptr != '\0')
+  {
+    ms_log (2, "Invalid integer value for %s: %s\n", argvec[argopt], value);
+    exit (1);
+  }
+
+  return lvalue;
+} /* End of getoptint() */
+
+/***************************************************************************
+ * getoptdouble:
+ * Return the value of a command line option, as returned by getoptval(),
+ * requiring the entire value to be a valid floating point number.
+ *
+ * Returns value on success and exits with error message on failure
+ ***************************************************************************/
+static double
+getoptdouble (int argcount, char **argvec, int argopt)
+{
+  char *value = getoptval (argcount, argvec, argopt);
+  char *endptr = NULL;
+  double dvalue;
+
+  errno = 0;
+  dvalue = strtod (value, &endptr);
+
+  if (errno || endptr == value || *endptr != '\0')
+  {
+    ms_log (2, "Invalid number value for %s: %s\n", argvec[argopt], value);
+    exit (1);
+  }
+
+  return dvalue;
+} /* End of getoptdouble() */
+
+/***************************************************************************
  * lisnumber:
  *
- * Test if the string is all digits allowing an initial minus sign.
+ * Test if the string is a number, allowing an initial minus sign and a
+ * single decimal point.
  *
  * Return 0 if not a number otherwise 1.
  ***************************************************************************/
@@ -697,11 +752,19 @@ static int
 lisnumber (char *number)
 {
   int idx = 0;
+  int decimal = 0;
 
   while (*(number + idx))
   {
     if (idx == 0 && *(number + idx) == '-')
     {
+      idx++;
+      continue;
+    }
+
+    if (*(number + idx) == '.' && !decimal)
+    {
+      decimal = 1;
       idx++;
       continue;
     }
