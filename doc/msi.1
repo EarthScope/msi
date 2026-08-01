@@ -1,4 +1,4 @@
-.TH MSI 1 2023/07/23
+.TH MSI 1 2026/08/01
 .SH NAME
 miniSEED Inspector
 
@@ -23,9 +23,10 @@ Files on the command line prefixed with a '@' character are input list
 files and are expected to contain a simple list of input files, see
 \fBINPUT LIST FILE\fR for more details.
 
-When a input file is full SEED including both SEED headers and data
-records all of the headers will be skipped and completely unprocessed
-unless the \fB-y\fP option has been specified.
+When an input file contains data that cannot be identified as
+miniSEED, such as full SEED headers, \fBmsi\fP will stop processing
+that file unless the \fB-snd\fP option has been specified, in which
+case the unidentified data are skipped.
 
 .SH OPTIONS
 
@@ -64,6 +65,9 @@ Limit processing to miniSEED records that contain the \fImatch\fP
 pattern, which is applied to the Source Identifier for each record,
 often following this pattern:
 'FDSN:<network>_<station>_<location>_<band>_<source>_<subsource>'
+The pattern is a glob expression: '*' matches zero or more
+characters, '?' matches any single character, and '[set]', '[!set]'
+or '[^set]' match or exclude any character in the set.
 May be used multiple times, a record matching any pattern is kept.
 
 .IP "-r \fIreject\fP"
@@ -71,6 +75,7 @@ Limit processing to miniSEED records that do _not_ contain the
 \fIreject\fP pattern, which is applied to the the Source Identifier
 for each record, often following this pattern:
 'FDSN:<network>_<station>_<location>_<band>_<source>_<subsource>'
+The pattern supports the same glob syntax as \fB-m\fP.
 May be used multiple times, a record matching any pattern is rejected.
 
 .IP "-n \fIcount\fP"
@@ -107,6 +112,11 @@ values from each record.
 .IP "-D          "
 Decompress/unpack data in input records and print all the sample
 values.
+
+.IP "-z         "
+Validate and print record header details in a raw, unparsed form
+instead of the normal parsed form.  Combine with \fB-p\fP to control
+the level of detail.
 
 .IP "-t         "
 Print a sorted trace list after processing all input records.
