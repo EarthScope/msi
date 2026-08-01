@@ -257,8 +257,7 @@ main (int argc, char **argv)
           {
             ms_log (2, "Unrecognized sample type: %c\n", msr->sampletype);
           }
-
-          if (msr->sampletype == 't')
+          else if (msr->sampletype == 't')
           {
             char *textdata = (char *)msr->datasamples;
             int length = msr->numsamples;
