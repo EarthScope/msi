@@ -59,11 +59,11 @@ msi [options] file1 [file2 file3 ...]
 
 <b>-m </b><i>match</i>
 
-<p style="padding-left: 30px;">Limit processing to miniSEED records that contain the <i>match</i> pattern, which is applied to the Source Identifier for each record, often following this pattern: 'FDSN:<network>_<station>_<location>_<band>_<source>_<subsource>'</p>
+<p style="padding-left: 30px;">Limit processing to miniSEED records that contain the <i>match</i> pattern, which is applied to the Source Identifier for each record, often following this pattern: 'FDSN:<network>_<station>_<location>_<band>_<source>_<subsource>'.  May be used multiple times, a record matching any pattern is kept.</p>
 
 <b>-r </b><i>reject</i>
 
-<p style="padding-left: 30px;">Limit processing to miniSEED records that do _not_ contain the <i>reject</i> pattern, which is applied to the the Source Identifier for each record, often following this pattern: 'FDSN:<network>_<station>_<location>_<band>_<source>_<subsource>'</p>
+<p style="padding-left: 30px;">Limit processing to miniSEED records that do _not_ contain the <i>reject</i> pattern, which is applied to the the Source Identifier for each record, often following this pattern: 'FDSN:<network>_<station>_<location>_<band>_<source>_<subsource>'.  May be used multiple times, a record matching any pattern is rejected.</p>
 
 <b>-n </b><i>count</i>
 

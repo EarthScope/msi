@@ -27,6 +27,8 @@ static double getoptdouble (int argcount, char **argvec, int argopt);
 static int lisnumber (char *number);
 static int addfile (char *filename);
 static int addlistfile (char *filename);
+static int addmatch (const char *pattern);
+static int addreject (const char *pattern);
 static int my_globmatch (const char *string, const char *pattern);
 static void usage (void);
 
@@ -55,9 +57,6 @@ static char *binfile = NULL;
 static char *outfile = NULL;
 static nstime_t starttime = NSTERROR; /* Limit to records containing or after starttime */
 static nstime_t endtime = NSTERROR; /* Limit to records containing or before endtime */
-static char *match = NULL; /* Glob match pattern */
-static char *reject = NULL; /* Glob reject pattern */
-
 static double timetol; /* Time tolerance for continuous traces */
 static double sampratetol; /* Sample rate tolerance for continuous traces */
 static MS3Tolerance tolerance = { .time = NULL, .samprate = NULL };
@@ -72,6 +71,17 @@ struct filelink
 
 struct filelink *filelist = 0;
 struct filelink *filelisttail = 0;
+
+struct patternlink
+{
+  char *pattern;
+  struct patternlink *next;
+};
+
+struct patternlink *matchlist = 0;
+struct patternlink *matchlisttail = 0;
+struct patternlink *rejectlist = 0;
+struct patternlink *rejectlisttail = 0;
 
 int
 main (int argc, char **argv)
@@ -183,12 +193,24 @@ main (int argc, char **argv)
         }
       }
 
-      if (match || reject)
+      if (matchlist || rejectlist)
       {
-        /* Check if record is matched by the match pattern */
-        if (match)
+        /* Check if record is matched by any match pattern */
+        if (matchlist)
         {
-          if (my_globmatch (msr->sid, match) == 0)
+          struct patternlink *plp;
+          int matched = 0;
+
+          for (plp = matchlist; plp; plp = plp->next)
+          {
+            if (my_globmatch (msr->sid, plp->pattern))
+            {
+              matched = 1;
+              break;
+            }
+          }
+
+          if (!matched)
           {
             if (verbose >= 3)
             {
@@ -199,10 +221,22 @@ main (int argc, char **argv)
           }
         }
 
-        /* Check if record is rejected by the reject pattern */
-        if (reject)
+        /* Check if record is rejected by any reject pattern */
+        if (rejectlist)
         {
-          if (my_globmatch (msr->sid, reject) != 0)
+          struct patternlink *plp;
+          int rejected = 0;
+
+          for (plp = rejectlist; plp; plp = plp->next)
+          {
+            if (my_globmatch (msr->sid, plp->pattern))
+            {
+              rejected = 1;
+              break;
+            }
+          }
+
+          if (rejected)
           {
             if (verbose >= 3)
             {
@@ -396,8 +430,6 @@ processparam (int argcount, char **argvec)
 {
   int optind;
   int timeformat_option = -1;
-  char *match_pattern = NULL;
-  char *reject_pattern = NULL;
   char *tptr;
 
   /* Process all command line arguments */
@@ -443,19 +475,13 @@ processparam (int argcount, char **argvec)
     }
     else if (strcmp (argvec[optind], "-m") == 0)
     {
-      if ((match_pattern = strdup (getoptval (argcount, argvec, optind++))) == NULL)
-      {
-        ms_log (2, "Error allocating memory\n");
+      if (addmatch (getoptval (argcount, argvec, optind++)))
         exit (1);
-      }
     }
     else if (strcmp (argvec[optind], "-r") == 0)
     {
-      if ((reject_pattern = strdup (getoptval (argcount, argvec, optind++))) == NULL)
-      {
-        ms_log (2, "Error allocating memory\n");
+      if (addreject (getoptval (argcount, argvec, optind++)))
         exit (1);
-      }
     }
     else if (strcmp (argvec[optind], "-n") == 0)
     {
@@ -616,30 +642,6 @@ processparam (int argcount, char **argvec)
     ms_log (1, "%s version %s\n\n", PACKAGE, VERSION);
     ms_log (1, "Try %s -h for usage\n", PACKAGE);
     exit (1);
-  }
-
-  /* Add wildcards to match pattern for logical "contains" */
-  if (match_pattern)
-  {
-    if ((match = malloc (strlen (match_pattern) + 3)) == NULL)
-    {
-      ms_log (2, "Error allocating memory\n");
-      exit (1);
-    }
-
-    snprintf (match, strlen (match_pattern) + 3, "*%s*", match_pattern);
-  }
-
-  /* Add wildcards to reject pattern for logical "contains" */
-  if (reject_pattern)
-  {
-    if ((reject = malloc (strlen (reject_pattern) + 3)) == NULL)
-    {
-      ms_log (2, "Error allocating memory\n");
-      exit (1);
-    }
-
-    snprintf (reject, strlen (reject_pattern) + 3, "*%s*", reject_pattern);
   }
 
   /* Add program name and version to User-Agent for URL-based requests */
@@ -835,6 +837,100 @@ addfile (char *filename)
 
   return 0;
 } /* End of addfile() */
+
+/***************************************************************************
+ * addmatch:
+ *
+ * Add a glob pattern, wrapped in wildcards, to the end of the global
+ * match list (matchlist).  May be called more than once to accumulate
+ * multiple patterns, any of which will allow a record to be kept.
+ *
+ * Returns 0 on success and -1 on error.
+ ***************************************************************************/
+static int
+addmatch (const char *pattern)
+{
+  struct patternlink *newpp;
+
+  newpp = (struct patternlink *)calloc (1, sizeof (struct patternlink));
+
+  if (!newpp)
+  {
+    ms_log (2, "addmatch(): Cannot allocate memory\n");
+    return -1;
+  }
+
+  newpp->pattern = malloc (strlen (pattern) + 3);
+
+  if (!newpp->pattern)
+  {
+    ms_log (2, "addmatch(): Cannot allocate memory\n");
+    return -1;
+  }
+
+  snprintf (newpp->pattern, strlen (pattern) + 3, "*%s*", pattern);
+
+  /* Add new pattern to the end of the list */
+  if (!matchlisttail)
+  {
+    matchlist = newpp;
+    matchlisttail = newpp;
+  }
+  else
+  {
+    matchlisttail->next = newpp;
+    matchlisttail = newpp;
+  }
+
+  return 0;
+} /* End of addmatch() */
+
+/***************************************************************************
+ * addreject:
+ *
+ * Add a glob pattern, wrapped in wildcards, to the end of the global
+ * reject list (rejectlist).  May be called more than once to accumulate
+ * multiple patterns, any of which will cause a record to be rejected.
+ *
+ * Returns 0 on success and -1 on error.
+ ***************************************************************************/
+static int
+addreject (const char *pattern)
+{
+  struct patternlink *newpp;
+
+  newpp = (struct patternlink *)calloc (1, sizeof (struct patternlink));
+
+  if (!newpp)
+  {
+    ms_log (2, "addreject(): Cannot allocate memory\n");
+    return -1;
+  }
+
+  newpp->pattern = malloc (strlen (pattern) + 3);
+
+  if (!newpp->pattern)
+  {
+    ms_log (2, "addreject(): Cannot allocate memory\n");
+    return -1;
+  }
+
+  snprintf (newpp->pattern, strlen (pattern) + 3, "*%s*", pattern);
+
+  /* Add new pattern to the end of the list */
+  if (!rejectlisttail)
+  {
+    rejectlist = newpp;
+    rejectlisttail = newpp;
+  }
+  else
+  {
+    rejectlisttail->next = newpp;
+    rejectlisttail = newpp;
+  }
+
+  return 0;
+} /* End of addreject() */
 
 /***************************************************************************
  * addlistfile:
@@ -1082,7 +1178,9 @@ usage (void)
            " -te time     Limit to records that end before time\n"
            "                time format: 'YYYY[,DDD,HH,MM,SS,FFFFFF]' delimiters: [,:.]\n"
            " -m match     Limit to records containing the specified pattern\n"
-           " -r reject    Limit to records not containing the specfied pattern\n"
+           "                may be used multiple times, a record matching any is kept\n"
+           " -r reject    Limit to records not containing the specified pattern\n"
+           "                may be used multiple times, a record matching any is rejected\n"
            "                Patterns are applied to: 'FDSN:NET_STA_LOC_BAND_SOURCE_SS'\n"
            " -n count     Only process count number of records\n"
            " -snd         Skip non-miniSEED data\n"

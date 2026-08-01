@@ -64,12 +64,14 @@ Limit processing to miniSEED records that contain the \fImatch\fP
 pattern, which is applied to the Source Identifier for each record,
 often following this pattern:
 'FDSN:<network>_<station>_<location>_<band>_<source>_<subsource>'
+May be used multiple times, a record matching any pattern is kept.
 
 .IP "-r \fIreject\fP"
 Limit processing to miniSEED records that do _not_ contain the
 \fIreject\fP pattern, which is applied to the the Source Identifier
 for each record, often following this pattern:
 'FDSN:<network>_<station>_<location>_<band>_<source>_<subsource>'
+May be used multiple times, a record matching any pattern is rejected.
 
 .IP "-n \fIcount\fP"
 Only process \fIcount\fP input records.

@@ -1,12 +1,13 @@
-2026.211:
+2026.213:
+	- Allow -m and -r to be given multiple times, a record is kept if
+	it matches any -m pattern and rejected if it matches any -r pattern.
+	- Move the basic summary (-s) output to after the trace listing.
 	- Do not close stdout when writing output to it, which silently
 	discarded the trace listing, gap listing and basic summary.
 	- Close the list file before returning on error in addlistfile().
 	- Widen sample count locals in the data printing code to int64_t.
 	- Skip sample printing for an unrecognized sample type instead of
 	printing a blank line per sample row after the error message.
-	- Check for allocation failure when duplicating the -m and -r
-	pattern values.
 	- Reject non-numeric values given to -n, -tf, -tt, -rt, -gmin and
 	-gmax instead of silently treating them as zero, and allow -gmin
 	and -gmax to accept negative decimal values.
@@ -14,7 +15,6 @@
 	basic summary was counting files never opened.
 	- Allow '-b -' to write binary samples to stdout, the value was
 	rejected during option parsing.
-	- Move the basic summary (-s) output to after the trace listing.
 	- Fix mislabeled "Skipping (endtime)" message.
 	- Print the read error message before exiting when a file cannot
 	be read (previously exited silently).
