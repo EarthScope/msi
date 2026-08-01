@@ -4,6 +4,7 @@
 	- Move the basic summary (-s) output to after the trace listing.
 	- Do not close stdout when writing output to it, which silently
 	discarded the trace listing, gap listing and basic summary.
+	- Update glob pattern matcher with improved version.
 	- Close the list file before returning on error in addlistfile().
 	- Widen sample count locals in the data printing code to int64_t.
 	- Skip sample printing for an unrecognized sample type instead of
