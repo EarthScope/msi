@@ -1,6 +1,8 @@
 2026.211:
 	- Do not close stdout when writing output to it, which silently
 	discarded the trace listing, gap listing and basic summary.
+	- Check for allocation failure when duplicating the -m and -r
+	pattern values.
 	- Reject non-numeric values given to -n, -tf, -tt, -rt, -gmin and
 	-gmax instead of silently treating them as zero, and allow -gmin
 	and -gmax to accept negative decimal values.

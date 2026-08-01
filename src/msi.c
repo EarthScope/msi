@@ -444,11 +444,19 @@ processparam (int argcount, char **argvec)
     }
     else if (strcmp (argvec[optind], "-m") == 0)
     {
-      match_pattern = strdup (getoptval (argcount, argvec, optind++));
+      if ((match_pattern = strdup (getoptval (argcount, argvec, optind++))) == NULL)
+      {
+        ms_log (2, "Error allocating memory\n");
+        exit (1);
+      }
     }
     else if (strcmp (argvec[optind], "-r") == 0)
     {
-      reject_pattern = strdup (getoptval (argcount, argvec, optind++));
+      if ((reject_pattern = strdup (getoptval (argcount, argvec, optind++))) == NULL)
+      {
+        ms_log (2, "Error allocating memory\n");
+        exit (1);
+      }
     }
     else if (strcmp (argvec[optind], "-n") == 0)
     {
